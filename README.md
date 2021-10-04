@@ -304,7 +304,7 @@ Body attributes:
  Arrive at destination location at no later than given time. You can define a maximum of 10 searches
 
 ```js
-    departure_search = {
+    let departure_search = {
         'id': "public transport from Trafalgar Square",
         'departure_time': "2021-10-01T08:00:00Z",
         'travel_time': 1800,
@@ -312,7 +312,7 @@ Body attributes:
         'transportation': { 'type': "public_transport" },
         'properties': ["travel_time", "distance"]
     }
-    arrival_search = {
+    let arrival_search = {
         'id': "public transport to Trafalgar Square",
         'arrival_time': "2021-10-01T08:00:00Z",
         'travel_time': 1800,
