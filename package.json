@@ -1,0 +1,18 @@
+{
+  "name": "traveltimejs",
+  "version": "1.0.0",
+  "description": "NodeJS Interface to Travel Time",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/s-Nick-s/traveltimeJS"
+  },
+  "author": "Nikolay S. (https://github.com/s-Nick-s)",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.22.0"
+  }
+}
