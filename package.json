@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/s-Nick-s/traveltimeJS"
+    "url": "https://github.com/traveltime-dev/traveltime-sdk-nodejs"
   },
   "author": "Nikolay S. (https://github.com/s-Nick-s)",
   "license": "MIT",

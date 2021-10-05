@@ -11,7 +11,7 @@ Dependencies:
 ## Installation
 
 ```
-    npm install git+https://github.com/s-Nick-s/traveltimejs
+    npm install git+https://github.com/traveltime-dev/traveltime-sdk-nodejs
 ```
 
 ## Usage
@@ -46,7 +46,7 @@ Arrive at destination location at no later than given time. You can define a max
 ```js
     let departure_search1 = {
         'id': "public transport from Trafalgar Square",
-        'departure_time': "2021-10-01T08:00:00Z",
+        'departure_time': new Date,
         'travel_time': 900,
         'coords': { 'lat': 51.507609, 'lng': -0.128315 },
         'transportation': { 'type': "public_transport" },
@@ -54,14 +54,14 @@ Arrive at destination location at no later than given time. You can define a max
     }
     let departure_search2 = {
         'id': "driving from Trafalgar Square",
-        'departure_time': "2021-10-01T08:00:00Z",
+        'departure_time': new Date,
         'travel_time': 900,
         'coords': { 'lat': 51.507609, 'lng': -0.128315 },
         'transportation': { 'type': "driving" }
     }
     let arrival_search = {
         'id': "public transport to Trafalgar Square",
-        'arrival_time': "2021-10-01T08:00:00Z",
+        'arrival_time': new Date,
         'travel_time': 900,
         'coords': { 'lat': 51.507609, 'lng': -0.128315 },
         'transportation': { 'type': "public_transport" },
@@ -107,7 +107,7 @@ Arrive at destination location at no later than given time. You can define a max
         "departure_location_id": "London center",
         "arrival_location_ids": ["Hyde Park", "ZSL London Zoo"],
         "transportation": { "type": "bus" },
-        "departure_time": "2021-10-01T08:00:00Z",
+        "departure_time": new Date,
         "travel_time": 1800,
         "properties": ["travel_time"],
         "range": { "enabled": true, "max_results": 3, "width": 600 }
@@ -118,7 +118,7 @@ Arrive at destination location at no later than given time. You can define a max
         "departure_location_ids": ["Hyde Park", "ZSL London Zoo"],
         "arrival_location_id": "London center",
         "transportation": { "type": "public_transport" },
-        "arrival_time": "2021-10-01T08:00:00Z",
+        "arrival_time": new Date,
         "travel_time": 1900,
         "properties": ["travel_time", "distance", "distance_breakdown", "fares"]
     }
@@ -153,7 +153,7 @@ Arrive at destination location at no later than given time. You can define a max
         "departure_location_id": "London center",
         "arrival_location_ids": ["Hyde Park", "ZSL London Zoo"],
         "transportation": { "type": "driving" },
-        "departure_time": "2021-10-01T08:00:00Z",
+        "departure_time": new Date,
         "properties": ["travel_time", "distance", "route"]
     }
 
@@ -162,7 +162,7 @@ Arrive at destination location at no later than given time. You can define a max
         "departure_location_ids": ["Hyde Park", "ZSL London Zoo"],
         "arrival_location_id": "London center",
         "transportation": { "type": "public_transport" },
-        "arrival_time": "2021-10-01T08:00:00Z",
+        "arrival_time": new Date,
         "properties": ["travel_time", "distance", "route", "fares"],
         "range": { "enabled": true, "max_results": 1, "width": 1800 }
     }
@@ -234,7 +234,7 @@ Arrive at destination location at no later than given time. You can define a max
 ```js
     let departure_search = {
         'id': "public transport from Trafalgar Square",
-        'departure_time': "2021-10-01T08:00:00Z",
+        'departure_time': new Date,
         'travel_time': 1800,
         'coords': { 'lat': 51.507609, 'lng': -0.128315 },
         'transportation': { 'type': "public_transport" },
@@ -243,7 +243,7 @@ Arrive at destination location at no later than given time. You can define a max
     }
     let arrival_search = {
         'id': "public transport to Trafalgar Square",
-        'arrival_time': "2021-10-01T08:00:00Z",
+        'arrival_time': new Date,
         'travel_time': 1800,
         'coords': { 'lat': 51.507609, 'lng': -0.128315 },
         'transportation': { 'type': "public_transport" },
@@ -270,7 +270,7 @@ Body attributes:
 ```js
     let departure_search = {
         'id': "public transport from Trafalgar Square",
-        'departure_time': "2021-10-01T08:00:00Z",
+        'departure_time': new Date,
         'travel_time': 1800,
         'coords': { 'lat': 51.507609, 'lng': -0.128315 },
         'transportation': { 'type': "public_transport" },
@@ -279,7 +279,7 @@ Body attributes:
     }
     let arrival_search = {
         'id': "public transport to Trafalgar Square",
-        'arrival_time': "2021-10-01T08:00:00Z",
+        'arrival_time': new Date,
         'travel_time': 1800,
         'coords': { 'lat': 51.507609, 'lng': -0.128315 },
         'transportation': { 'type': "public_transport" },
@@ -306,7 +306,7 @@ Body attributes:
 ```js
     let departure_search = {
         'id': "public transport from Trafalgar Square",
-        'departure_time': "2021-10-01T08:00:00Z",
+        'departure_time': new Date,
         'travel_time': 1800,
         'coords': { 'lat': 51.507609, 'lng': -0.128315 },
         'transportation': { 'type': "public_transport" },
@@ -314,7 +314,7 @@ Body attributes:
     }
     let arrival_search = {
         'id': "public transport to Trafalgar Square",
-        'arrival_time': "2021-10-01T08:00:00Z",
+        'arrival_time': new Date,
         'travel_time': 1800,
         'coords': { 'lat': 51.507609, 'lng': -0.128315 },
         'transportation': { 'type': "public_transport" },
