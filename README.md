@@ -11,7 +11,7 @@ Dependencies:
 ## Installation
 
 ```
-npm install traveltime
+npm i traveltime-api
 ```
 
 This package comes this TypeScript support.
