@@ -1,18 +1,29 @@
 {
-  "name": "traveltimejs",
-  "version": "1.0.0",
-  "description": "NodeJS Interface to Travel Time",
-  "main": "src/index.js",
+  "name": "traveltime-api",
+  "version": "2.0.0",
+  "description": "TravelTime API SDK for node js with TypeScript",
+  "main": "target/index.js",
+  "types": "target/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/traveltime-dev/traveltime-sdk-nodejs"
   },
-  "author": "Nikolay S. (https://github.com/s-Nick-s)",
+  "author": "TravelTime <support@traveltime.com> (https://traveltime.com/)",
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.22.0"
-  }
+    "axios": "^0.27.2"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.29.0",
+    "@typescript-eslint/parser": "^5.29.0",
+    "eslint": "^8.18.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "typescript": "^4.7.4"
+  },
+  "keywords": ["traveltime", "api", "maps"],
+  "files": ["target/**/*"]
 }
