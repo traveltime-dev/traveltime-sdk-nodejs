@@ -1,8 +1,8 @@
-# traveltimeJS: Travel Time NodeJS SDK
+# TravelTime Node.js SDK
 
-traveltimeJS is a NodeJS SDK for Travel Time API (https://traveltime.com/).  
-Travel Time API helps users find locations by journey time rather than using ‘as the crow flies’ distance.  
-Time-based searching gives users more opportunities for personalisation and delivers a more relevant search.
+This library is Node.js SDK for TravelTime API (https://traveltime.com/).  
+TravelTime API helps users find locations by journey time rather than using ‘as the crow flies’ distance.  
+Time-based searching gives users more opportunities for personalization and delivers a more relevant search.
 
 Dependencies:
 
@@ -11,168 +11,194 @@ Dependencies:
 ## Installation
 
 ```
-    npm install git+https://github.com/traveltime-dev/traveltime-sdk-nodejs
+npm i traveltime-api
 ```
+
+This package comes this TypeScript support.
 
 ## Usage
-All functions return API response bodies as promises.  
-On invalid request functions will return [API error response](https://traveltime.com/docs/api/reference/error-response).  
-As input all functions (except `map_info`, `geocoding` and `geocoding_reverse`) expect a `body` object.
-This object must contain a valid request body. Check indvidual function documentation or API documention for information on how to construct it.
 
+### Client Initialization
 
-### Authentication
-In order to authenticate with Travel Time API, you will have to supply the Application Id and Api Key. 
+Before starting, the package needs to be configured with your account's application ID and Key, which can be found in the [TravelTime Developer Portal Dashboard](https://account.traveltime.com/dashboard).
+To create an instance - you will need to create new `TravelTimeClient` class object with credentials you got from dashboard.
 
-```js
-    const traveltimejs = require('traveltimejs');
-    //store your credentials in an environment variable
-    process.env['TRAVELTIME_ID'] = 'YOUR_API_ID';
-    process.env['TRAVELTIME_KEY'] = 'YOUR_API_KEY';
+```typescript
+import { TravelTimeClient } from 'traveltime';
+
+const travelTimeClient = new TravelTimeClient({
+  apiKey: 'YOUR_API_KEY',
+  applicationId: 'YOUR_APPLICATION_ID',
+});
 ```
+
+Now you'll be able to call all TravelTime API endpoints from `travelTimeClient` instance.
+
+Every instance function returns Object with type of `Promise<AxiosResponse<EndpointResponseType>>`.
 
 ### [Isochrones (Time Map)](https://traveltime.com/docs/api/reference/isochrones)
 Given origin coordinates, find shapes of zones reachable within corresponding travel time.
 Find unions/intersections between different searches
  
-Body attributes:
-* departure_searches ( optional): Searches based on departure times.
-Leave departure location at no earlier than given time. You can define a maximum of 10 searches
-* arrival_searches ( optional): Searches based on arrival times.
-Arrive at destination location at no later than given time. You can define a maximum of 10 searches
-* unions ( optional): Define unions of shapes that are results of previously defined searches.
-* intersections ( optional): Define intersections of shapes that are results of previously defined searches.
+Function accepts object that matches API json spec.
 
-```js
-    let departure_search1 = {
-        'id': "public transport from Trafalgar Square",
-        'departure_time': new Date,
-        'travel_time': 900,
-        'coords': { 'lat': 51.507609, 'lng': -0.128315 },
-        'transportation': { 'type': "public_transport" },
-        'properties': ['is_only_walking']
-    }
-    let departure_search2 = {
-        'id': "driving from Trafalgar Square",
-        'departure_time': new Date,
-        'travel_time': 900,
-        'coords': { 'lat': 51.507609, 'lng': -0.128315 },
-        'transportation': { 'type': "driving" }
-    }
-    let arrival_search = {
-        'id': "public transport to Trafalgar Square",
-        'arrival_time': new Date,
-        'travel_time': 900,
-        'coords': { 'lat': 51.507609, 'lng': -0.128315 },
-        'transportation': { 'type': "public_transport" },
-        'range': { 'enabled': true, 'width': 3600 }
-    }
-    let union = {
-        'id': "union of driving and public transport",
-        'search_ids': ['driving from Trafalgar Square', 'public transport from Trafalgar Square']
-    }
-    let intersection = {
-        'id': "intersection of driving and public transport",
-        'search_ids': ['driving from Trafalgar Square', 'public transport from Trafalgar Square']
-    }
+```typescript
+import {
+  TimeMapRequestArrivalSearch,
+  TimeMapRequestDepartureSearch,
+  TimeMapRequestUnionOrIntersection,
+} from 'traveltime';
 
-    traveltimejs.time_map({
-        departure_searches: [departure_search1, departure_search2],
-        arrival_searches: [arrival_search],
-        unions: [union],
-        intersections: [intersection]
-    }).then(out => console.log(out)).catch(e => console.log(e))
+const departure_search1: TimeMapRequestDepartureSearch = {
+  id: 'public transport from Trafalgar Square',
+  departure_time: new Date().toISOString(),
+  travel_time: 900,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  properties: ['is_only_walking'],
+};
+const departure_search2: TimeMapRequestDepartureSearch = {
+  id: 'driving from Trafalgar Square',
+  departure_time: new Date().toISOString(),
+  travel_time: 900,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'driving' },
+};
+const arrival_search: TimeMapRequestArrivalSearch = {
+  id: 'public transport to Trafalgar Square',
+  arrival_time: new Date().toISOString(),
+  travel_time: 900,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  range: { enabled: true, width: 3600 },
+};
+const union: TimeMapRequestUnionOrIntersection = {
+  id: 'union of driving and public transport',
+  search_ids: ['driving from Trafalgar Square', 'public transport from Trafalgar Square'],
+};
+const intersection: TimeMapRequestUnionOrIntersection = {
+  id: 'intersection of driving and public transport',
+  search_ids: ['driving from Trafalgar Square', 'public transport from Trafalgar Square'],
+};
+
+travelTimeClient.timeMap({
+  departure_searches: [departure_search1, departure_search2],
+  arrival_searches: [arrival_search],
+  unions: [union],
+  intersections: [intersection],
+}).then((r) => console.log(r.data))
+  .catch((e) => console.error(e));
 ```
 
 ### [Distance Matrix (Time Filter)](https://traveltime.com/docs/api/reference/distance-matrix)
 Given origin and destination points filter out points that cannot be reached within specified time limit.
 Find out travel times, distances and costs between an origin and up to 2,000 destination points.
 
-Body attributes:
-* locations (Array of Objects): Locations to use. Each location requires an id and lat/lng values
-* departure_searches (Array of Objects, optional): Searches based on departure times.
-Leave departure location at no earlier than given time. You can define a maximum of 10 searches
-* arrival_searches (Array of Objects, optional): Searches based on arrival times.
-Arrive at destination location at no later than given time. You can define a maximum of 10 searches
+Function accepts object that matches API json spec.
 
-```js
-    let locations = [
-        { "id": "London center", "coords": { "lat": 51.508930, "lng": -0.131387 } },
-        { "id": "Hyde Park", "coords": { "lat": 51.508824, "lng": -0.167093 } },
-        { "id": "ZSL London Zoo", "coords": { "lat": 51.536067, "lng": -0.153596 } }
-    ]
+```ts
+import {
+  LocationRequest,
+  TimeFilterRequestArrivalSearch,
+  TimeFilterRequestDepartureSearch,
+} from 'traveltime';
 
-    let departure_search = {
-        "id": "forward search example",
-        "departure_location_id": "London center",
-        "arrival_location_ids": ["Hyde Park", "ZSL London Zoo"],
-        "transportation": { "type": "bus" },
-        "departure_time": new Date,
-        "travel_time": 1800,
-        "properties": ["travel_time"],
-        "range": { "enabled": true, "max_results": 3, "width": 600 }
-    }
+const locations: LocationRequest[] = [
+  {
+    id: 'London center',
+    coords: {
+      lat: 51.508930,
+      lng: -0.131387,
+    },
+  },
+  {
+    id: 'Hyde Park',
+    coords: {
+      lat: 51.508824,
+      lng: -0.167093,
+    },
+  },
+  {
+    id: 'ZSL London Zoo',
+    coords: {
+      lat: 51.536067,
+      lng: -0.153596,
+    },
+  },
+];
 
-    let arrival_search = {
-        "id": "backward search example",
-        "departure_location_ids": ["Hyde Park", "ZSL London Zoo"],
-        "arrival_location_id": "London center",
-        "transportation": { "type": "public_transport" },
-        "arrival_time": new Date,
-        "travel_time": 1900,
-        "properties": ["travel_time", "distance", "distance_breakdown", "fares"]
-    }
+const departure_search: TimeFilterRequestDepartureSearch = {
+  id: 'forward search example',
+  departure_location_id: 'London center',
+  arrival_location_ids: ['Hyde Park', 'ZSL London Zoo'],
+  transportation: { type: 'bus' },
+  departure_time: new Date().toISOString(),
+  travel_time: 1800,
+  properties: ['travel_time'],
+  range: { enabled: true, max_results: 3, width: 600 },
+};
 
+const arrival_search: TimeFilterRequestArrivalSearch = {
+  id: 'backward search example',
+  departure_location_ids: ['Hyde Park', 'ZSL London Zoo'],
+  arrival_location_id: 'London center',
+  transportation: { type: 'public_transport' },
+  arrival_time: new Date().toISOString(),
+  travel_time: 1800,
+  properties: ['travel_time', 'distance', 'distance_breakdown', 'fares'],
+};
 
-    traveltimejs.time_filter({
-        locations: locations,
-        departure_searches: [departure_search],
-        arrival_searches: [arrival_search]
-    }).then(out => console.log(out)).catch(e => console.log(e))
+travelTimeClient.timeFilter({
+  locations,
+  departure_searches: [departure_search],
+  arrival_searches: [arrival_search],
+}).then((r) => console.log(r.data))
+  .catch((e) => console.error(e));
 ```
 
 ### [Routes](https://traveltime.com/docs/api/reference/routes)
 Returns routing information between source and destinations.
 
-Body attributes:
-* locations (Array of Objects): Locations to use. Each location requires an id and lat/lng values
-* departure_searches (Array of Objects, optional): Searches based on departure times.
-Leave departure location at no earlier than given time. You can define a maximum of 10 searches
-* arrival_searches (Array of Objects, optional): Searches based on arrival times.
-Arrive at destination location at no later than given time. You can define a maximum of 10 searches
+Function accepts object that matches API json spec.
 
-```js
-    let locations = [
-        { "id": "London center", "coords": { "lat": 51.508930, "lng": -0.131387 } },
-        { "id": "Hyde Park", "coords": { "lat": 51.508824, "lng": -0.167093 } },
-        { "id": "ZSL London Zoo", "coords": { "lat": 51.536067, "lng": -0.153596 } }
-    ]
+```ts
+import {
+  LocationRequest,
+  RoutesRequestArrivalSearch,
+  RoutesRequestDepartureSearch,
+} from 'traveltime';
 
-    let departure_search = {
-        "id": "departure search example",
-        "departure_location_id": "London center",
-        "arrival_location_ids": ["Hyde Park", "ZSL London Zoo"],
-        "transportation": { "type": "driving" },
-        "departure_time": new Date,
-        "properties": ["travel_time", "distance", "route"]
-    }
+const locations: LocationRequest[] = [
+  { id: 'London center', coords: { lat: 51.508930, lng: -0.131387 } },
+  { id: 'Hyde Park', coords: { lat: 51.508824, lng: -0.167093 } },
+  { id: 'ZSL London Zoo', coords: { lat: 51.536067, lng: -0.153596 } },
+];
 
-    let arrival_search = {
-        "id": "arrival  search example",
-        "departure_location_ids": ["Hyde Park", "ZSL London Zoo"],
-        "arrival_location_id": "London center",
-        "transportation": { "type": "public_transport" },
-        "arrival_time": new Date,
-        "properties": ["travel_time", "distance", "route", "fares"],
-        "range": { "enabled": true, "max_results": 1, "width": 1800 }
-    }
+const departure_search: RoutesRequestDepartureSearch = {
+  id: 'departure search example',
+  departure_location_id: 'London center',
+  arrival_location_ids: ['Hyde Park', 'ZSL London Zoo'],
+  transportation: { type: 'driving' },
+  departure_time: new Date().toISOString(),
+  properties: ['travel_time', 'distance', 'route'],
+};
 
+const arrival_search: RoutesRequestArrivalSearch = {
+  id: 'arrival  search example',
+  departure_location_ids: ['Hyde Park', 'ZSL London Zoo'],
+  arrival_location_id: 'London center',
+  transportation: { type: 'public_transport' },
+  arrival_time: new Date().toISOString(),
+  properties: ['travel_time', 'distance', 'route', 'fares'],
+  range: { enabled: true, max_results: 1, width: 1800 },
+};
 
-    traveltimejs.routes({
-        locations: locations,
-        departure_searches: [departure_search],
-        arrival_searches: [arrival_search]
-    }).then(out => console.log(out)).catch(e => console.log(e)).catch(e => console.log(e))
+travelTimeClient.routes({
+  locations,
+  departure_searches: [departure_search],
+  arrival_searches: [arrival_search],
+}).then((r) => console.log(r.data))
+  .catch((e) => console.error(e));
 ```
 
 ### [Time Filter (Fast)](https://traveltime.com/docs/api/reference/time-filter-fast)
@@ -180,193 +206,221 @@ A very fast version of time_filter().
 However, the request parameters are much more limited.
 Currently only supports UK and Ireland.
 
-Body attributes:
-* locations (Array of Objects): Locations to use. Each location requires an id and lat/lng values
-* arrival_searches.many_to_one (Array of Objects, optional): Specify a single arrival location and multiple departure locations. Max 10.
-* arrival_searches.one_to_many (Array of Objects, optional): Specify a single departure location and multiple arrival locations. Max 10.
+Function accepts object that matches API json spec.
 
-```js
-    let locations = [
-        { "id": "London center", "coords": { "lat": 51.508930, "lng": -0.131387 } },
-        { "id": "Hyde Park", "coords": { "lat": 51.508824, "lng": -0.167093 } },
-        { "id": "ZSL London Zoo", "coords": { "lat": 51.536067, "lng": -0.153596 } }
-    ]
+```ts
+import {
+  LocationRequest,
+  TimeFilterFastRequestArrivalManyToOneSearch,
+  TimeFilterFastRequestArrivalOneToManySearch,
+} from 'traveltime';
 
-    let arrival_many_to_one = {
-        "id": "arrive-at many-to-one search example",
-        "departure_location_ids": ["Hyde Park", "ZSL London Zoo"],
-        "arrival_location_id": "London center",
-        "transportation": { "type": "public_transport" },
-        "arrival_time_period": "weekday_morning",
-        "travel_time": 1900,
-        "properties": ["travel_time", "fares"]
-    }
-    let arrival_one_to_many = {
-        "id": "arrive-at one-to-many search example",
-        "arrival_location_ids": ["Hyde Park", "ZSL London Zoo"],
-        "departure_location_id": "London center",
-        "transportation": { "type": "public_transport" },
-        "arrival_time_period": "weekday_morning",
-        "travel_time": 1900,
-        "properties": ["travel_time", "fares"]
-    }
+const locations: LocationRequest[] = [
+  { id: 'London center', coords: { lat: 51.508930, lng: -0.131387 } },
+  { id: 'Hyde Park', coords: { lat: 51.508824, lng: -0.167093 } },
+  { id: 'ZSL London Zoo', coords: { lat: 51.536067, lng: -0.153596 } },
+];
 
+const arrival_many_to_one: TimeFilterFastRequestArrivalManyToOneSearch = {
+  id: 'arrive-at many-to-one search example',
+  departure_location_ids: ['Hyde Park', 'ZSL London Zoo'],
+  arrival_location_id: 'London center',
+  transportation: { type: 'public_transport' },
+  arrival_time_period: 'weekday_morning',
+  travel_time: 1900,
+  properties: ['travel_time', 'fares'],
+};
+const arrival_one_to_many: TimeFilterFastRequestArrivalOneToManySearch = {
+  id: 'arrive-at one-to-many search example',
+  arrival_location_ids: ['Hyde Park', 'ZSL London Zoo'],
+  departure_location_id: 'London center',
+  transportation: { type: 'public_transport' },
+  arrival_time_period: 'weekday_morning',
+  travel_time: 1900,
+  properties: ['travel_time', 'fares'],
+};
 
-    traveltimejs.time_filter_fast({
-        locations: locations,
-        arrival_searches: {
-            many_to_one: [arrival_many_to_one],
-            one_to_many: [arrival_one_to_many]
-        }
-    }).then(out => console.log(out)).catch(e => console.log(e))
+travelTimeClient.timeFilterFast({
+  locations,
+  arrival_searches: {
+    many_to_one: [arrival_many_to_one],
+    one_to_many: [arrival_one_to_many],
+  },
+}).then((r) => console.log(r.data))
+  .catch((e) => console.error(e));
 ```
 
 ### [Time Filter (Postcode Districts)](https://traveltime.com/docs/api/reference/postcode-district-filter)
 Find districts that have a certain coverage from origin (or to destination) and get statistics about postcodes within such districts.
 Currently only supports United Kingdom.
 
-Body attributes:
-* departure_searches (Array of Objects, optional): Searches based on departure times.
-Leave departure location at no earlier than given time. You can define a maximum of 10 searches
-* arrival_searches (Array of Objects, optional): Searches based on arrival times.
-Arrive at destination location at no later than given time. You can define a maximum of 10 searches
+Function accepts object that matches API json spec.
 
-```js
-    let departure_search = {
-        'id': "public transport from Trafalgar Square",
-        'departure_time': new Date,
-        'travel_time': 1800,
-        'coords': { 'lat': 51.507609, 'lng': -0.128315 },
-        'transportation': { 'type': "public_transport" },
-        'properties': ["coverage", "travel_time_reachable", "travel_time_all"],
-        "reachable_postcodes_threshold": 0.1
-    }
-    let arrival_search = {
-        'id': "public transport to Trafalgar Square",
-        'arrival_time': new Date,
-        'travel_time': 1800,
-        'coords': { 'lat': 51.507609, 'lng': -0.128315 },
-        'transportation': { 'type': "public_transport" },
-        'properties': ["coverage", "travel_time_reachable", "travel_time_all"],
-        "reachable_postcodes_threshold": 0.1
-    }
+```ts
+import {
+  TimeFilterPostcodeDistrictsRequestArrivalSearch,
+  TimeFilterPostcodeDistrictsRequestDepartureSearch,
+} from 'traveltime';
 
-    traveltimejs.time_filter_postcode_districts({
-        departure_searches: [departure_search],
-        arrival_searches: [arrival_search]
-    }).then(out => console.log(out)).catch(e => console.log(e))
+const departure_search: TimeFilterPostcodeDistrictsRequestDepartureSearch = {
+  id: 'public transport from Trafalgar Square',
+  departure_time: new Date().toISOString(),
+  travel_time: 1800,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  properties: ['coverage', 'travel_time_reachable', 'travel_time_all'],
+  reachable_postcodes_threshold: 0.1,
+};
+const arrival_search: TimeFilterPostcodeDistrictsRequestArrivalSearch = {
+  id: 'public transport to Trafalgar Square',
+  arrival_time: new Date().toISOString(),
+  travel_time: 1800,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  properties: ['coverage', 'travel_time_reachable', 'travel_time_all'],
+  reachable_postcodes_threshold: 0.1,
+};
+
+travelTimeClient.timeFilterPostcodeDistricts({
+  departure_searches: [departure_search],
+  arrival_searches: [arrival_search],
+}).then((r) => console.log(r.data))
+  .catch((e) => console.error(e));
 ```
 
 ### [Time Filter (Postcode Sectors)](https://traveltime.com/docs/api/reference/postcode-sector-filter)
 Find sectors that have a certain coverage from origin (or to destination) and get statistics about postcodes within such sectors.
 Currently only supports United Kingdom.
 
-Body attributes:
-* departure_searches (Array of Objects, optional): Searches based on departure times.
- Leave departure location at no earlier than given time. You can define a maximum of 10 searches
-* arrival_searches (Array of Objects, optional): Searches based on arrival times.
- Arrive at destination location at no later than given time. You can define a maximum of 10 searches
+Function accepts object that matches API json spec.
 
-```js
-    let departure_search = {
-        'id': "public transport from Trafalgar Square",
-        'departure_time': new Date,
-        'travel_time': 1800,
-        'coords': { 'lat': 51.507609, 'lng': -0.128315 },
-        'transportation': { 'type': "public_transport" },
-        'properties': ["coverage", "travel_time_reachable", "travel_time_all"],
-        "reachable_postcodes_threshold": 0.1
-    }
-    let arrival_search = {
-        'id': "public transport to Trafalgar Square",
-        'arrival_time': new Date,
-        'travel_time': 1800,
-        'coords': { 'lat': 51.507609, 'lng': -0.128315 },
-        'transportation': { 'type': "public_transport" },
-        'properties': ["coverage", "travel_time_reachable", "travel_time_all"],
-        "reachable_postcodes_threshold": 0.1
-    }
+```ts
+import {
+  TimeFilterPostcodeSectorsRequestArrivalSearch,
+  TimeFilterPostcodeSectorsRequestDepartureSearch,
+} from 'traveltime';
 
-    traveltimejs.time_filter_postcode_sectors({
-        departure_searches: [departure_search],
-        arrival_searches: [arrival_search]
-    }).then(out => console.log(out)).catch(e => console.log(e))
+const departure_search: TimeFilterPostcodeSectorsRequestDepartureSearch = {
+  id: 'public transport from Trafalgar Square',
+  departure_time: new Date().toISOString(),
+  travel_time: 1800,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  properties: ['coverage', 'travel_time_reachable', 'travel_time_all'],
+  reachable_postcodes_threshold: 0.1,
+};
+const arrival_search: TimeFilterPostcodeSectorsRequestArrivalSearch = {
+  id: 'public transport to Trafalgar Square',
+  arrival_time: new Date().toISOString(),
+  travel_time: 1800,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  properties: ['coverage', 'travel_time_reachable', 'travel_time_all'],
+  reachable_postcodes_threshold: 0.1,
+};
+
+travelTimeClient.timeFilterPostcodeSectors({
+  departure_searches: [departure_search],
+  arrival_searches: [arrival_search],
+}).then((r) => console.log(r.data))
+  .catch((e) => console.error(e));
 ```
 
 ### [Time Filter (Postcodes)](https://traveltime.com/docs/api/reference/postcode-search)
 Find reachable postcodes from origin (or to destination) and get statistics about such postcodes.
 Currently only supports United Kingdom.
 
-Body attributes:
-* departure_searches (Array of Objects, optional): Searches based on departure times.
- Leave departure location at no earlier than given time. You can define a maximum of 10 searches
-* arrival_searches (Array of Objects, optional): Searches based on arrival times.
- Arrive at destination location at no later than given time. You can define a maximum of 10 searches
+Function accepts object that matches API json spec.
 
-```js
-    let departure_search = {
-        'id': "public transport from Trafalgar Square",
-        'departure_time': new Date,
-        'travel_time': 1800,
-        'coords': { 'lat': 51.507609, 'lng': -0.128315 },
-        'transportation': { 'type': "public_transport" },
-        'properties': ["travel_time", "distance"]
-    }
-    let arrival_search = {
-        'id': "public transport to Trafalgar Square",
-        'arrival_time': new Date,
-        'travel_time': 1800,
-        'coords': { 'lat': 51.507609, 'lng': -0.128315 },
-        'transportation': { 'type': "public_transport" },
-        'properties': ["travel_time", "distance"]
-    }
+```ts
+import {
+  TimeFilterPostcodesRequestArrivalSearch,
+  TimeFilterPostcodesRequestDepartureSearch,
+} from 'traveltime';
 
-    traveltimejs.time_filter_postcodes({
-        departure_searches: [departure_search],
-        arrival_searches: [arrival_search]
-    }).then(out => console.log(out)).catch(e => console.log(e))
+const departure_search: TimeFilterPostcodesRequestDepartureSearch = {
+  id: 'public transport from Trafalgar Square',
+  departure_time: new Date().toISOString(),
+  travel_time: 1800,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  properties: ['travel_time', 'distance'],
+};
+const arrival_search: TimeFilterPostcodesRequestArrivalSearch = {
+  id: 'public transport to Trafalgar Square',
+  arrival_time: new Date().toISOString(),
+  travel_time: 1800,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  properties: ['travel_time', 'distance'],
+};
+
+travelTimeClient.timeFilterPostcodes({
+  departure_searches: [departure_search],
+  arrival_searches: [arrival_search],
+}).then((r) => console.log(r.data))
+  .catch((e) => console.error(e));
 ```
 
 ### [Geocoding (Search)](https://traveltime.com/docs/api/reference/geocoding-search) 
 Match a query string to geographic coordinates.
 
-Body attributes:
-* query (String): A query to geocode. Can be an address, a postcode or a venue.
-* within_country (String, optional): Only return the results that are within the specified country.
- If no results are found it will return the country itself. Format:ISO 3166-1 alpha-2 or alpha-3
-* exclude_location_types (String, optional): Exclude location types from results. Available values: "country".
+Function accepts object that might has these properties:
+ - `acceptLanguage` - [Request geocoding results to be in specific language if it is available.](https://docs.traveltime.com/api/reference/geocoding-search#Accept-Language)
+ - `params` -  object that matches API json spec.
 
-```js
-    traveltimejs.geocoding({ query: 'Parliament square' }).then((out) => { console.log(out) }).catch((e) => { console.log(e) })
+```ts
+travelTimeClient.geocoding({
+  params: {
+    query: 'Parliament square',
+  },
+}).then((r) => console.log(r.data))
+  .catch((e) => console.error(e));
 ```
 ### [Reverse Geocoding](https://traveltime.com/docs/api/reference/geocoding-reverse)
 Attempt to match a latitude, longitude pair to an address.
 
-Body attributes:
-* lat (Number): Latitude of the point to reverse geocode.
-* lng (Number): Longitude of the point to reverse geocode.
-* within_country (String, optional): Only return the results that are within the specified country.
- If no results are found it will return the country itself. Format:ISO 3166-1 alpha-2 or alpha-3
-* exclude_location_types (String, optional): Exclude location types from results. Available values: "country".
+Function accepts object that might has these properties:
+ - `acceptLanguage` - [Request geocoding results to be in specific language if it is available.](https://docs.traveltime.com/api/reference/geocoding-search#Accept-Language)
+ - `params` -  object that matches API json spec.
 
-```js
-    traveltimejs.geocoding_reverse({ lat: 51.507281, lng: -0.132120 }).then((out) => { console.log(out) }).catch((e) => { console.log(e) })
+```ts
+travelTimeClient.geocodingReverse({
+  params: {
+    lat: 51.507281, lng: -0.132120,
+  },
+}).then((r) => console.log(r.data))
+  .catch((e) => console.error(e));
 ```
 
-### [Map Info](https://traveltime.com/docs/api/reference/map-info) and [Supported Locations](https://traveltime.com/docs/api/reference/supported-locations)
-Get information about currently supported countries and find out what points are supported by the api.
+### [Map Info](https://traveltime.com/docs/api/reference/map-info)
+Get information about currently supported countries.
 
-Supported Locations Body attributes:
-* locations (Array of Objects): Locations to use. Each location requires an id and lat/lng values
+```ts
+travelTimeClient.mapInfo()
+  .then((r) => console.log(r.data))
+  .catch((e) => console.error(e));
+```
 
-```js
-    traveltimejs.map_info().then(out => console.log(out)).catch(e => console.log(e))
-    ////
-    let locations = [
-        {"id": "Kaunas", "coords": {"lat": 54.900008, "lng": 23.957734}},
-        {"id": "London", "coords": {"lat": 51.506756, "lng": -0.128050}},
-        {"id": "Bangkok", "coords": {"lat": 13.761866, "lng": 100.544818}},
-        {"id": "Lisbon", "coords": {"lat": 38.721869, "lng": -9.138549}}
-    ]
-    traveltimejs.supported_locations({ locations }).then(out => console.log(out)).catch(e => console.log(e))
+### [Supported Locations](https://traveltime.com/docs/api/reference/supported-locations)
+Find out what points are supported by the api.
+
+Function accepts object that matches API json spec.
+
+```ts
+import {
+  SupportedLocationsRequestLocation,
+} from 'traveltime';
+
+const locations: SupportedLocationsRequestLocation[] = [
+  { id: 'Kaunas', coords: { lat: 54.900008, lng: 23.957734 } },
+  { id: 'London', coords: { lat: 51.506756, lng: -0.128050 } },
+  { id: 'Bangkok', coords: { lat: 13.761866, lng: 100.544818 } },
+  { id: 'Lisbon', coords: { lat: 38.721869, lng: -9.138549 } },
+];
+
+travelTimeClient.supportedLocations({
+  locations,
+}).then((r) => console.log(r.data))
+  .catch((e) => console.error(e));
 ```
