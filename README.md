@@ -24,7 +24,7 @@ Before starting, the package needs to be configured with your account's applicat
 To create an instance - you will need to create new `TravelTimeClient` class object with credentials you got from dashboard.
 
 ```typescript
-import { TravelTimeClient } from 'traveltime';
+import { TravelTimeClient } from 'traveltime-api';
 
 const travelTimeClient = new TravelTimeClient({
   apiKey: 'YOUR_API_KEY',
