@@ -24,7 +24,7 @@ import {
 } from './types';
 
 export * from './types';
-type Method = 'get' | 'post'
+type HttpMethod = 'get' | 'post'
 
 export class TravelTimeClient {
   private apiKey: string;
@@ -47,7 +47,7 @@ export class TravelTimeClient {
     });
   }
 
-  private async request<Response, Request = {}>(url: string, method: Method, body?: Request) {
+  private async request<Response, Request = {}>(url: string, method: HttpMethod, body?: Request) {
     try {
       const { data } = await this.axiosInstance[method]<Response>(url, body);
       return data;
@@ -56,14 +56,16 @@ export class TravelTimeClient {
     }
   }
 
-  async geocoding({ acceptLanguage, params }: GeocodingSearchRequest) {
+  async geocoding(query: string, req?: GeocodingSearchRequest) {
+    const { acceptLanguage, params } = req || {};
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
-    return this.request<GeocodingResponse>('/geocoding/search', 'get', { params, headers });
+    return this.request<GeocodingResponse>('/geocoding', 'get', { params: { ...params, query }, headers });
   }
 
-  async geocodingReverse({ acceptLanguage, params }: GeocodingReverseRequest) {
+  async geocodingReverse(query: string, req?: GeocodingReverseRequest) {
+    const { acceptLanguage, params } = req || {};
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
-    return this.request<GeocodingResponse>('/geocoding/reverse', 'get', { params, headers });
+    return this.request<GeocodingResponse>('/geocoding/reverse', 'get', { params: { ...params, query }, headers });
   }
 
   mapInfo = async () => this.request<MapInfoResponse>('/map-info', 'get');

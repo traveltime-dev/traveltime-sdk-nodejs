@@ -1,8 +1,10 @@
 # TravelTime Node.js SDK
 
-This library is Node.js SDK for TravelTime API (https://traveltime.com/).  
+This library is Node.js SDK for [TravelTime API](https://traveltime.com/).  
 TravelTime API helps users find locations by journey time rather than using ‘as the crow flies’ distance.  
 Time-based searching gives users more opportunities for personalization and delivers a more relevant search.
+
+For additional details see our [TravelTime API Documentation](https://docs.traveltime.com/api/overview/introduction).
 
 Dependencies:
 
