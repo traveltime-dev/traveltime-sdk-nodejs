@@ -49,9 +49,9 @@ export class TravelTimeClient {
     });
   }
 
-  private async request<Response, Request = {}>(url: string, method: HttpMethod, body?: Request) {
+  private async request<Response>(url: string, method: HttpMethod, params?: Record<string, any>) {
     try {
-      const { data } = await this.axiosInstance[method]<Response>(url, body);
+      const { data } = await this.axiosInstance[method]<Response>(url, params);
       return data;
     } catch (error) {
       throw TravelTimeError.makeError(error);
