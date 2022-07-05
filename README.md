@@ -12,6 +12,9 @@ Dependencies:
 
 ## Installation
 
+[npm](https://www.npmjs.com/package/traveltime-api)
+
+
 ```
 npm i traveltime-api
 ```
