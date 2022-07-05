@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { TravelTimeError } from './error';
 import {
   MapInfoResponse,
   GeocodingResponse,
@@ -23,6 +24,9 @@ import {
 } from './types';
 
 export * from './types';
+export * from './error';
+
+type HttpMethod = 'get' | 'post'
 
 export class TravelTimeClient {
   private apiKey: string;
@@ -45,49 +49,43 @@ export class TravelTimeClient {
     });
   }
 
-  geocoding({ acceptLanguage, params }: GeocodingSearchRequest) {
+  private async request<Response>(url: string, method: HttpMethod, params?: Record<string, any>) {
+    try {
+      const { data } = await this.axiosInstance[method]<Response>(url, params);
+      return data;
+    } catch (error) {
+      throw TravelTimeError.makeError(error);
+    }
+  }
+
+  async geocoding(query: string, req?: GeocodingSearchRequest) {
+    const { acceptLanguage, params } = req || {};
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
-    return this.axiosInstance.get<GeocodingResponse>('/geocoding/search', { params, headers });
+    return this.request<GeocodingResponse>('/geocoding/search', 'get', { params: { ...params, query }, headers });
   }
 
-  geocodingReverse({ acceptLanguage, params }: GeocodingReverseRequest) {
+  async geocodingReverse({ acceptLanguage, params }: GeocodingReverseRequest) {
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
-    return this.axiosInstance.get<GeocodingResponse>('/geocoding/reverse', { params, headers });
+    return this.request<GeocodingResponse>('/geocoding/reverse', 'get', { params, headers });
   }
 
-  mapInfo() {
-    return this.axiosInstance.get<MapInfoResponse>('/map-info');
-  }
+  mapInfo = async () => this.request<MapInfoResponse>('/map-info', 'get');
 
-  routes(data: RoutesRequest) {
-    return this.axiosInstance.post<RoutesResponse>('/routes', data);
-  }
+  routes = async (body: RoutesRequest) => this.request<RoutesResponse>('/routes', 'post', body);
 
-  supportedLocations(data: SupportedLocationsRequest) {
-    return this.axiosInstance.post<SupportedLocationsResponse>('/supported-locations', data);
-  }
+  supportedLocations = async (body: SupportedLocationsRequest) => this.request<SupportedLocationsResponse>('/supported-locations', 'post', body);
 
-  timeFilter(data: TimeFilterRequest) {
-    return this.axiosInstance.post<TimeFilterResponse>('/time-filter', data);
-  }
+  timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', body);
 
-  timeFilterFast(data: TimeFilterFastRequest) {
-    return this.axiosInstance.post<TimeFilterFastResponse>('/time-filter/fast', data);
-  }
+  timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', body);
 
-  timeFilterPostcodeDistricts(data: TimeFilterPostcodeDistrictsRequest) {
-    return this.axiosInstance.post<TimeFilterPostcodeDistrictsResponse>('/time-filter/postcode-districts', data);
-  }
+  timeFilterPostcodeDistricts = async (body: TimeFilterPostcodeDistrictsRequest) => this
+    .request<TimeFilterPostcodeDistrictsResponse>('/time-filter/postcode-districts', 'post', body);
 
-  timeFilterPostcodeSectors(data: TimeFilterPostcodeSectorsRequest) {
-    return this.axiosInstance.post<TimeFilterPostcodeSectorsResponse>('/time-filter/postcode-sectors', data);
-  }
+  timeFilterPostcodeSectors = async (body: TimeFilterPostcodeSectorsRequest) => this
+    .request<TimeFilterPostcodeSectorsResponse>('/time-filter/postcode-sectors', 'post', body);
 
-  timeFilterPostcodes(data: TimeFilterPostcodesRequest) {
-    return this.axiosInstance.post<TimeFilterPostcodesResponse>('/time-filter/postcodes', data);
-  }
+  timeFilterPostcodes = async (body: TimeFilterPostcodesRequest) => this.request<TimeFilterPostcodesResponse>('/time-filter/postcodes', 'post', body);
 
-  timeMap(data: TimeMapRequest) {
-    return this.axiosInstance.post<TimeMapResponse>('/time-map', data);
-  }
+  timeMap = async (body: TimeMapRequest) => this.request<TimeMapResponse>('/time-map', 'post', body);
 }

@@ -1,14 +1,19 @@
 # TravelTime Node.js SDK
 
-This library is Node.js SDK for TravelTime API (https://traveltime.com/).  
+This library is Node.js SDK for [TravelTime API](https://traveltime.com/).  
 TravelTime API helps users find locations by journey time rather than using ‘as the crow flies’ distance.  
 Time-based searching gives users more opportunities for personalization and delivers a more relevant search.
+
+For additional details see our [TravelTime API Documentation](https://docs.traveltime.com/api/overview/introduction).
 
 Dependencies:
 
 * axios
 
 ## Installation
+
+[npm](https://www.npmjs.com/package/traveltime-api)
+
 
 ```
 npm i traveltime-api
@@ -86,7 +91,7 @@ travelTimeClient.timeMap({
   arrival_searches: [arrival_search],
   unions: [union],
   intersections: [intersection],
-}).then((r) => console.log(r.data))
+}).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
 
@@ -152,7 +157,7 @@ travelTimeClient.timeFilter({
   locations,
   departure_searches: [departure_search],
   arrival_searches: [arrival_search],
-}).then((r) => console.log(r.data))
+}).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
 
@@ -197,7 +202,7 @@ travelTimeClient.routes({
   locations,
   departure_searches: [departure_search],
   arrival_searches: [arrival_search],
-}).then((r) => console.log(r.data))
+}).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
 
@@ -246,7 +251,7 @@ travelTimeClient.timeFilterFast({
     many_to_one: [arrival_many_to_one],
     one_to_many: [arrival_one_to_many],
   },
-}).then((r) => console.log(r.data))
+}).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
 
@@ -284,7 +289,7 @@ const arrival_search: TimeFilterPostcodeDistrictsRequestArrivalSearch = {
 travelTimeClient.timeFilterPostcodeDistricts({
   departure_searches: [departure_search],
   arrival_searches: [arrival_search],
-}).then((r) => console.log(r.data))
+}).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
 
@@ -322,7 +327,7 @@ const arrival_search: TimeFilterPostcodeSectorsRequestArrivalSearch = {
 travelTimeClient.timeFilterPostcodeSectors({
   departure_searches: [departure_search],
   arrival_searches: [arrival_search],
-}).then((r) => console.log(r.data))
+}).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
 
@@ -358,7 +363,7 @@ const arrival_search: TimeFilterPostcodesRequestArrivalSearch = {
 travelTimeClient.timeFilterPostcodes({
   departure_searches: [departure_search],
   arrival_searches: [arrival_search],
-}).then((r) => console.log(r.data))
+}).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
 
@@ -370,11 +375,7 @@ Function accepts object that might has these properties:
  - `params` -  object that matches API json spec.
 
 ```ts
-travelTimeClient.geocoding({
-  params: {
-    query: 'Parliament square',
-  },
-}).then((r) => console.log(r.data))
+travelTimeClient.geocoding('Parliament square').then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
 ### [Reverse Geocoding](https://traveltime.com/docs/api/reference/geocoding-reverse)
@@ -389,7 +390,7 @@ travelTimeClient.geocodingReverse({
   params: {
     lat: 51.507281, lng: -0.132120,
   },
-}).then((r) => console.log(r.data))
+}).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
 
@@ -398,7 +399,7 @@ Get information about currently supported countries.
 
 ```ts
 travelTimeClient.mapInfo()
-  .then((r) => console.log(r.data))
+  .then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
 
@@ -421,6 +422,21 @@ const locations: SupportedLocationsRequestLocation[] = [
 
 travelTimeClient.supportedLocations({
   locations,
-}).then((r) => console.log(r.data))
+}).then((data) => console.log(data))
   .catch((e) => console.error(e));
+```
+
+### [TravelTime Error Response](https://docs.traveltime.com/api/reference/error-response)
+If an error occurred in TravelTime api you can use TravelTimeError object to check and destructure error into a standard format.
+
+```ts
+import { TravelTimeError } from 'traveltime';
+
+travelTimeClient.mapInfo()
+  .then((data) => console.log(data))
+  .catch((e) => {
+      if(TravelTimeError.isTravelTimeError(e)) {
+      // your error handling logic
+    }
+  });
 ```
