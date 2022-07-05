@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-interface TraveltimeErrorConstructor {
+export interface TraveltimeErrorConstructor {
     http_status: number;
     error_code: number;
     description: string;
@@ -7,7 +7,7 @@ interface TraveltimeErrorConstructor {
     additional_info: Record<string, any>
 }
 
-class TravelTimeError extends Error {
+export class TravelTimeError extends Error {
   http_status: number;
   error_code: number;
   description: string;
@@ -44,5 +44,3 @@ class TravelTimeError extends Error {
     });
   }
 }
-
-export default TravelTimeError;

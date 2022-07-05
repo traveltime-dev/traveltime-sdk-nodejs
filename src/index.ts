@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import TravelTimeError from './error';
+import { TravelTimeError } from './error';
 import {
   MapInfoResponse,
   GeocodingResponse,
@@ -24,6 +24,8 @@ import {
 } from './types';
 
 export * from './types';
+export * from './error';
+
 type HttpMethod = 'get' | 'post'
 
 export class TravelTimeClient {
@@ -62,10 +64,9 @@ export class TravelTimeClient {
     return this.request<GeocodingResponse>('/geocoding/search', 'get', { params: { ...params, query }, headers });
   }
 
-  async geocodingReverse(query: string, req?: GeocodingReverseRequest) {
-    const { acceptLanguage, params } = req || {};
+  async geocodingReverse({ acceptLanguage, params }: GeocodingReverseRequest) {
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
-    return this.request<GeocodingResponse>('/geocoding/reverse', 'get', { params: { ...params, query }, headers });
+    return this.request<GeocodingResponse>('/geocoding/reverse', 'get', { params, headers });
   }
 
   mapInfo = async () => this.request<MapInfoResponse>('/map-info', 'get');
