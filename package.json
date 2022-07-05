@@ -5,7 +5,8 @@
   "main": "target/index.js",
   "types": "target/index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "build+publish": "npm i && npm run build && npm publish"
   },
   "repository": {
     "type": "git",
