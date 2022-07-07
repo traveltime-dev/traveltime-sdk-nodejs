@@ -1,4 +1,16 @@
-# TravelTime Node.js SDK
+<p align="center">
+    <a href="https://traveltime.com">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://web-common.traveltimeplatform.com/images/tt_logo_dark.png">
+        <source media="(prefers-color-scheme: light)" srcset="https://web-common.traveltimeplatform.com/images/tt-logo-new.png">
+        <img alt="TravelTime Logo" src="https://web-common.traveltimeplatform.com/images/tt-logo-new.png" height="72px">
+      </picture>
+    </a>
+    <h1 align="center">Node.js SDK</h1>
+</p>
+
+[![npm](https://img.shields.io/npm/v/traveltime-api?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/traveltime-api)
+[![GitHub](https://img.shields.io/github/license/traveltime-dev/traveltime-sdk-nodejs?style=for-the-badge&labelColor=000000)](https://github.com/traveltime-dev/traveltime-sdk-nodejs/blob/master/LICENSE)
 
 This library is Node.js SDK for [TravelTime API](https://traveltime.com/).  
 TravelTime API helps users find locations by journey time rather than using ‘as the crow flies’ distance.  
