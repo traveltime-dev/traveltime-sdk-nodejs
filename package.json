@@ -15,7 +15,8 @@
   "author": "TravelTime <support@traveltime.com> (https://traveltime.com/)",
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.27.2"
+    "axios": "^0.27.2",
+    "protobufjs": "^7.0.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.29.0",
