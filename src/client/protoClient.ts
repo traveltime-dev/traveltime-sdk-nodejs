@@ -111,7 +111,6 @@ export class TravelTimeProtoClient {
       try {
         const { data } = await this.axiosInstance.post(this.buildRequestUrl(request), buffer);
         const response = TimeFilterFastResponse.decode(data);
-        console.log(response.toJSON());
         return response.toJSON() as TimeFilterFastProtoResponse;
       } catch (e) {
         throw new Error('Error while sending proto request');
