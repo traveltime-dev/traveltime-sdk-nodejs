@@ -14,13 +14,11 @@ export interface TimeFilterFastProtoRequest {
   destinationCoordinates: Array<Coords>,
   transportation: TimeFilterFastProtoTransportation,
   travelTime: number,
-  properties?: TimeFilterFastProtoProperties
 }
 
 interface TimeFilterFastProtoResponseProperties {
   properties: {
-    travelTimes: Array<number>,
-    monthlyFares: Array<number>,
+    travelTimes: Array<number>
   }
 }
 

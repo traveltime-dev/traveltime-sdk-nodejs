@@ -74,14 +74,10 @@ export class TravelTimeProtoClient {
     destinationCoordinates,
     transportation,
     travelTime,
-    properties,
   }: TimeFilterFastProtoRequest): TimeFilterFastProtoMessage {
     if (!(transportation in this.transportationMap)) {
       throw new Error('Transportation type is not supported');
     }
-
-    const fares = properties?.fares ? 0 : undefined;
-    const distances = properties?.distances ? 1 : undefined;
 
     return {
       oneToManyRequest: {
@@ -92,7 +88,6 @@ export class TravelTimeProtoClient {
         },
         arrivalTimePeriod: 0,
         travelTime,
-        properties: [fares, distances].filter((x) => x !== undefined),
       },
     };
   }
