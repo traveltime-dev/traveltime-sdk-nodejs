@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import protobuf from 'protobufjs';
 import { Coords } from '../types';
-import { TimeFilterFastProtoRequest, TimeFilterFastProtoTransportation } from '../types/proto';
+import { TimeFilterFastProtoRequest, TimeFilterFastProtoResponse, TimeFilterFastProtoTransportation } from '../types/proto';
 
 interface TimeFilterFastProtoMessage {
   oneToManyRequest: {
@@ -97,45 +97,27 @@ export class TravelTimeProtoClient {
     };
   }
 
-  timeFilterFast = async (request: TimeFilterFastProtoRequest) => {
-    protobuf.load(`${process.cwd()}/src/proto/v2/TimeFilterFastRequest.proto`, async (err, root) => {
-      if (err) {
-        throw new Error(err.message);
+  timeFilterFast = async (request: TimeFilterFastProtoRequest) => protobuf.load([
+    `${process.cwd()}/src/proto/TimeFilterFastRequest.proto`,
+    `${process.cwd()}/src/proto/TimeFilterFastResponse.proto`,
+  ])
+    .then(async (root) => {
+      const TimeFilterFastRequest = root.lookupType('com.igeolise.traveltime.rabbitmq.requests.TimeFilterFastRequest');
+      const TimeFilterFastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.TimeFilterFastResponse');
+      const messageRequest = this.buildProtoRequest(request);
+      const message = TimeFilterFastRequest.create(messageRequest);
+      const buffer = TimeFilterFastRequest.encode(message).finish();
+
+      try {
+        const { data } = await this.axiosInstance.post(this.buildRequestUrl(request), buffer);
+        const response = TimeFilterFastResponse.decode(data);
+        console.log(response.toJSON());
+        return response.toJSON() as TimeFilterFastProtoResponse;
+      } catch (e) {
+        throw new Error('Error while sending proto request');
       }
-
-      if (root) {
-        const TimeFilterFastRequest = root?.lookupType('com.igeolise.traveltime.rabbitmq.requests.TimeFilterFastRequest');
-        const messageRequest = this.buildProtoRequest(request);
-        const error = TimeFilterFastRequest.verify(messageRequest);
-
-        if (error !== null) {
-          throw new Error(`Proto file verification failed: ${error}`);
-        }
-
-        const message = TimeFilterFastRequest.create(messageRequest);
-
-        const buffer = TimeFilterFastRequest.encode(message).finish();
-        console.log((TimeFilterFastRequest.decode(buffer) as any).oneToManyRequest);
-
-        try {
-          const res = await this.axiosInstance.post(this.buildRequestUrl(request), buffer);
-          // console.log(res);
-
-          protobuf.load(`${process.cwd()}/src/proto/TimeFilterFastResponse.proto`, async (err, root) => {
-            const TimeFilterFastReseponse = root?.lookupType('com.igeolise.traveltime.rabbitmq.responses.TimeFilterFastResponse');
-            const TimeFilterFastError = root?.lookupType('com.igeolise.traveltime.rabbitmq.responses.Error');
-
-            if (TimeFilterFastReseponse) {
-              const response = TimeFilterFastReseponse.decode(res.data);
-              console.log(response);
-            }
-          });
-        } catch (error) {
-          console.error((error as any).response);
-        }
-      } else {
-        console.log('no root');
-      }
+    })
+    .catch(() => {
+      throw new Error("Proto file couldn't be loaded");
     });
-  };
 }
