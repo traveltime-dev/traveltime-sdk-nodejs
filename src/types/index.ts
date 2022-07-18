@@ -11,3 +11,4 @@ export * from './timeFilterPostcodeDistricts';
 export * from './timeFilterPostcodeSectors';
 export * from './timeFilterPostcodes';
 export * from './timeMap';
+export * from './proto';

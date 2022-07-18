@@ -64,7 +64,7 @@ import {
   TimeMapRequestArrivalSearch,
   TimeMapRequestDepartureSearch,
   TimeMapRequestUnionOrIntersection,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const departure_search1: TimeMapRequestDepartureSearch = {
   id: 'public transport from Trafalgar Square',
@@ -118,7 +118,7 @@ import {
   LocationRequest,
   TimeFilterRequestArrivalSearch,
   TimeFilterRequestDepartureSearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const locations: LocationRequest[] = [
   {
@@ -183,7 +183,7 @@ import {
   LocationRequest,
   RoutesRequestArrivalSearch,
   RoutesRequestDepartureSearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const locations: LocationRequest[] = [
   { id: 'London center', coords: { lat: 51.508930, lng: -0.131387 } },
@@ -230,7 +230,7 @@ import {
   LocationRequest,
   TimeFilterFastRequestArrivalManyToOneSearch,
   TimeFilterFastRequestArrivalOneToManySearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const locations: LocationRequest[] = [
   { id: 'London center', coords: { lat: 51.508930, lng: -0.131387 } },
@@ -314,7 +314,7 @@ Function accepts object that matches API json spec.
 import {
   TimeFilterPostcodeDistrictsRequestArrivalSearch,
   TimeFilterPostcodeDistrictsRequestDepartureSearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const departure_search: TimeFilterPostcodeDistrictsRequestDepartureSearch = {
   id: 'public transport from Trafalgar Square',
@@ -352,7 +352,7 @@ Function accepts object that matches API json spec.
 import {
   TimeFilterPostcodeSectorsRequestArrivalSearch,
   TimeFilterPostcodeSectorsRequestDepartureSearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const departure_search: TimeFilterPostcodeSectorsRequestDepartureSearch = {
   id: 'public transport from Trafalgar Square',
@@ -390,7 +390,7 @@ Function accepts object that matches API json spec.
 import {
   TimeFilterPostcodesRequestArrivalSearch,
   TimeFilterPostcodesRequestDepartureSearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const departure_search: TimeFilterPostcodesRequestDepartureSearch = {
   id: 'public transport from Trafalgar Square',
@@ -460,7 +460,7 @@ Function accepts object that matches API json spec.
 ```ts
 import {
   SupportedLocationsRequestLocation,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const locations: SupportedLocationsRequestLocation[] = [
   { id: 'Kaunas', coords: { lat: 54.900008, lng: 23.957734 } },
@@ -479,7 +479,7 @@ travelTimeClient.supportedLocations({
 If an error occurred in TravelTime api you can use TravelTimeError object to check and destructure error into a standard format.
 
 ```ts
-import { TravelTimeError } from 'traveltime';
+import { TravelTimeError } from 'traveltime-api';
 
 travelTimeClient.mapInfo()
   .then((data) => console.log(data))
