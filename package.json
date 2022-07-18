@@ -5,7 +5,7 @@
   "main": "target/index.js",
   "types": "target/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -R src/client/proto target/client",
     "build+publish": "npm i && npm run build && npm publish"
   },
   "repository": {

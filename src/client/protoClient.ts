@@ -25,6 +25,8 @@ export class TravelTimeProtoClient {
 
   private baseUri = 'http://proto.api.traveltimeapp.com/api/v2';
 
+  private protoFileDir = `${__dirname}/proto/v2`;
+
   private transportationMap: Record<TimeFilterFastProtoTransportation, number> = {
     pt: 0,
     'driving+ferry': 3,
@@ -93,8 +95,8 @@ export class TravelTimeProtoClient {
   }
 
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => protobuf.load([
-    `${process.cwd()}/src/proto/TimeFilterFastRequest.proto`,
-    `${process.cwd()}/src/proto/TimeFilterFastResponse.proto`,
+    `${this.protoFileDir}/TimeFilterFastRequest.proto`,
+    `${this.protoFileDir}/TimeFilterFastResponse.proto`,
   ])
     .then(async (root) => {
       const TimeFilterFastRequest = root.lookupType('com.igeolise.traveltime.rabbitmq.requests.TimeFilterFastRequest');
@@ -112,6 +114,6 @@ export class TravelTimeProtoClient {
       }
     })
     .catch(() => {
-      throw new Error("Proto file couldn't be loaded");
+      throw new Error(`Could not load proto file at: ${this.protoFileDir}`);
     });
 }
