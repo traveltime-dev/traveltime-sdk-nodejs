@@ -64,7 +64,7 @@ import {
   TimeMapRequestArrivalSearch,
   TimeMapRequestDepartureSearch,
   TimeMapRequestUnionOrIntersection,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const departure_search1: TimeMapRequestDepartureSearch = {
   id: 'public transport from Trafalgar Square',
@@ -118,7 +118,7 @@ import {
   LocationRequest,
   TimeFilterRequestArrivalSearch,
   TimeFilterRequestDepartureSearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const locations: LocationRequest[] = [
   {
@@ -183,7 +183,7 @@ import {
   LocationRequest,
   RoutesRequestArrivalSearch,
   RoutesRequestDepartureSearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const locations: LocationRequest[] = [
   { id: 'London center', coords: { lat: 51.508930, lng: -0.131387 } },
@@ -230,7 +230,7 @@ import {
   LocationRequest,
   TimeFilterFastRequestArrivalManyToOneSearch,
   TimeFilterFastRequestArrivalOneToManySearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const locations: LocationRequest[] = [
   { id: 'London center', coords: { lat: 51.508930, lng: -0.131387 } },
@@ -267,6 +267,43 @@ travelTimeClient.timeFilterFast({
   .catch((e) => console.error(e));
 ```
 
+### [Time Filter Fast (Proto)](https://traveltime.com/docs/api/reference/supported-locations)
+Filter out points that cannot be reached within specified time limit.
+
+Request Properties:
+* departureLocation: Original point.
+* destinationCoordinates: destination points. Cannot be more than 200,000.
+* transportation: transportation type.
+* travelTime: time limit;
+* country: return the results that are within the specified country
+
+```ts
+import { TravelTimeProtoClient, TimeFilterFastProtoRequest } from 'traveltime-api';
+
+const travelTimeProtoClient = new TravelTimeProtoClient({
+  apiKey: 'YOUR_API_KEY',
+  applicationId: 'YOUR_APPLICATION_ID',
+});
+
+const requestData: TimeFilterFastProtoRequest = {
+  country: 'uk',
+  departureLocation: {
+    lat: 51.508930,
+    lng: -0.131387,
+  },
+  destinationCoordinates: [{
+    lat: 51.508824,
+    lng: -0.167093,
+  }],
+  transportation: 'driving+ferry',
+  travelTime: 7200
+};
+
+travelTimeProtoClient.timeFilterFast(requestData)
+  .then((data) => console.log(data))
+  .catch((e) => console.error(e));
+```
+
 ### [Time Filter (Postcode Districts)](https://traveltime.com/docs/api/reference/postcode-district-filter)
 Find districts that have a certain coverage from origin (or to destination) and get statistics about postcodes within such districts.
 Currently only supports United Kingdom.
@@ -277,7 +314,7 @@ Function accepts object that matches API json spec.
 import {
   TimeFilterPostcodeDistrictsRequestArrivalSearch,
   TimeFilterPostcodeDistrictsRequestDepartureSearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const departure_search: TimeFilterPostcodeDistrictsRequestDepartureSearch = {
   id: 'public transport from Trafalgar Square',
@@ -315,7 +352,7 @@ Function accepts object that matches API json spec.
 import {
   TimeFilterPostcodeSectorsRequestArrivalSearch,
   TimeFilterPostcodeSectorsRequestDepartureSearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const departure_search: TimeFilterPostcodeSectorsRequestDepartureSearch = {
   id: 'public transport from Trafalgar Square',
@@ -353,7 +390,7 @@ Function accepts object that matches API json spec.
 import {
   TimeFilterPostcodesRequestArrivalSearch,
   TimeFilterPostcodesRequestDepartureSearch,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const departure_search: TimeFilterPostcodesRequestDepartureSearch = {
   id: 'public transport from Trafalgar Square',
@@ -423,7 +460,7 @@ Function accepts object that matches API json spec.
 ```ts
 import {
   SupportedLocationsRequestLocation,
-} from 'traveltime';
+} from 'traveltime-api';
 
 const locations: SupportedLocationsRequestLocation[] = [
   { id: 'Kaunas', coords: { lat: 54.900008, lng: 23.957734 } },
@@ -442,7 +479,7 @@ travelTimeClient.supportedLocations({
 If an error occurred in TravelTime api you can use TravelTimeError object to check and destructure error into a standard format.
 
 ```ts
-import { TravelTimeError } from 'traveltime';
+import { TravelTimeError } from 'traveltime-api';
 
 travelTimeClient.mapInfo()
   .then((data) => console.log(data))
