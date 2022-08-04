@@ -33,7 +33,7 @@ type RequestPayload = {
   config?: AxiosRequestConfig
 }
 
-type B = {
+type TimeMapResponseType = {
   'application/json': TimeMapResponse
   'application/vnd.wkt+json': TimeMapResponseVndWkt
   'application/vnd.wkt-no-holes+json': TimeMapResponseVndWkt
@@ -105,9 +105,9 @@ export class TravelTimeClient {
   // eslint-disable-next-line no-unused-vars
   async timeMap(body: TimeMapRequest): Promise<TimeMapResponse>
   // eslint-disable-next-line no-dupe-class-members, no-unused-vars
-  async timeMap<T extends keyof B>(body: TimeMapRequest, format: T): Promise<B[T]>
+  async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format: T): Promise<TimeMapResponseType[T]>
   // eslint-disable-next-line no-dupe-class-members
-  async timeMap<T extends keyof B>(body: TimeMapRequest, format?: T) {
+  async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format?: T) {
     const headers = format ? { Accept: format } : undefined;
     return this.request('/time-map', 'post', { body, config: { headers } });
   }
