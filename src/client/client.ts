@@ -64,7 +64,7 @@ export class TravelTimeClient {
   }
 
   private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload) {
-    const { body, config } = payload!;
+    const { body, config } = payload || {};
     try {
       const { data } = await (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
       return data;
@@ -102,11 +102,8 @@ export class TravelTimeClient {
 
   timeFilterPostcodes = async (body: TimeFilterPostcodesRequest) => this.request<TimeFilterPostcodesResponse>('/time-filter/postcodes', 'post', { body });
 
-  // eslint-disable-next-line no-unused-vars
   async timeMap(body: TimeMapRequest): Promise<TimeMapResponse>
-  // eslint-disable-next-line no-dupe-class-members, no-unused-vars
   async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format: T): Promise<TimeMapResponseType[T]>
-  // eslint-disable-next-line no-dupe-class-members
   async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format?: T) {
     const headers = format ? { Accept: format } : undefined;
     return this.request('/time-map', 'post', { body, config: { headers } });
