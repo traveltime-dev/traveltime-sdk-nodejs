@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { TravelTimeError } from '../error';
 import {
   MapInfoResponse,
@@ -21,9 +21,26 @@ import {
   TimeFilterPostcodeDistrictsResponse,
   TimeFilterPostcodeSectorsRequest,
   TimeFilterPostcodeSectorsResponse,
+  TimeMapResponseVndBoundingBoxes,
+  TimeMapResponseVndWkt,
+  TimeMapResponseGeoJSON,
 } from '../types';
 
 type HttpMethod = 'get' | 'post'
+
+type RequestPayload = {
+  body?: any
+  config?: AxiosRequestConfig
+}
+
+type TimeMapResponseType = {
+  'application/json': TimeMapResponse
+  'application/vnd.wkt+json': TimeMapResponseVndWkt
+  'application/vnd.wkt-no-holes+json': TimeMapResponseVndWkt
+  'application/geo+json': TimeMapResponseGeoJSON
+  'application/kml+xml': string
+  'application/vnd.bounding-boxes+json': TimeMapResponseVndBoundingBoxes
+}
 
 export class TravelTimeClient {
   private apiKey: string;
@@ -46,9 +63,10 @@ export class TravelTimeClient {
     });
   }
 
-  private async request<Response>(url: string, method: HttpMethod, params?: Record<string, any>) {
+  private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload) {
+    const { body, config } = payload || {};
     try {
-      const { data } = await this.axiosInstance[method]<Response>(url, params);
+      const { data } = await (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
       return data;
     } catch (error) {
       throw TravelTimeError.makeError(error);
@@ -58,31 +76,36 @@ export class TravelTimeClient {
   async geocoding(query: string, req?: GeocodingSearchRequest) {
     const { acceptLanguage, params } = req || {};
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
-    return this.request<GeocodingResponse>('/geocoding/search', 'get', { params: { ...params, query }, headers });
+    return this.request<GeocodingResponse>('/geocoding/search', 'get', { config: { params: { ...params, query }, headers } });
   }
 
   async geocodingReverse({ acceptLanguage, params }: GeocodingReverseRequest) {
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
-    return this.request<GeocodingResponse>('/geocoding/reverse', 'get', { params, headers });
+    return this.request<GeocodingResponse>('/geocoding/reverse', 'get', { config: { params, headers } });
   }
 
   mapInfo = async () => this.request<MapInfoResponse>('/map-info', 'get');
 
-  routes = async (body: RoutesRequest) => this.request<RoutesResponse>('/routes', 'post', body);
+  routes = async (body: RoutesRequest) => this.request<RoutesResponse>('/routes', 'post', { body });
 
-  supportedLocations = async (body: SupportedLocationsRequest) => this.request<SupportedLocationsResponse>('/supported-locations', 'post', body);
+  supportedLocations = async (body: SupportedLocationsRequest) => this.request<SupportedLocationsResponse>('/supported-locations', 'post', { body });
 
-  timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', body);
+  timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', { body });
 
-  timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', body);
+  timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
 
   timeFilterPostcodeDistricts = async (body: TimeFilterPostcodeDistrictsRequest) => this
-    .request<TimeFilterPostcodeDistrictsResponse>('/time-filter/postcode-districts', 'post', body);
+    .request<TimeFilterPostcodeDistrictsResponse>('/time-filter/postcode-districts', 'post', { body });
 
   timeFilterPostcodeSectors = async (body: TimeFilterPostcodeSectorsRequest) => this
-    .request<TimeFilterPostcodeSectorsResponse>('/time-filter/postcode-sectors', 'post', body);
+    .request<TimeFilterPostcodeSectorsResponse>('/time-filter/postcode-sectors', 'post', { body });
 
-  timeFilterPostcodes = async (body: TimeFilterPostcodesRequest) => this.request<TimeFilterPostcodesResponse>('/time-filter/postcodes', 'post', body);
+  timeFilterPostcodes = async (body: TimeFilterPostcodesRequest) => this.request<TimeFilterPostcodesResponse>('/time-filter/postcodes', 'post', { body });
 
-  timeMap = async (body: TimeMapRequest) => this.request<TimeMapResponse>('/time-map', 'post', body);
+  async timeMap(body: TimeMapRequest): Promise<TimeMapResponse>
+  async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format: T): Promise<TimeMapResponseType[T]>
+  async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format?: T) {
+    const headers = format ? { Accept: format } : undefined;
+    return this.request('/time-map', 'post', { body, config: { headers } });
+  }
 }

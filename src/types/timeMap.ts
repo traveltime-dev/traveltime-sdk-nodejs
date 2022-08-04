@@ -63,3 +63,60 @@ export type TimeMapResponseResult = {
 export type TimeMapResponse = {
   'results': Array<TimeMapResponseResult>
 }
+
+export type Position = number[];
+
+export type TimeMapResponseGeoJSONPolygon = {
+  'type': string;
+  'coordinates': Position[][][];
+}
+
+export type TimeMapResponseGeoJSONFeature = {
+  'type': string;
+  'geometry': Array<TimeMapResponseGeoJSONPolygon> | TimeMapResponseGeoJSONPolygon;
+  'properties': TimeMapResponseProperties;
+}
+
+export type TimeMapResponseGeoJSON = {
+  'type': string;
+  'features': Array<TimeMapResponseGeoJSONFeature>;
+}
+
+export type TimeMapResponseVndWktResult = {
+  'search_id': string;
+  'shape': string;
+  'properties': TimeMapResponseProperties;
+}
+
+export type TimeMapResponseVndWkt = {
+  'results': Array<TimeMapResponseVndWktResult>;
+}
+
+export type Envelope = {
+  'min_lat': number,
+  'max_lat': number,
+  'min_lng': number,
+  'max_lng': number,
+}
+
+export type Boxes = {
+  'min_lat': number,
+  'max_lat': number,
+  'min_lng': number,
+  'max_lng': number,
+}
+
+export type TimeMapResponseVndBoundingBoxesBoundingBox = {
+  'envelope': Envelope;
+  'boxes': Array<Boxes>;
+}
+
+export type TimeMapResponseVndBoundingBoxesResult = {
+  'search_id': string;
+  'bounding_boxes': Array<TimeMapResponseVndBoundingBoxesBoundingBox>;
+  'properties': TimeMapResponseProperties;
+}
+
+export type TimeMapResponseVndBoundingBoxes = {
+  'results': Array<TimeMapResponseVndBoundingBoxesResult>;
+}
