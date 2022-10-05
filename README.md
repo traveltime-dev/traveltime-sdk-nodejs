@@ -308,9 +308,8 @@ travelTimeProtoClient.timeFilterFast(requestData)
   .catch((e) => console.error(e));
 ```
 
-The responses are in the form of a list where each position denotes either a
-travel time (in seconds) of a journey, or if negative that the journey from the
-origin to the destination point is impossible.
+The responses are in the form of a list where each position denotes:
+* travel time (in seconds) of a journey, or if negative that the journey from the origin to the destination point is impossible.
 
 ### Time Filter Fast with distance (Proto)
 
