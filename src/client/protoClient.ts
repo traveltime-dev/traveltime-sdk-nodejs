@@ -56,8 +56,6 @@ export class TravelTimeProtoClient {
       },
       headers: {
         'Content-Type': 'application/octet-stream',
-        'X-Application-Id': this.applicationId,
-        'X-Api-Key': this.apiKey,
         Accept: 'application/octet-stream',
       },
       responseType: 'arraybuffer',
