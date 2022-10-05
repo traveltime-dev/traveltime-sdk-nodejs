@@ -51,8 +51,8 @@ export class TravelTimeProtoClient {
     this.apiKey = credentials.apiKey;
     this.axiosInstance = axios.create({
       auth: {
-        username: this.apiKey,
-        password: this.applicationId,
+        username: this.applicationId,
+        password: this.apiKey,
       },
       headers: {
         'Content-Type': 'application/octet-stream',
