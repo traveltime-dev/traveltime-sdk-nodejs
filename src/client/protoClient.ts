@@ -115,7 +115,7 @@ export class TravelTimeProtoClient {
   private async handleProtoFile(
     root: protobuf.Root,
     uri: string,
-    request: TimeFilterFastProtoRequest| TimeFilterFastProtoDistanceRequest,
+    request: TimeFilterFastProtoRequest | TimeFilterFastProtoDistanceRequest,
     options?: ProtoRequestBuildOptions,
   ) {
     const TimeFilterFastRequest = root.lookupType('com.igeolise.traveltime.rabbitmq.requests.TimeFilterFastRequest');
