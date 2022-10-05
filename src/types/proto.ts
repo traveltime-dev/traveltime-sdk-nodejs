@@ -1,7 +1,9 @@
 import { Coords } from './common';
 
-export type TimeFilterFastProtoTransportation = 'pt' | 'walking+ferry' | 'cycling+ferry' | 'driving+ferry';
-export type TimeFilterFastProtoCountry = 'nl' | 'at' | 'be' | 'de' | 'fr' | 'ie' | 'lt' | 'uk'
+export type TimeFilterFastProtoDistanceTransportation = 'driving+ferry' | 'walking+ferry'
+export type TimeFilterFastProtoDistanceCountry = 'uk' | 'ie'
+export type TimeFilterFastProtoTransportation = 'pt' | 'cycling+ferry' | TimeFilterFastProtoDistanceTransportation;
+export type TimeFilterFastProtoCountry = 'nl' | 'at' | 'be' | 'de' | 'fr' | 'lt' | TimeFilterFastProtoDistanceCountry
 
 export interface TimeFilterFastProtoProperties {
   fares?: boolean,
@@ -16,16 +18,31 @@ export interface TimeFilterFastProtoRequest {
   travelTime: number,
 }
 
-interface TimeFilterFastProtoResponseProperties {
+export interface TimeFilterFastProtoDistanceRequest {
+  country: TimeFilterFastProtoDistanceCountry
+  departureLocation: Coords,
+  destinationCoordinates: Array<Coords>,
+  transportation: TimeFilterFastProtoDistanceTransportation,
+  travelTime: number,
+}
+
+export interface TimeFilterFastProtoResponseProperties {
   properties: {
     travelTimes: Array<number>
   }
 }
 
-interface TimeFilterFastProtoResponseError {
+export interface TimeFilterFastProtoDistanceResponseProperties {
+  properties: {
+    travelTimes: Array<number>,
+    distances: Array<number>
+  }
+}
+
+export interface TimeFilterFastProtoResponseError {
   error: {
     type: string
   }
 }
 
-export type TimeFilterFastProtoResponse = TimeFilterFastProtoResponseProperties | TimeFilterFastProtoResponseError
+export type TimeFilterFastProtoResponse = TimeFilterFastProtoResponseProperties | TimeFilterFastProtoDistanceResponseProperties | TimeFilterFastProtoResponseError

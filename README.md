@@ -267,15 +267,19 @@ travelTimeClient.timeFilterFast({
   .catch((e) => console.error(e));
 ```
 
-### [Time Filter Fast (Proto)](https://traveltime.com/docs/api/reference/supported-locations)
-Filter out points that cannot be reached within specified time limit.
+### Time Filter Fast (Proto)
+A fast version of time filter communicating using [protocol buffers](https://github.com/protocolbuffers/protobuf).
 
-Request Properties:
-* departureLocation: Original point.
-* destinationCoordinates: destination points. Cannot be more than 200,000.
-* transportation: transportation type.
-* travelTime: time limit;
-* country: return the results that are within the specified country
+The request parameters are much more limited and only travel time is returned. In addition, the results are only approximately correct (95% of the results are guaranteed to be within 5% of the routes returned by regular time filter).
+
+This inflexibility comes with a benefit of faster response times (Over 5x faster compared to regular time filter) and larger limits on the amount of destination points.
+
+Body attributes:
+* departureLocation: Origin point.
+* destinationCoordinates: Destination points. Cannot be more than 200,000.
+* transportation: Transportation type.
+* travelTime: Time limit;
+* country: Return the results that are within the specified country
 
 ```ts
 import { TravelTimeProtoClient, TimeFilterFastProtoRequest } from 'traveltime-api';
@@ -303,6 +307,55 @@ travelTimeProtoClient.timeFilterFast(requestData)
   .then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
+
+The responses are in the form of a list where each position denotes:
+* travel time (in seconds) of a journey, or if negative that the journey from the origin to the destination point is impossible.
+
+### Time Filter Fast with distance (Proto)
+
+A fast version of time filter communicating using [protocol buffers](https://github.com/protocolbuffers/protobuf) that supports distance information.
+
+The request parameters are much more limited and only travel time and distance is returned. In addition, the results are only approximately correct (95% of the results are guaranteed to be within 5% of the routes returned by regular time filter).
+
+Body attributes:
+* departureLocation: Origin point.
+* destinationCoordinates: Destination points. Cannot be more than 200,000.
+* transportation: Transportation type.
+* travelTime: Time limit;
+* country: Return the results that are within the specified country
+
+```ts
+import {
+  TravelTimeProtoClient, TimeFilterFastProtoDistanceRequest,
+} from 'traveltime-api';
+
+const travelTimeProtoClient = new TravelTimeProtoClient({
+  apiKey: 'YOUR_API_KEY',
+  applicationId: 'YOUR_APPLICATION_ID',
+});
+
+const requestData: TimeFilterFastProtoDistanceRequest = {
+  country: 'uk',
+  departureLocation: {
+    lat: 51.508930,
+    lng: -0.131387,
+  },
+  destinationCoordinates: [{
+    lat: 51.508824,
+    lng: -0.167093,
+  }],
+  transportation: 'driving+ferry',
+  travelTime: 7200,
+};
+
+travelTimeProtoClient.timeFilterFastDistance(requestData)
+  .then((data) => console.log(data))
+  .catch((e) => console.error(e));
+```
+
+The responses are in the form of lists where each position denotes:
+  * travel time (in seconds) of a journey, or if negative that the journey from the origin to the destination point is impossible.
+  * if a travel time for a position is non negative than the distance list at the same position denotes travel distance in meters for that journey, if the journey is impossible the distance value at the position is *undefined*.
 
 ### [Time Filter (Postcode Districts)](https://traveltime.com/docs/api/reference/postcode-district-filter)
 Find districts that have a certain coverage from origin (or to destination) and get statistics about postcodes within such districts.
