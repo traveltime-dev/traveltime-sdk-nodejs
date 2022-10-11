@@ -76,7 +76,8 @@ export class TravelTimeClient {
   async geocoding(query: string, req?: GeocodingSearchRequest) {
     const { acceptLanguage, params } = req || {};
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
-    return this.request<GeocodingResponse>('/geocoding/search', 'get', { config: { params: { ...params, query }, headers } });
+    const bounds = params?.bounds ? `${params.bounds.southEast.lat},${params.bounds.southEast.lng},${params.bounds.northWest.lat},${params.bounds.northWest.lng}` : undefined;
+    return this.request<GeocodingResponse>('/geocoding/search', 'get', { config: { params: { ...params, bounds, query }, headers } });
   }
 
   async geocodingReverse({ acceptLanguage, params }: GeocodingReverseRequest) {
