@@ -71,10 +71,7 @@ export class TravelTimeProtoClient {
   }
 
   private buildDeltas(departure: Coords, destinations: Array<Coords>) {
-    return destinations.map((destination) => [
-      this.encodeFixedPoint(departure.lat, destination.lat),
-      this.encodeFixedPoint(departure.lng, destination.lng),
-    ]).reduce((prev, cur) => [...prev, ...cur], []);
+    return destinations.flatMap((destination) => [this.encodeFixedPoint(departure.lat, destination.lat), this.encodeFixedPoint(departure.lng, destination.lng)]);
   }
 
   private buildProtoRequest({
