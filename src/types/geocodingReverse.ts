@@ -1,11 +1,8 @@
-import {
-  GeocodingRequestCommonParams,
-} from './geocoding';
-
 export type GeocodingReverseRequest = {
-  'acceptLanguage'?: string
-  'params': GeocodingRequestCommonParams & {
-    'lat': number
-    'lng': number
+  acceptLanguage?: string
+  params: {
+    lat: number,
+    lng: number,
+    'within.country'?: string
   }
 };
