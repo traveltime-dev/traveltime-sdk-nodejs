@@ -2,11 +2,6 @@ import {
   TravelTimeResponseFeature,
 } from './common';
 
-export type GeocodingRequestCommonParams = {
-  'within.country'?: string
-  'exclude.location.types'?: 'country'
-}
-
 export type GeocodingResponseGeometry = {
   'type': 'Point',
   'coordinates': [number, number]

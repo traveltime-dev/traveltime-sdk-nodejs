@@ -1,7 +1,4 @@
 import { Coords } from './common';
-import {
-  GeocodingRequestCommonParams,
-} from './geocoding';
 
 export type GeocodingBounds = {
   southEast: Coords,
@@ -10,9 +7,12 @@ export type GeocodingBounds = {
 
 export type GeocodingSearchRequest = {
   acceptLanguage?: string
-  params: GeocodingRequestCommonParams & {
+  params: {
     limit?: number
     'force.add.postcode'?: boolean
     bounds?: GeocodingBounds
+    'within.country'?: string
+    'format.name'?: boolean
+    'format.exclude.country'?: boolean
   }
 };
