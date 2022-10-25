@@ -31,8 +31,6 @@ Dependencies:
 npm i traveltime-api
 ```
 
-This package comes this TypeScript support.
-
 ## Usage
 
 ### Client Initialization
