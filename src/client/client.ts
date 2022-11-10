@@ -47,14 +47,18 @@ export class TravelTimeClient {
   private applicationId: string;
   private axiosInstance: AxiosInstance;
 
+  private baseUri = 'https://api.traveltimeapp.com/v4';
+
   constructor(
     credentials: { apiKey: string, applicationId: string },
+    parameters?: { baseUri?: string },
   ) {
+    this.baseUri = parameters?.baseUri || this.baseUri;
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
     this.axiosInstance = axios.create({
-      baseURL: 'https://api.traveltimeapp.com/v4',
+      baseURL: this.baseUri,
       headers: {
         'Content-Type': 'application/json',
         'X-Application-Id': this.applicationId,
