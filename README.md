@@ -18,10 +18,6 @@ Time-based searching gives users more opportunities for personalization and deli
 
 For additional details see our [TravelTime API Documentation](https://docs.traveltime.com/api/overview/introduction).
 
-Dependencies:
-
-* axios
-
 ## Installation
 
 [npm](https://www.npmjs.com/package/traveltime-api)
