@@ -27,7 +27,7 @@ export type TimeMapFastRequestArrivalSearch = {
   one_to_many: TimeMapFastRequestSearch
 }
 
-export type TimeMapRequest = {
+export type TimeMapFastRequest = {
   arrival_searches?: Array<TimeMapFastRequestArrivalSearch>
   unions?: Array<TimeMapRequestUnionOrIntersection>
   intersections?: Array<TimeMapRequestUnionOrIntersection>
