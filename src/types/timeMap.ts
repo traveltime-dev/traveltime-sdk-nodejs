@@ -6,7 +6,7 @@ import {
 
 export type TimeMapRequestProperty = 'is_only_walking';
 export declare type TimeMapRequestLevelOfDetailScaleType = 'simple' | 'coarse_grid';
-export declare type TimeMapRequestLevelOfDetailLevel = 'lowest' | 'low' | 'medium' | 'high' | 'highest';
+export declare type TimeMapRequestLevelOfDetailLevel = 'lowest' | 'low' | 'medium' | 'high' | 'highest' | number;
 
 export type RequestLevelOfDetail = {
   scale_type: TimeMapRequestLevelOfDetailScaleType;
