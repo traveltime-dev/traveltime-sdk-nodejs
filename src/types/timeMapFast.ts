@@ -23,12 +23,12 @@ export type TimeMapFastRequestSearch = {
 }
 
 export type TimeMapFastRequestArrivalSearch = {
-  many_to_one: TimeMapFastRequestSearch,
-  one_to_many: TimeMapFastRequestSearch
+  one_to_many?: Array<TimeMapFastRequestSearch>,
+  many_to_one?: Array<TimeMapFastRequestSearch>
 }
 
 export type TimeMapFastRequest = {
-  arrival_searches?: Array<TimeMapFastRequestArrivalSearch>
+  arrival_searches: TimeMapFastRequestArrivalSearch
   unions?: Array<TimeMapRequestUnionOrIntersection>
   intersections?: Array<TimeMapRequestUnionOrIntersection>
 }
