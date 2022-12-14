@@ -101,6 +101,42 @@ travelTimeClient.timeMap({
   .catch((e) => console.error(e));
 ```
 
+### [Isochrones (Time Map) Fast](https://docs.traveltime.com/api/reference/isochrones-fast)
+A very fast version of Isochrone API. However, the request parameters are much more limited.
+
+```typescript
+import {
+  TimeMapFastRequestArrivalSearch,
+  TimeMapRequestUnionOrIntersection,
+} from 'traveltime-api';
+
+const arrival_search: TimeMapRequestArrivalSearch = {
+  id: 'public transport to Trafalgar Square',
+  arrival_time: new Date().toISOString(),
+  travel_time: 900,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  range: { enabled: true, width: 3600 },
+};
+const union: TimeMapRequestUnionOrIntersection = {
+  id: 'union of driving and public transport',
+  search_ids: ['driving from Trafalgar Square', 'public transport from Trafalgar Square'],
+};
+const intersection: TimeMapRequestUnionOrIntersection = {
+  id: 'intersection of driving and public transport',
+  search_ids: ['driving from Trafalgar Square', 'public transport from Trafalgar Square'],
+};
+
+travelTimeClient.timeMapFast({
+  arrival_searches: {
+    one_to_many: [arrival_search]
+  },
+  unions: [union],
+  intersections: [intersection],
+}).then((data) => console.log(data))
+  .catch((e) => console.error(e));
+```
+
 ### [Distance Matrix (Time Filter)](https://traveltime.com/docs/api/reference/distance-matrix)
 Given origin and destination points filter out points that cannot be reached within specified time limit.
 Find out travel times, distances and costs between an origin and up to 2,000 destination points.
