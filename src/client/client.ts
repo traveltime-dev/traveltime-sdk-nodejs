@@ -24,6 +24,7 @@ import {
   TimeMapResponseVndBoundingBoxes,
   TimeMapResponseVndWkt,
   TimeMapResponseGeoJSON,
+  TimeMapFastRequest,
 } from '../types';
 
 type HttpMethod = 'get' | 'post'
@@ -108,5 +109,12 @@ export class TravelTimeClient {
   async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format?: T) {
     const headers = format ? { Accept: format } : undefined;
     return this.request('/time-map', 'post', { body, config: { headers } });
+  }
+
+  async timeMapFast(body: TimeMapFastRequest): Promise<TimeMapResponse>
+  async timeMapFast<T extends keyof TimeMapResponseType>(body: TimeMapFastRequest, format: T): Promise<TimeMapResponseType[T]>
+  async timeMapFast<T extends keyof TimeMapResponseType>(body: TimeMapFastRequest, format?: T) {
+    const headers = format ? { Accept: format } : undefined;
+    return this.request('/time-map/fast', 'post', { body, config: { headers } });
   }
 }
