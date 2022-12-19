@@ -2,7 +2,6 @@ import { Coords } from './common';
 import {
   RequestLevelOfDetail,
   TimeMapRequestLevelOfDetailScaleType,
-  TimeMapRequestUnionOrIntersection,
 } from './timeMap';
 
 export type TimeMapFastTransportation = 'public_transport' | 'driving' | 'driving+public_transport' | 'driving+ferry' | 'cycling' | 'cycling+ferry' | 'walking' | 'walking+ferry'
@@ -29,6 +28,4 @@ export type TimeMapFastRequestArrivalSearch = {
 
 export type TimeMapFastRequest = {
   arrival_searches: TimeMapFastRequestArrivalSearch
-  unions?: Array<TimeMapRequestUnionOrIntersection>
-  intersections?: Array<TimeMapRequestUnionOrIntersection>
 }
