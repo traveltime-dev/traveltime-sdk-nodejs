@@ -60,6 +60,7 @@ export class TravelTimeClient {
         'Content-Type': 'application/json',
         'X-Application-Id': this.applicationId,
         'X-Api-Key': this.apiKey,
+        'User-Agent': 'Travel Time Nodejs SDK',
       },
     });
   }

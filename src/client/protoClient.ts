@@ -57,6 +57,7 @@ export class TravelTimeProtoClient {
       headers: {
         'Content-Type': 'application/octet-stream',
         Accept: 'application/octet-stream',
+        'User-Agent': 'Travel Time Nodejs SDK',
       },
       responseType: 'arraybuffer',
     });
