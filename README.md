@@ -107,7 +107,6 @@ A very fast version of Isochrone API. However, the request parameters are much m
 ```typescript
 import {
   TimeMapFastRequestArrivalSearch,
-  TimeMapRequestUnionOrIntersection,
 } from 'traveltime-api';
 
 const arrival_search: TimeMapRequestArrivalSearch = {
@@ -118,21 +117,11 @@ const arrival_search: TimeMapRequestArrivalSearch = {
   transportation: { type: 'public_transport' },
   range: { enabled: true, width: 3600 },
 };
-const union: TimeMapRequestUnionOrIntersection = {
-  id: 'union of driving and public transport',
-  search_ids: ['driving from Trafalgar Square', 'public transport from Trafalgar Square'],
-};
-const intersection: TimeMapRequestUnionOrIntersection = {
-  id: 'intersection of driving and public transport',
-  search_ids: ['driving from Trafalgar Square', 'public transport from Trafalgar Square'],
-};
 
 travelTimeClient.timeMapFast({
   arrival_searches: {
     one_to_many: [arrival_search]
-  },
-  unions: [union],
-  intersections: [intersection],
+  }
 }).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
