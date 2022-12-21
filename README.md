@@ -126,6 +126,20 @@ travelTimeClient.timeMapFast({
   .catch((e) => console.error(e));
 ```
 
+### Time Map Response Formats
+
+Time Map and Time Map Fast endpoints support multiple response formats. [See full list](https://docs.traveltime.com/api/reference/isochrones#Response-Body). You may pass a `format` parameter alongside your payload to specify particular response format. 
+
+```typescript
+travelTimeClient.timeMap(
+  {...payload},
+  'application/geo+json'
+).then((data) => console.log(data))
+  .catch((e) => console.error(e));
+```
+
+Requesting an unsupported response format will result in an error.
+
 ### [Distance Matrix (Time Filter)](https://traveltime.com/docs/api/reference/distance-matrix)
 Given origin and destination points filter out points that cannot be reached within specified time limit.
 Find out travel times, distances and costs between an origin and up to 2,000 destination points.
