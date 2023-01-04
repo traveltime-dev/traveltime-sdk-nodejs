@@ -14,9 +14,6 @@
 
 [Travel Time](https://docs.traveltime.com/api/overview/introduction) Node.js SDK helps users find locations by journey time rather than using ‘as the crow flies’ distance. Time-based searching gives users more opportunities for personalisation and delivers a more relevant search.
 
-Dependencies:
-* axios
-
 ## Installation
 
 [npm](https://www.npmjs.com/package/traveltime-api)
