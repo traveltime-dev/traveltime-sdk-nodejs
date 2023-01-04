@@ -43,6 +43,8 @@ type TimeMapResponseType = {
   'application/vnd.bounding-boxes+json': TimeMapResponseVndBoundingBoxes
 }
 
+const DEFAULT_BASE_URL = 'https://api.traveltimeapp.com/v4';
+
 export class TravelTimeClient {
   private apiKey: string;
   private applicationId: string;
@@ -50,12 +52,13 @@ export class TravelTimeClient {
 
   constructor(
     credentials: { apiKey: string, applicationId: string },
+    parameters?: { baseURL?: string },
   ) {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
     this.axiosInstance = axios.create({
-      baseURL: 'https://api.traveltimeapp.com/v4',
+      baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
       headers: {
         'Content-Type': 'application/json',
         'X-Application-Id': this.applicationId,
@@ -118,4 +121,14 @@ export class TravelTimeClient {
     const headers = format ? { Accept: format } : undefined;
     return this.request('/time-map/fast', 'post', { body, config: { headers } });
   }
+
+  getBaseURL = () => this.axiosInstance.defaults.baseURL;
+
+  /**
+   *
+   * @param baseURL Set new base URL. Pass nothing to reset to default
+   */
+  setBaseURL = (baseURL = DEFAULT_BASE_URL) => {
+    this.axiosInstance.defaults.baseURL = baseURL;
+  };
 }
