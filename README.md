@@ -12,11 +12,10 @@
 [![npm](https://img.shields.io/npm/v/traveltime-api?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/traveltime-api)
 [![GitHub](https://img.shields.io/github/license/traveltime-dev/traveltime-sdk-nodejs?style=for-the-badge&labelColor=000000)](https://github.com/traveltime-dev/traveltime-sdk-nodejs/blob/master/LICENSE)
 
-This library is Node.js SDK for [TravelTime API](https://traveltime.com/).  
-TravelTime API helps users find locations by journey time rather than using ‘as the crow flies’ distance.  
-Time-based searching gives users more opportunities for personalization and delivers a more relevant search.
+[Travel Time](https://docs.traveltime.com/api/overview/introduction) Node.js SDK helps users find locations by journey time rather than using ‘as the crow flies’ distance. Time-based searching gives users more opportunities for personalisation and delivers a more relevant search.
 
-For additional details see our [TravelTime API Documentation](https://docs.traveltime.com/api/overview/introduction).
+Dependencies:
+* axios
 
 ## Installation
 
@@ -26,6 +25,8 @@ For additional details see our [TravelTime API Documentation](https://docs.trave
 ```
 npm i traveltime-api
 ```
+
+This package comes with TypeScript support.
 
 ## Usage
 
@@ -38,8 +39,8 @@ To create an instance - you will need to create new `TravelTimeClient` class obj
 import { TravelTimeClient } from 'traveltime-api';
 
 const travelTimeClient = new TravelTimeClient({
-  apiKey: 'YOUR_API_KEY',
-  applicationId: 'YOUR_APPLICATION_ID',
+  apiKey: 'YOUR_APP_KEY',
+  applicationId: 'YOUR_APP_ID',
 });
 ```
 
@@ -49,7 +50,13 @@ Every instance function returns Object with type of `Promise<AxiosResponse<Endpo
 
 ### [Isochrones (Time Map)](https://traveltime.com/docs/api/reference/isochrones)
 Given origin coordinates, find shapes of zones reachable within corresponding travel time.
-Find unions/intersections between different searches
+Find unions/intersections between different searches.
+
+Body attributes:
+* departure_searches: Searches based on departure times. Leave departure location at no earlier than given time. You can define a maximum of 10 searches.
+* arrival_searches: Searches based on arrival times. Arrive at destination location at no later than given time. You can define a maximum of 10 searches.
+* unions: Define unions of shapes that are results of previously defined searches.
+* intersections: Define intersections of shapes that are results of previously defined searches.
  
 Function accepts object that matches API json spec.
 
@@ -146,6 +153,11 @@ Find out travel times, distances and costs between an origin and up to 2,000 des
 
 Function accepts object that matches API json spec.
 
+Body attributes:
+* locations: Locations to use. Each location requires an id and lat/lng values.
+* departure_searches: Searches based on departure times. Leave departure location at no earlier than given time. You can define a maximum of 10 searches.
+* arrival_searches: Searches based on arrival times. Arrive at destination location at no later than given time. You can define a maximum of 10 searches.
+
 ```ts
 import {
   LocationRequest,
@@ -211,6 +223,11 @@ Returns routing information between source and destinations.
 
 Function accepts object that matches API json spec.
 
+Body attributes:
+* locations: Locations to use. Each location requires an id and lat/lng values.
+* departure_searches: Searches based on departure times. Leave departure location at no earlier than given time. You can define a maximum of 10 searches.
+* arrival_searches: Searches based on arrival times. Arrive at destination location at no later than given time. You can define a maximum of 10 searches.
+
 ```ts
 import {
   LocationRequest,
@@ -252,7 +269,7 @@ travelTimeClient.routes({
 ```
 
 ### [Time Filter (Fast)](https://traveltime.com/docs/api/reference/time-filter-fast)
-A very fast version of time_filter().
+A very fast version of `time_filter()`.
 However, the request parameters are much more limited.
 Currently only supports UK and Ireland.
 
@@ -300,7 +317,7 @@ travelTimeClient.timeFilterFast({
   .catch((e) => console.error(e));
 ```
 
-### Time Filter Fast (Proto)
+### [Time Filter Fast (Proto)](https://traveltime.com/docs/api/reference/travel-time-distance-matrix-proto)
 A fast version of time filter communicating using [protocol buffers](https://github.com/protocolbuffers/protobuf).
 
 The request parameters are much more limited and only travel time is returned. In addition, the results are only approximately correct (95% of the results are guaranteed to be within 5% of the routes returned by regular time filter).
@@ -308,18 +325,18 @@ The request parameters are much more limited and only travel time is returned. I
 This inflexibility comes with a benefit of faster response times (Over 5x faster compared to regular time filter) and larger limits on the amount of destination points.
 
 Body attributes:
-* departureLocation: Origin point.
+* country: Return the results that are within the specified country.
+* departureLocation: Point of departure.
 * destinationCoordinates: Destination points. Cannot be more than 200,000.
 * transportation: Transportation type.
-* travelTime: Time limit;
-* country: Return the results that are within the specified country
+* travelTime: Time limit.
 
 ```ts
 import { TravelTimeProtoClient, TimeFilterFastProtoRequest } from 'traveltime-api';
 
 const travelTimeProtoClient = new TravelTimeProtoClient({
-  apiKey: 'YOUR_API_KEY',
-  applicationId: 'YOUR_APPLICATION_ID',
+  apiKey: 'YOUR_APP_KEY',
+  applicationId: 'YOUR_APP_ID',
 });
 
 const requestData: TimeFilterFastProtoRequest = {
@@ -340,55 +357,6 @@ travelTimeProtoClient.timeFilterFast(requestData)
   .then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
-
-The responses are in the form of a list where each position denotes:
-* travel time (in seconds) of a journey, or if negative that the journey from the origin to the destination point is impossible.
-
-### Time Filter Fast with distance (Proto)
-
-A fast version of time filter communicating using [protocol buffers](https://github.com/protocolbuffers/protobuf) that supports distance information.
-
-The request parameters are much more limited and only travel time and distance is returned. In addition, the results are only approximately correct (95% of the results are guaranteed to be within 5% of the routes returned by regular time filter).
-
-Body attributes:
-* departureLocation: Origin point.
-* destinationCoordinates: Destination points. Cannot be more than 200,000.
-* transportation: Transportation type.
-* travelTime: Time limit;
-* country: Return the results that are within the specified country
-
-```ts
-import {
-  TravelTimeProtoClient, TimeFilterFastProtoDistanceRequest,
-} from 'traveltime-api';
-
-const travelTimeProtoClient = new TravelTimeProtoClient({
-  apiKey: 'YOUR_API_KEY',
-  applicationId: 'YOUR_APPLICATION_ID',
-});
-
-const requestData: TimeFilterFastProtoDistanceRequest = {
-  country: 'uk',
-  departureLocation: {
-    lat: 51.508930,
-    lng: -0.131387,
-  },
-  destinationCoordinates: [{
-    lat: 51.508824,
-    lng: -0.167093,
-  }],
-  transportation: 'driving+ferry',
-  travelTime: 7200,
-};
-
-travelTimeProtoClient.timeFilterFastDistance(requestData)
-  .then((data) => console.log(data))
-  .catch((e) => console.error(e));
-```
-
-The responses are in the form of lists where each position denotes:
-  * travel time (in seconds) of a journey, or if negative that the journey from the origin to the destination point is impossible.
-  * if a travel time for a position is non negative than the distance list at the same position denotes travel distance in meters for that journey, if the journey is impossible the distance value at the position is *undefined*.
 
 ### [Time Filter (Postcode Districts)](https://traveltime.com/docs/api/reference/postcode-district-filter)
 Find districts that have a certain coverage from origin (or to destination) and get statistics about postcodes within such districts.
@@ -506,8 +474,8 @@ travelTimeClient.timeFilterPostcodes({
 Match a query string to geographic coordinates.
 
 Function accepts object that might has these properties:
- - `acceptLanguage` - [Request geocoding results to be in specific language if it is available.](https://docs.traveltime.com/api/reference/geocoding-search#Accept-Language)
- - `params` -  object that matches API json spec.
+ * `acceptLanguage` - [Request geocoding results to be in specific language if it is available.](https://docs.traveltime.com/api/reference/geocoding-search#Accept-Language)
+ * `params` -  object that matches API json spec.
 
 ```ts
 travelTimeClient.geocoding('Parliament square').then((data) => console.log(data))
@@ -517,8 +485,8 @@ travelTimeClient.geocoding('Parliament square').then((data) => console.log(data)
 Attempt to match a latitude, longitude pair to an address.
 
 Function accepts object that might has these properties:
- - `acceptLanguage` - [Request geocoding results to be in specific language if it is available.](https://docs.traveltime.com/api/reference/geocoding-search#Accept-Language)
- - `params` -  object that matches API json spec.
+ * `acceptLanguage` - [Request geocoding results to be in specific language if it is available.](https://docs.traveltime.com/api/reference/geocoding-search#Accept-Language)
+ * `params` -  object that matches API json spec.
 
 ```ts
 travelTimeClient.geocodingReverse({
