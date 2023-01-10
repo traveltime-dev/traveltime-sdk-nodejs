@@ -115,3 +115,22 @@ export type TravelTimeResponseStatistics = {
   'mean': number;
   'median': number;
 }
+
+export interface LevelOfDetail {
+  scale_type: 'coarse_grid' | 'simple' | 'simple_numeric'
+}
+
+export interface CoarseGridLevelOfDetail extends LevelOfDetail {
+  scale_type: 'coarse_grid'
+  squareSize: number
+}
+
+export interface SimpleLevelOfDetail extends LevelOfDetail {
+  scale_type: 'simple',
+  level: 'lowest' | 'low' | 'medium' | 'high' | 'highest'
+}
+
+export interface SimpleNumericLevelOfDetail extends LevelOfDetail {
+  scale_type: 'simple_numeric',
+  level: number
+}

@@ -13,3 +13,4 @@ export * from './timeFilterPostcodes';
 export * from './timeMap';
 export * from './proto';
 export * from './timeMapFast';
+export * from './timeMapResponse';
