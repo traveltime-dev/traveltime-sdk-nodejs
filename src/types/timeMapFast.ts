@@ -1,12 +1,10 @@
-import { Coords, LevelOfDetail } from './common';
-
-export type TimeMapFastTransportation = 'public_transport' | 'driving' | 'driving+public_transport' | 'driving+ferry' | 'cycling' | 'cycling+ferry' | 'walking' | 'walking+ferry'
+import { Coords, LevelOfDetail, TransportationFast } from './common';
 
 export type TimeMapFastRequestSearch = {
   id: string,
   coords: Coords,
   transportation: {
-    type: TimeMapFastTransportation
+    type: TransportationFast
   },
   arrival_time_period : 'weekday_morning',
   travel_time: number,

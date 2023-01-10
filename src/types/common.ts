@@ -134,3 +134,5 @@ export interface SimpleNumericLevelOfDetail extends LevelOfDetail {
   scale_type: 'simple_numeric',
   level: number
 }
+
+export type TransportationFast = 'public_transport' | 'driving' | 'driving+public_transport' | 'driving+ferry' | 'cycling' | 'cycling+ferry' | 'walking' | 'walking+ferry'
