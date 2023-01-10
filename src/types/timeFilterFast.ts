@@ -1,14 +1,14 @@
 import {
   LocationRequest,
   ResponseFareTicket,
+  TransportationFast,
 } from './common';
 
 export type TimeFilterFastRequestArrivalTimePeriod = 'weekday_morning';
-export type TimeFilterFastRequestTransportationTypeEnum = 'public_transport' | 'driving' | 'driving+public_transport';
 export type TimeFilterFastRequestProperty = 'travel_time' | 'fares';
 
 export type TimeFilterFastRequestTransportation = {
-  'type': TimeFilterFastRequestTransportationTypeEnum;
+  'type': TransportationFast;
 }
 
 export type TimeFilterFastRequestArrivalSearchBase = {

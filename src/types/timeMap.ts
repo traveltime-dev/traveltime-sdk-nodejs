@@ -1,18 +1,11 @@
 import {
   Coords,
+  LevelOfDetail,
   RangeRequestNoMaxResults,
   TransportationRequestCommons,
 } from './common';
 
 export type TimeMapRequestProperty = 'is_only_walking';
-export declare type TimeMapRequestLevelOfDetailScaleType = 'simple' | 'coarse_grid';
-export declare type TimeMapRequestLevelOfDetailLevel = 'lowest' | 'low' | 'medium' | 'high' | 'highest' | number;
-
-export type RequestLevelOfDetail = {
-  scale_type: TimeMapRequestLevelOfDetailScaleType;
-  level: TimeMapRequestLevelOfDetailLevel;
-  square_size: number;
-}
 
 export type TimeMapRequestSearchBase = {
   id: string
@@ -21,7 +14,7 @@ export type TimeMapRequestSearchBase = {
   travel_time: number
   properties?: Array<TimeMapRequestProperty>
   range?: RangeRequestNoMaxResults
-  level_of_detail?: RequestLevelOfDetail
+  level_of_detail?: LevelOfDetail
   single_shape?: boolean
   no_holes?: boolean
 }

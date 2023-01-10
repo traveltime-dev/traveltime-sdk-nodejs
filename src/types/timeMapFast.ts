@@ -1,24 +1,14 @@
-import { Coords } from './common';
-import {
-  RequestLevelOfDetail,
-  TimeMapRequestLevelOfDetailScaleType,
-} from './timeMap';
-
-export type TimeMapFastTransportation = 'public_transport' | 'driving' | 'driving+public_transport' | 'driving+ferry' | 'cycling' | 'cycling+ferry' | 'walking' | 'walking+ferry'
-
-export type TimeMapFastRequestLevelOfDetailScaleType = TimeMapRequestLevelOfDetailScaleType | 'simple_numeric'
-
-export type TimeMapFastRequestLevelOfDetail = Omit<RequestLevelOfDetail, 'scale_type'> & {scale_type: TimeMapFastRequestLevelOfDetailScaleType}
+import { Coords, LevelOfDetail, TransportationFast } from './common';
 
 export type TimeMapFastRequestSearch = {
   id: string,
   coords: Coords,
   transportation: {
-    type: TimeMapFastTransportation
+    type: TransportationFast
   },
   arrival_time_period : 'weekday_morning',
   travel_time: number,
-  level_of_detail?: TimeMapFastRequestLevelOfDetail
+  level_of_detail?: LevelOfDetail
 }
 
 export type TimeMapFastRequestArrivalSearch = {
