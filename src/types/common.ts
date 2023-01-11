@@ -122,7 +122,7 @@ export interface LevelOfDetail {
 
 export interface CoarseGridLevelOfDetail extends LevelOfDetail {
   scale_type: 'coarse_grid'
-  squareSize: number
+  square_size: number
 }
 
 export interface SimpleLevelOfDetail extends LevelOfDetail {
