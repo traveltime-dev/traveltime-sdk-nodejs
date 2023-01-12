@@ -61,18 +61,18 @@ export type TimeMapResponse = {
 export type Position = number[];
 
 export type TimeMapResponseGeoJSONPolygon = {
-  type: string;
+  type: 'MultiPolygon';
   coordinates: Position[][][];
 }
 
 export type TimeMapResponseGeoJSONFeature = {
-  type: string;
-  geometry: Array<TimeMapResponseGeoJSONPolygon> | TimeMapResponseGeoJSONPolygon;
+  type: 'Feature';
+  geometry: TimeMapResponseGeoJSONPolygon;
   properties: TimeMapResponseProperties;
 }
 
 export type TimeMapResponseGeoJSON = {
-  type: string;
+  type: 'FeatureCollection';
   features: Array<TimeMapResponseGeoJSONFeature>;
 }
 
