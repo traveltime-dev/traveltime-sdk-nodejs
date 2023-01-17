@@ -116,23 +116,20 @@ export type TravelTimeResponseStatistics = {
   'median': number;
 }
 
-export interface LevelOfDetail {
-  scale_type: 'coarse_grid' | 'simple' | 'simple_numeric'
-}
-
-export interface CoarseGridLevelOfDetail extends LevelOfDetail {
+export type CoarseGridLevelOfDetail = {
   scale_type: 'coarse_grid'
   square_size: number
 }
 
-export interface SimpleLevelOfDetail extends LevelOfDetail {
+export type SimpleLevelOfDetail = {
   scale_type: 'simple',
   level: 'lowest' | 'low' | 'medium' | 'high' | 'highest'
 }
 
-export interface SimpleNumericLevelOfDetail extends LevelOfDetail {
+export type SimpleNumericLevelOfDetail = {
   scale_type: 'simple_numeric',
   level: number
 }
 
+export type LevelOfDetail = CoarseGridLevelOfDetail | SimpleLevelOfDetail| SimpleNumericLevelOfDetail
 export type TransportationFast = 'public_transport' | 'driving' | 'driving+public_transport' | 'driving+ferry' | 'cycling' | 'cycling+ferry' | 'walking' | 'walking+ferry'
