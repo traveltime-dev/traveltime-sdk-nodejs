@@ -48,6 +48,10 @@ export type TimeMapResponseProperties = {
   is_only_walking?: boolean;
 }
 
+export type TimeMapResponseGeoJSONProperties = {
+  search_id: string;
+}
+
 export type TimeMapResponseResult = {
   search_id: string;
   shapes: Array<TimeMapResponseShape>;
@@ -68,7 +72,7 @@ export type TimeMapResponseGeoJSONPolygon = {
 export type TimeMapResponseGeoJSONFeature = {
   type: 'Feature';
   geometry: TimeMapResponseGeoJSONPolygon;
-  properties: TimeMapResponseProperties;
+  properties: TimeMapResponseGeoJSONProperties;
 }
 
 export type TimeMapResponseGeoJSON = {
