@@ -1,9 +1,9 @@
+import { Coords } from './../types/common';
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { TravelTimeError } from '../error';
 import {
   MapInfoResponse,
   GeocodingResponse,
-  GeocodingReverseRequest,
   GeocodingSearchRequest,
   RoutesRequest,
   RoutesResponse,
@@ -74,9 +74,9 @@ export class TravelTimeClient {
     return this.request<GeocodingResponse>('/geocoding/search', 'get', { config: { params: { ...params, bounds, query }, headers } });
   }
 
-  async geocodingReverse({ acceptLanguage, params }: GeocodingReverseRequest) {
+  async geocodingReverse(coords: Coords , acceptLanguage?: string) {
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
-    return this.request<GeocodingResponse>('/geocoding/reverse', 'get', { config: { params, headers } });
+    return this.request<GeocodingResponse>('/geocoding/reverse', 'get', { config: { params: coords, headers } });
   }
 
   mapInfo = async () => this.request<MapInfoResponse>('/map-info', 'get');
