@@ -1,4 +1,3 @@
-import { Coords } from './../types/common';
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { TravelTimeError } from '../error';
 import {
@@ -22,6 +21,7 @@ import {
   TimeFilterPostcodeSectorsRequest,
   TimeFilterPostcodeSectorsResponse,
   TimeMapFastRequest,
+  Coords,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 
@@ -74,7 +74,7 @@ export class TravelTimeClient {
     return this.request<GeocodingResponse>('/geocoding/search', 'get', { config: { params: { ...params, bounds, query }, headers } });
   }
 
-  async geocodingReverse(coords: Coords , acceptLanguage?: string) {
+  async geocodingReverse(coords: Coords, acceptLanguage?: string) {
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
     return this.request<GeocodingResponse>('/geocoding/reverse', 'get', { config: { params: coords, headers } });
   }
