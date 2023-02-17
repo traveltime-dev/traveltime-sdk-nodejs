@@ -215,56 +215,6 @@ travelTimeClient.timeFilter({
   .catch((e) => console.error(e));
 ```
 
-### [Routes](https://traveltime.com/docs/api/reference/routes)
-Returns routing information between source and destinations.
-
-Function accepts object that matches API json spec.
-
-Body attributes:
-* locations: Locations to use. Each location requires an id and lat/lng values.
-* departure_searches: Searches based on departure times. Leave departure location at no earlier than given time. You can define a maximum of 10 searches.
-* arrival_searches: Searches based on arrival times. Arrive at destination location at no later than given time. You can define a maximum of 10 searches.
-
-```ts
-import {
-  LocationRequest,
-  RoutesRequestArrivalSearch,
-  RoutesRequestDepartureSearch,
-} from 'traveltime-api';
-
-const locations: LocationRequest[] = [
-  { id: 'London center', coords: { lat: 51.508930, lng: -0.131387 } },
-  { id: 'Hyde Park', coords: { lat: 51.508824, lng: -0.167093 } },
-  { id: 'ZSL London Zoo', coords: { lat: 51.536067, lng: -0.153596 } },
-];
-
-const departure_search: RoutesRequestDepartureSearch = {
-  id: 'departure search example',
-  departure_location_id: 'London center',
-  arrival_location_ids: ['Hyde Park', 'ZSL London Zoo'],
-  transportation: { type: 'driving' },
-  departure_time: new Date().toISOString(),
-  properties: ['travel_time', 'distance', 'route'],
-};
-
-const arrival_search: RoutesRequestArrivalSearch = {
-  id: 'arrival  search example',
-  departure_location_ids: ['Hyde Park', 'ZSL London Zoo'],
-  arrival_location_id: 'London center',
-  transportation: { type: 'public_transport' },
-  arrival_time: new Date().toISOString(),
-  properties: ['travel_time', 'distance', 'route', 'fares'],
-  range: { enabled: true, max_results: 1, width: 1800 },
-};
-
-travelTimeClient.routes({
-  locations,
-  departure_searches: [departure_search],
-  arrival_searches: [arrival_search],
-}).then((data) => console.log(data))
-  .catch((e) => console.error(e));
-```
-
 ### [Time Filter (Fast)](https://traveltime.com/docs/api/reference/time-filter-fast)
 A very fast version of `time_filter()`.
 However, the request parameters are much more limited.
@@ -355,6 +305,42 @@ travelTimeProtoClient.timeFilterFast(requestData)
   .catch((e) => console.error(e));
 ```
 
+### [Time Filter (Postcodes)](https://traveltime.com/docs/api/reference/postcode-search)
+Find reachable postcodes from origin (or to destination) and get statistics about such postcodes.
+Currently only supports United Kingdom.
+
+Function accepts object that matches API json spec.
+
+```ts
+import {
+  TimeFilterPostcodesRequestArrivalSearch,
+  TimeFilterPostcodesRequestDepartureSearch,
+} from 'traveltime-api';
+
+const departure_search: TimeFilterPostcodesRequestDepartureSearch = {
+  id: 'public transport from Trafalgar Square',
+  departure_time: new Date().toISOString(),
+  travel_time: 1800,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  properties: ['travel_time', 'distance'],
+};
+const arrival_search: TimeFilterPostcodesRequestArrivalSearch = {
+  id: 'public transport to Trafalgar Square',
+  arrival_time: new Date().toISOString(),
+  travel_time: 1800,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  properties: ['travel_time', 'distance'],
+};
+
+travelTimeClient.timeFilterPostcodes({
+  departure_searches: [departure_search],
+  arrival_searches: [arrival_search],
+}).then((data) => console.log(data))
+  .catch((e) => console.error(e));
+```
+
 ### [Time Filter (Postcode Districts)](https://traveltime.com/docs/api/reference/postcode-district-filter)
 Find districts that have a certain coverage from origin (or to destination) and get statistics about postcodes within such districts.
 Currently only supports United Kingdom.
@@ -431,36 +417,50 @@ travelTimeClient.timeFilterPostcodeSectors({
   .catch((e) => console.error(e));
 ```
 
-### [Time Filter (Postcodes)](https://traveltime.com/docs/api/reference/postcode-search)
-Find reachable postcodes from origin (or to destination) and get statistics about such postcodes.
-Currently only supports United Kingdom.
+### [Routes](https://traveltime.com/docs/api/reference/routes)
+Returns routing information between source and destinations.
 
 Function accepts object that matches API json spec.
 
+Body attributes:
+* locations: Locations to use. Each location requires an id and lat/lng values.
+* departure_searches: Searches based on departure times. Leave departure location at no earlier than given time. You can define a maximum of 10 searches.
+* arrival_searches: Searches based on arrival times. Arrive at destination location at no later than given time. You can define a maximum of 10 searches.
+
 ```ts
 import {
-  TimeFilterPostcodesRequestArrivalSearch,
-  TimeFilterPostcodesRequestDepartureSearch,
+  LocationRequest,
+  RoutesRequestArrivalSearch,
+  RoutesRequestDepartureSearch,
 } from 'traveltime-api';
 
-const departure_search: TimeFilterPostcodesRequestDepartureSearch = {
-  id: 'public transport from Trafalgar Square',
+const locations: LocationRequest[] = [
+  { id: 'London center', coords: { lat: 51.508930, lng: -0.131387 } },
+  { id: 'Hyde Park', coords: { lat: 51.508824, lng: -0.167093 } },
+  { id: 'ZSL London Zoo', coords: { lat: 51.536067, lng: -0.153596 } },
+];
+
+const departure_search: RoutesRequestDepartureSearch = {
+  id: 'departure search example',
+  departure_location_id: 'London center',
+  arrival_location_ids: ['Hyde Park', 'ZSL London Zoo'],
+  transportation: { type: 'driving' },
   departure_time: new Date().toISOString(),
-  travel_time: 1800,
-  coords: { lat: 51.507609, lng: -0.128315 },
-  transportation: { type: 'public_transport' },
-  properties: ['travel_time', 'distance'],
-};
-const arrival_search: TimeFilterPostcodesRequestArrivalSearch = {
-  id: 'public transport to Trafalgar Square',
-  arrival_time: new Date().toISOString(),
-  travel_time: 1800,
-  coords: { lat: 51.507609, lng: -0.128315 },
-  transportation: { type: 'public_transport' },
-  properties: ['travel_time', 'distance'],
+  properties: ['travel_time', 'distance', 'route'],
 };
 
-travelTimeClient.timeFilterPostcodes({
+const arrival_search: RoutesRequestArrivalSearch = {
+  id: 'arrival  search example',
+  departure_location_ids: ['Hyde Park', 'ZSL London Zoo'],
+  arrival_location_id: 'London center',
+  transportation: { type: 'public_transport' },
+  arrival_time: new Date().toISOString(),
+  properties: ['travel_time', 'distance', 'route', 'fares'],
+  range: { enabled: true, max_results: 1, width: 1800 },
+};
+
+travelTimeClient.routes({
+  locations,
   departure_searches: [departure_search],
   arrival_searches: [arrival_search],
 }).then((data) => console.log(data))
