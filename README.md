@@ -508,14 +508,12 @@ travelTimeClient.geocoding('Parliament square').then((data) => console.log(data)
 Attempt to match a latitude, longitude pair to an address.
 
 Function accepts object that might has these properties:
+ * `coords` - lat, lng pair to try and match 
  * `acceptLanguage` - [Request geocoding results to be in specific language if it is available.](https://docs.traveltime.com/api/reference/geocoding-search#Accept-Language)
- * `params` -  object that matches API json spec.
 
 ```ts
 travelTimeClient.geocodingReverse({
-  params: {
-    lat: 51.507281, lng: -0.132120,
-  },
+  lat: 51.507281, lng: -0.132120,
 }).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
