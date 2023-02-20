@@ -492,6 +492,15 @@ travelTimeClient.timeFilterPostcodeSectors({
   .catch((e) => console.error(e));
 ```
 
+### [Map Info](https://traveltime.com/docs/api/reference/map-info)
+Get information about currently supported countries.
+
+```ts
+travelTimeClient.mapInfo()
+  .then((data) => console.log(data))
+  .catch((e) => console.error(e));
+```
+
 ### [Supported Locations](https://traveltime.com/docs/api/reference/supported-locations)
 Find out what points are supported by the api.
 
