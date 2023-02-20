@@ -1,6 +1,5 @@
 export * from './common';
 export * from './geocoding';
-export * from './geocodingReverse';
 export * from './geocodingSearch';
 export * from './mapInfo';
 export * from './supportedLocations';
