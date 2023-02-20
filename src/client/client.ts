@@ -71,7 +71,7 @@ export class TravelTimeClient {
     const { acceptLanguage, params } = req || {};
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
     const bounds = params?.bounds ? `${params.bounds.southEast.lat},${params.bounds.southEast.lng},${params.bounds.northWest.lat},${params.bounds.northWest.lng}` : undefined;
-    const withinCountry = Array.isArray(req?.params['within.country']) ? req?.params['within.country'].join(',') : req?.params['within.country'];
+    const withinCountry = Array.isArray(params?.['within.country']) ? params?.['within.country'].join(',') : params?.['within.country'];
     return this.request<GeocodingResponse>('/geocoding/search', 'get', {
       config: {
         params: {
