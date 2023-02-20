@@ -11,7 +11,7 @@ export type GeocodingSearchRequest = {
     limit?: number
     'force.add.postcode'?: boolean
     bounds?: GeocodingBounds
-    'within.country'?: string
+    'within.country'?: string[] | string
     'format.name'?: boolean
     'format.exclude.country'?: boolean
   }
