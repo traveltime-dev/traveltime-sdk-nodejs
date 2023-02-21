@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import crypto from 'crypto';
 import { TravelTimeError } from '../error';
 import {
   MapInfoResponse,
@@ -32,20 +33,41 @@ type RequestPayload = {
   config?: AxiosRequestConfig
 }
 
+type RateLimitSettings = {
+  enabled: boolean
+  requestsPerMinute: number
+  retryOnFailure: boolean
+  retryAfter: number
+}
+
+type Task<T = any> = () => Promise<T> | T;
+
 const DEFAULT_BASE_URL = 'https://api.traveltimeapp.com/v4';
 
 export class TravelTimeClient {
   private apiKey: string;
   private applicationId: string;
   private axiosInstance: AxiosInstance;
+  private rateLimitSettings: RateLimitSettings;
+  private requestQueue: Array<Task>;
+  private completedQueue: Set<string>;
 
   constructor(
     credentials: { apiKey: string, applicationId: string },
-    parameters?: { baseURL?: string },
+    parameters?: { baseURL?: string, rateLimitSettings?: Partial<RateLimitSettings> },
   ) {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
+    this.requestQueue = [];
+    this.completedQueue = new Set();
+    this.rateLimitSettings = {
+      enabled: false,
+      requestsPerMinute: 60,
+      retryOnFailure: false,
+      retryAfter: 1000,
+      ...parameters?.rateLimitSettings,
+    };
     this.axiosInstance = axios.create({
       baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
       headers: {
@@ -57,10 +79,41 @@ export class TravelTimeClient {
     });
   }
 
-  private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload) {
+  private taskCleanUp(id: string) {
+    setTimeout(() => {
+      this.completedQueue.delete(id);
+      this.execute();
+    }, 1000 * 60);
+  }
+
+  private async execute() {
+    const task = this.requestQueue.shift();
+    if (!task) {
+      return;
+    }
+    if (this.completedQueue.size < this.rateLimitSettings.requestsPerMinute) {
+      const uuid = crypto.randomUUID();
+      this.completedQueue.add(uuid);
+      await task();
+      this.taskCleanUp(uuid);
+    } else {
+      this.requestQueue.unshift(task);
+    }
+  }
+
+  private addAndExecute(request: Task) {
+    this.requestQueue.push(request);
+    this.execute();
+  }
+
+  private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload): Promise<Response> {
     const { body, config } = payload || {};
+    const rq = () => (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
     try {
-      const { data } = await (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
+      const promise = this.rateLimitSettings.enabled ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
+        this.addAndExecute(() => resolve(rq()));
+      }) : rq();
+      const { data } = await promise;
       return data;
     } catch (error) {
       throw TravelTimeError.makeError(error);
@@ -127,5 +180,12 @@ export class TravelTimeClient {
    */
   setBaseURL = (baseURL = DEFAULT_BASE_URL) => {
     this.axiosInstance.defaults.baseURL = baseURL;
+  };
+
+  setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
+    this.rateLimitSettings = {
+      ...this.rateLimitSettings,
+      ...settings,
+    };
   };
 }
