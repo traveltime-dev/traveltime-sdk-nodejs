@@ -51,6 +51,8 @@ export class TravelTimeClient {
   private rateLimitSettings: RateLimitSettings;
   private requestQueue: Array<Task>;
   private completedQueue: Set<string>;
+  private isThrottleActive: boolean;
+  private isRequestInProgress: boolean;
 
   constructor(
     credentials: { apiKey: string, applicationId: string },
@@ -61,6 +63,8 @@ export class TravelTimeClient {
     this.apiKey = credentials.apiKey;
     this.requestQueue = [];
     this.completedQueue = new Set();
+    this.isThrottleActive = false;
+    this.isRequestInProgress = false;
     this.rateLimitSettings = {
       enabled: false,
       requestsPerMinute: 60,
@@ -79,7 +83,20 @@ export class TravelTimeClient {
     });
   }
 
+  private disableThrottle() {
+    if (!this.isThrottleActive) return;
+    setTimeout(() => {
+      this.isThrottleActive = false;
+      if (this.requestQueue.length > 0) this.execute();
+    }, (60 * 1000) / this.rateLimitSettings.requestsPerMinute);
+  }
+
   private taskCleanUp(id: string) {
+    this.isRequestInProgress = false;
+    this.disableThrottle();
+
+    if (this.requestQueue.length > 0) this.execute();
+
     setTimeout(() => {
       this.completedQueue.delete(id);
       this.execute();
@@ -87,11 +104,14 @@ export class TravelTimeClient {
   }
 
   private async execute() {
+    if (this.isRequestInProgress || this.isThrottleActive) return;
     const task = this.requestQueue.shift();
     if (!task) {
       return;
     }
     if (this.completedQueue.size < this.rateLimitSettings.requestsPerMinute) {
+      this.isThrottleActive = true;
+      this.isRequestInProgress = true;
       const uuid = crypto.randomUUID();
       this.completedQueue.add(uuid);
       await task();
