@@ -35,9 +35,7 @@ type RequestPayload = {
 
 type RateLimitSettings = {
   enabled: boolean
-  requestsPerMinute: number
-  retryOnFailure: boolean
-  retryAfter: number
+  requestsPerMinute: number // HPM?
 }
 
 type Task<T = any> = () => Promise<T> | T;
@@ -68,8 +66,6 @@ export class TravelTimeClient {
     this.rateLimitSettings = {
       enabled: false,
       requestsPerMinute: 60,
-      retryOnFailure: false,
-      retryAfter: 1000,
       ...parameters?.rateLimitSettings,
     };
     this.axiosInstance = axios.create({
