@@ -1,5 +1,4 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import crypto from 'crypto';
 import { TravelTimeError } from '../error';
 import {
   MapInfoResponse,
@@ -25,6 +24,7 @@ import {
   Coords,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
+import { RateLimiter, RateLimitSettings } from './rateLimiter';
 
 type HttpMethod = 'get' | 'post'
 
@@ -32,13 +32,6 @@ type RequestPayload = {
   body?: any
   config?: AxiosRequestConfig
 }
-
-type RateLimitSettings = {
-  enabled: boolean
-  hitsPerMinute: number
-}
-
-type Task<T = any> = () => Promise<T> | T;
 
 const DEFAULT_BASE_URL = 'https://api.traveltimeapp.com/v4';
 
@@ -66,11 +59,7 @@ export class TravelTimeClient {
   private apiKey: string;
   private applicationId: string;
   private axiosInstance: AxiosInstance;
-  private rateLimitSettings: RateLimitSettings;
-  private requestQueue: Array<{ task: Task, hits: number }>;
-  private completedQueue: Set<string>;
-  private isThrottleActive: boolean;
-  private isRequestInProgress: boolean;
+  private rateLimiter: RateLimiter;
 
   constructor(
     credentials: { apiKey: string, applicationId: string },
@@ -79,15 +68,7 @@ export class TravelTimeClient {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
-    this.requestQueue = [];
-    this.completedQueue = new Set();
-    this.isThrottleActive = false;
-    this.isRequestInProgress = false;
-    this.rateLimitSettings = {
-      enabled: false,
-      hitsPerMinute: 60,
-      ...parameters?.rateLimitSettings,
-    };
+    this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
     this.axiosInstance = axios.create({
       baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
       headers: {
@@ -99,56 +80,17 @@ export class TravelTimeClient {
     });
   }
 
-  private disableThrottle(hits: number) {
-    if (!this.isThrottleActive) return;
-    setTimeout(() => {
-      this.isThrottleActive = false;
-      if (this.requestQueue.length > 0) this.execute();
-    }, ((60 * 1000) / this.rateLimitSettings.hitsPerMinute) * hits);
-  }
-
-  private taskCleanUp(ids: string[]) {
-    this.isRequestInProgress = false;
-    if (this.requestQueue.length > 0) this.execute();
-    setTimeout(() => {
-      ids.forEach((id) => this.completedQueue.delete(id));
-      this.execute();
-    }, 1000 * 60);
-  }
-
-  private async execute() {
-    if (this.isRequestInProgress || this.isThrottleActive) return;
-    const request = this.requestQueue.shift();
-    if (!request) return;
-    if (this.completedQueue.size + request.hits <= this.rateLimitSettings.hitsPerMinute) {
-      this.isThrottleActive = true;
-      this.isRequestInProgress = true;
-      const uuids = [...Array(request.hits).keys()].map(() => crypto.randomUUID());
-      uuids.forEach((id) => this.completedQueue.add(id));
-      this.disableThrottle(uuids.length);
-      await request.task();
-      this.taskCleanUp(uuids);
-    } else {
-      this.requestQueue.unshift(request);
-    }
-  }
-
-  private addAndExecute(request: Task, hits: number) {
-    this.requestQueue.push({ task: request, hits });
-    this.execute();
-  }
-
   private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload, retryCount = 0): Promise<Response> {
     const { body, config } = payload || {};
     const rq = () => (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
     try {
-      const promise = this.rateLimitSettings.enabled ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-        this.addAndExecute(() => resolve(rq()), getHitAmountFromRequest(url, body || {}));
+      const promise = this.rateLimiter.isEnabled() ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
+        this.rateLimiter.addAndExecute(() => resolve(rq()), getHitAmountFromRequest(url, body || {}));
       }) : rq();
       const { data } = await promise;
       return data;
     } catch (error) {
-      if (this.rateLimitSettings.enabled && retryCount < 3 && axios.isAxiosError(error) && error.response?.status === 429) {
+      if (this.rateLimiter.isEnabled() && retryCount < 3 && axios.isAxiosError(error) && error.response?.status === 429) {
         return this.request(url, method, payload, retryCount + 1);
       }
       throw TravelTimeError.makeError(error);
@@ -218,9 +160,6 @@ export class TravelTimeClient {
   };
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
-    this.rateLimitSettings = {
-      ...this.rateLimitSettings,
-      ...settings,
-    };
+    this.setRateLimitSettings(settings);
   };
 }
