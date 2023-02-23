@@ -55,6 +55,19 @@ function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
   }
 }
 
+function endpointChecksHPM(url: string) {
+  return [
+    '/time-filter',
+    '/routes',
+    '/time-filter/postcode-districts',
+    '/time-filter/postcode-sectors',
+    '/time-filter/postcodes',
+    '/time-map/fast',
+    '/time-filter/fast',
+    '/time-map',
+  ].includes(url);
+}
+
 export class TravelTimeClient {
   private apiKey: string;
   private applicationId: string;
@@ -84,7 +97,7 @@ export class TravelTimeClient {
     const { body, config } = payload || {};
     const rq = () => (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
     try {
-      const promise = this.rateLimiter.isEnabled() ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
+      const promise = (this.rateLimiter.isEnabled() && endpointChecksHPM(url)) ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
         this.rateLimiter.addAndExecute(() => resolve(rq()), getHitAmountFromRequest(url, body || {}));
       }) : rq();
       const { data } = await promise;
