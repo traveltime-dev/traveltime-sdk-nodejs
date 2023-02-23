@@ -35,19 +35,39 @@ type RequestPayload = {
 
 type RateLimitSettings = {
   enabled: boolean
-  requestsPerMinute: number // HPM?
+  hitsPerMinute: number // HPM?
 }
 
 type Task<T = any> = () => Promise<T> | T;
 
 const DEFAULT_BASE_URL = 'https://api.traveltimeapp.com/v4';
 
+function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
+  switch (url) {
+    case '/time-filter':
+    case '/routes':
+    case '/time-filter/postcode-districts':
+    case '/time-filter/postcode-sectors':
+    case '/time-filter/postcodes': {
+      return (body.departure_searches?.length || 0) + (body.arrival_searches?.length || 0);
+    }
+    case '/time-map/fast':
+    case '/time-filter/fast': {
+      return (body.arrival_searches.one_to_many?.length || 0) + (body.arrival_searches.many_to_one?.length || 0);
+    }
+    case '/time-map': {
+      return (body.departure_searches?.length || 0) + (body.arrival_searches?.length || 0) + (body.unions?.length || 0) + (body.intersections?.length || 0);
+    }
+    default: return 0;
+  }
+}
+
 export class TravelTimeClient {
   private apiKey: string;
   private applicationId: string;
   private axiosInstance: AxiosInstance;
   private rateLimitSettings: RateLimitSettings;
-  private requestQueue: Array<Task>;
+  private requestQueue: Array<{task: Task, hits: number}>;
   private completedQueue: Set<string>;
   private isThrottleActive: boolean;
   private isRequestInProgress: boolean;
@@ -65,7 +85,7 @@ export class TravelTimeClient {
     this.isRequestInProgress = false;
     this.rateLimitSettings = {
       enabled: false,
-      requestsPerMinute: 60,
+      hitsPerMinute: 60,
       ...parameters?.rateLimitSettings,
     };
     this.axiosInstance = axios.create({
@@ -79,46 +99,46 @@ export class TravelTimeClient {
     });
   }
 
-  private disableThrottle() {
+  private disableThrottle(hits: number) {
     if (!this.isThrottleActive) return;
     setTimeout(() => {
       this.isThrottleActive = false;
       if (this.requestQueue.length > 0) this.execute();
-    }, (60 * 1000) / this.rateLimitSettings.requestsPerMinute);
+    }, ((60 * 1000) / this.rateLimitSettings.hitsPerMinute) * hits);
   }
 
-  private taskCleanUp(id: string) {
+  private taskCleanUp(ids: string[]) {
     this.isRequestInProgress = false;
-    this.disableThrottle();
 
     if (this.requestQueue.length > 0) this.execute();
 
     setTimeout(() => {
-      this.completedQueue.delete(id);
+      ids.forEach((id) => this.completedQueue.delete(id));
       this.execute();
     }, 1000 * 60);
   }
 
   private async execute() {
     if (this.isRequestInProgress || this.isThrottleActive) return;
-    const task = this.requestQueue.shift();
-    if (!task) {
+    const request = this.requestQueue.shift();
+    if (!request) {
       return;
     }
-    if (this.completedQueue.size < this.rateLimitSettings.requestsPerMinute) {
+    if (this.completedQueue.size + request.hits < this.rateLimitSettings.hitsPerMinute) {
       this.isThrottleActive = true;
       this.isRequestInProgress = true;
-      const uuid = crypto.randomUUID();
-      this.completedQueue.add(uuid);
-      await task();
-      this.taskCleanUp(uuid);
+      const uuids = [...Array(request.hits).keys()].map(() => crypto.randomUUID());
+      uuids.forEach((id) => this.completedQueue.add(id));
+      this.disableThrottle(uuids.length);
+      await request.task();
+      this.taskCleanUp(uuids);
     } else {
-      this.requestQueue.unshift(task);
+      this.requestQueue.unshift(request);
     }
   }
 
-  private addAndExecute(request: Task) {
-    this.requestQueue.push(request);
+  private addAndExecute(request: Task, hits: number) {
+    this.requestQueue.push({ task: request, hits });
     this.execute();
   }
 
@@ -127,7 +147,7 @@ export class TravelTimeClient {
     const rq = () => (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
     try {
       const promise = this.rateLimitSettings.enabled ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-        this.addAndExecute(() => resolve(rq()));
+        this.addAndExecute(() => resolve(rq()), getHitAmountFromRequest(url, body || {}));
       }) : rq();
       const { data } = await promise;
       return data;
