@@ -138,7 +138,7 @@ export class TravelTimeClient {
     this.execute();
   }
 
-  private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload): Promise<Response> {
+  private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload, retryCount = 0): Promise<Response> {
     const { body, config } = payload || {};
     const rq = () => (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
     try {
@@ -148,6 +148,9 @@ export class TravelTimeClient {
       const { data } = await promise;
       return data;
     } catch (error) {
+      if (this.rateLimitSettings.enabled && retryCount < 3 && axios.isAxiosError(error) && error.response?.status === 429) {
+        return this.request(url, method, payload, retryCount + 1);
+      }
       throw TravelTimeError.makeError(error);
     }
   }
