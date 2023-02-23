@@ -6,7 +6,7 @@
   "types": "target/index.d.ts",
   "scripts": {
     "build": "tsc && cp -R src/client/proto target/client",
-    "clean": "rm -rf node_modules && rm -rf target && rm -rf main.ts",
+    "clean": "rm -rf node_modules && rm -rf target && rm -f main.ts",
     "dev": "ts-node main.ts",
     "release": "npm run clean && npm i && npm run build && npm publish",
     "release-rc": "npm run clean && npm i && npm run build && npm publish --tag rc"

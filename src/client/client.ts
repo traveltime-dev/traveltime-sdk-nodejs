@@ -67,7 +67,7 @@ export class TravelTimeClient {
   private applicationId: string;
   private axiosInstance: AxiosInstance;
   private rateLimitSettings: RateLimitSettings;
-  private requestQueue: Array<{task: Task, hits: number}>;
+  private requestQueue: Array<{ task: Task, hits: number }>;
   private completedQueue: Set<string>;
   private isThrottleActive: boolean;
   private isRequestInProgress: boolean;
@@ -109,9 +109,7 @@ export class TravelTimeClient {
 
   private taskCleanUp(ids: string[]) {
     this.isRequestInProgress = false;
-
     if (this.requestQueue.length > 0) this.execute();
-
     setTimeout(() => {
       ids.forEach((id) => this.completedQueue.delete(id));
       this.execute();
@@ -121,10 +119,8 @@ export class TravelTimeClient {
   private async execute() {
     if (this.isRequestInProgress || this.isThrottleActive) return;
     const request = this.requestQueue.shift();
-    if (!request) {
-      return;
-    }
-    if (this.completedQueue.size + request.hits < this.rateLimitSettings.hitsPerMinute) {
+    if (!request) return;
+    if (this.completedQueue.size + request.hits <= this.rateLimitSettings.hitsPerMinute) {
       this.isThrottleActive = true;
       this.isRequestInProgress = true;
       const uuids = [...Array(request.hits).keys()].map(() => crypto.randomUUID());
