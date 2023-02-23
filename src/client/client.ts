@@ -24,6 +24,7 @@ import {
   Coords,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
+import { RateLimiter, RateLimitSettings } from './rateLimiter';
 
 type HttpMethod = 'get' | 'post'
 
@@ -34,18 +35,53 @@ type RequestPayload = {
 
 const DEFAULT_BASE_URL = 'https://api.traveltimeapp.com/v4';
 
+function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
+  switch (url) {
+    case '/time-filter':
+    case '/routes':
+    case '/time-filter/postcode-districts':
+    case '/time-filter/postcode-sectors':
+    case '/time-filter/postcodes': {
+      return (body.departure_searches?.length || 0) + (body.arrival_searches?.length || 0);
+    }
+    case '/time-map/fast':
+    case '/time-filter/fast': {
+      return (body.arrival_searches.one_to_many?.length || 0) + (body.arrival_searches.many_to_one?.length || 0);
+    }
+    case '/time-map': {
+      return (body.departure_searches?.length || 0) + (body.arrival_searches?.length || 0) + (body.unions?.length || 0) + (body.intersections?.length || 0);
+    }
+    default: return 0;
+  }
+}
+
+function endpointChecksHPM(url: string) {
+  return [
+    '/time-filter',
+    '/routes',
+    '/time-filter/postcode-districts',
+    '/time-filter/postcode-sectors',
+    '/time-filter/postcodes',
+    '/time-map/fast',
+    '/time-filter/fast',
+    '/time-map',
+  ].includes(url);
+}
+
 export class TravelTimeClient {
   private apiKey: string;
   private applicationId: string;
   private axiosInstance: AxiosInstance;
+  private rateLimiter: RateLimiter;
 
   constructor(
     credentials: { apiKey: string, applicationId: string },
-    parameters?: { baseURL?: string },
+    parameters?: { baseURL?: string, rateLimitSettings?: Partial<RateLimitSettings> },
   ) {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
+    this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
     this.axiosInstance = axios.create({
       baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
       headers: {
@@ -57,12 +93,19 @@ export class TravelTimeClient {
     });
   }
 
-  private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload) {
+  private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload, retryCount = 0): Promise<Response> {
     const { body, config } = payload || {};
+    const rq = () => (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
     try {
-      const { data } = await (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
+      const promise = (this.rateLimiter.isEnabled() && endpointChecksHPM(url)) ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
+        this.rateLimiter.addAndExecute(() => resolve(rq()), getHitAmountFromRequest(url, body || {}));
+      }) : rq();
+      const { data } = await promise;
       return data;
     } catch (error) {
+      if (this.rateLimiter.isEnabled() && retryCount < 3 && axios.isAxiosError(error) && error.response?.status === 429) {
+        return this.request(url, method, payload, retryCount + 1);
+      }
       throw TravelTimeError.makeError(error);
     }
   }
@@ -127,5 +170,9 @@ export class TravelTimeClient {
    */
   setBaseURL = (baseURL = DEFAULT_BASE_URL) => {
     this.axiosInstance.defaults.baseURL = baseURL;
+  };
+
+  setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
+    this.setRateLimitSettings(settings);
   };
 }
