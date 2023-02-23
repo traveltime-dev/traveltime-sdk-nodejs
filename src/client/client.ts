@@ -35,7 +35,7 @@ type RequestPayload = {
 
 type RateLimitSettings = {
   enabled: boolean
-  hitsPerMinute: number // HPM?
+  hitsPerMinute: number
 }
 
 type Task<T = any> = () => Promise<T> | T;
