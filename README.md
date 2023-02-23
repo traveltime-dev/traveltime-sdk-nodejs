@@ -43,15 +43,13 @@ const travelTimeClient = new TravelTimeClient({
 
 #### Advanced Options
 
-You can specify more parameters when using our SDK. Client constructor takes second argument - `parameters`.
-
-Parameters can be these (all fields are optional):
+You can apply additional optional parameters to client constructor’s second argument `parameters` object:
  - `baseURL` [string] - you can change base URL of client. Default value is `https://api.traveltimeapp.com/v4`.
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. When using rate limiter if the response status is `429` we will retry your request up to 3 times. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
     - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`.
 
-If you need later to change any of these parameters you can call setter methods: `travelTimeClient.setBaseURL`, `travelTimeClient.setRateLimitSettings`.
+If you need to change any of these parameters you can call setter methods: `travelTimeClient.setBaseURL`, `travelTimeClient.setRateLimitSettings`.
 
 ---
 
@@ -294,14 +292,12 @@ Body attributes:
 
 #### Advanced Options
 
-You can specify more parameters when using our SDK. Client constructor takes second argument - `parameters`.
-
-Parameters can be these (all fields are optional):
+You can apply additional optional parameters to client constructor’s second argument `parameters` object:
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
     - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`.
 
-If you need later to change any of these parameters you can call setter methods: `travelTimeClient.setRateLimitSettings`.
+If you need to change any of these parameters you can call setter methods: `travelTimeClient.setRateLimitSettings`.
 
 ```ts
 import { TravelTimeProtoClient, TimeFilterFastProtoRequest } from 'traveltime-api';
