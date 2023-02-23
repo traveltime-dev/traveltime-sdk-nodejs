@@ -5,6 +5,7 @@ import { Coords } from '../types';
 import {
   TimeFilterFastProtoDistanceRequest, TimeFilterFastProtoRequest, TimeFilterFastProtoResponse, TimeFilterFastProtoTransportation,
 } from '../types/proto';
+import { RateLimiter, RateLimitSettings } from './rateLimiter';
 
 interface TimeFilterFastProtoMessage {
   oneToManyRequest: {
@@ -25,30 +26,27 @@ interface ProtoRequestBuildOptions {
 
 export class TravelTimeProtoClient {
   private apiKey: string;
-
   private applicationId: string;
-
   private axiosInstance: AxiosInstance;
-
   private baseUri = 'http://proto.api.traveltimeapp.com/api/v2';
-
   private protoDistanceUri = 'https://proto-with-distance.api.traveltimeapp.com/api/v2';
-
   private protoFileDir = `${__dirname}/proto/v2`;
-
   private transportationMap: Record<TimeFilterFastProtoTransportation, number> = {
     pt: 0,
     'driving+ferry': 3,
     'cycling+ferry': 6,
     'walking+ferry': 7,
   };
+  private rateLimiter: RateLimiter;
 
   constructor(
     credentials: { apiKey: string, applicationId: string },
+    parameters?: { rateLimitSettings?: Partial<RateLimitSettings> },
   ) {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
+    this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
     this.axiosInstance = axios.create({
       auth: {
         username: this.applicationId,
@@ -121,9 +119,13 @@ export class TravelTimeProtoClient {
     const messageRequest = this.buildProtoRequest(request, options);
     const message = TimeFilterFastRequest.create(messageRequest);
     const buffer = TimeFilterFastRequest.encode(message).finish();
+    const rq = () => this.axiosInstance.post(this.buildRequestUrl(uri, request), buffer);
 
     try {
-      const { data } = await this.axiosInstance.post(this.buildRequestUrl(uri, request), buffer);
+      const promise = this.rateLimiter.isEnabled() ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
+        this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
+      }) : rq();
+      const { data } = await promise;
       const response = TimeFilterFastResponse.decode(data);
       return response.toJSON() as TimeFilterFastProtoResponse;
     } catch (e) {
@@ -136,4 +138,8 @@ export class TravelTimeProtoClient {
 
   timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.readProtoFile()
     .then(async (root) => this.handleProtoFile(root, this.protoDistanceUri, request, { useDistance: true }));
+
+  setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
+    this.setRateLimitSettings(settings);
+  };
 }
