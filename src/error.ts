@@ -35,12 +35,6 @@ export class TravelTimeError extends Error {
     if (this.isTravelTimeError(errorData)) {
       return new TravelTimeError(errorData);
     }
-    return new TravelTimeError({
-      description: 'Couldn\'t get data',
-      http_status: error?.response?.status || 500,
-      error_code: 1,
-      documentation_link: 'https://docs.traveltime.com/api/reference/error-codes',
-      additional_info: {},
-    });
+    return error;
   }
 }

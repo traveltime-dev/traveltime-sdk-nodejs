@@ -121,22 +121,18 @@ export class TravelTimeProtoClient {
     const buffer = TimeFilterFastRequest.encode(message).finish();
     const rq = () => this.axiosInstance.post(this.buildRequestUrl(uri, request), buffer);
 
-    try {
-      const promise = this.rateLimiter.isEnabled() ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-        this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
-      }) : rq();
-      const { data } = await promise;
-      const response = TimeFilterFastResponse.decode(data);
-      return response.toJSON() as TimeFilterFastProtoResponse;
-    } catch (e) {
-      throw new Error('Error while sending proto request');
-    }
+    const promise = this.rateLimiter.isEnabled() ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
+      this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
+    }) : rq();
+    const { data } = await promise;
+    const response = TimeFilterFastResponse.decode(data);
+    return response.toJSON() as TimeFilterFastProtoResponse;
   }
 
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.readProtoFile()
     .then(async (root) => this.handleProtoFile(root, this.baseUri, request));
 
-  timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.readProtoFile()
+  private timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.readProtoFile()
     .then(async (root) => this.handleProtoFile(root, this.protoDistanceUri, request, { useDistance: true }));
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
