@@ -132,7 +132,7 @@ export class TravelTimeProtoClient {
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.readProtoFile()
     .then(async (root) => this.handleProtoFile(root, this.baseUri, request));
 
-  timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.readProtoFile()
+  private timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.readProtoFile()
     .then(async (root) => this.handleProtoFile(root, this.protoDistanceUri, request, { useDistance: true }));
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
