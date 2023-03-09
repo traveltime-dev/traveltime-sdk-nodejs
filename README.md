@@ -125,9 +125,9 @@ import {
   TimeMapFastRequestArrivalSearch,
 } from 'traveltime-api';
 
-const arrival_search: TimeMapRequestArrivalSearch = {
+const arrival_search: TimeMapFastRequestSearch = {
   id: 'public transport to Trafalgar Square',
-  arrival_time: new Date().toISOString(),
+  arrival_time_period: 'weekday_morning',
   travel_time: 900,
   coords: { lat: 51.507609, lng: -0.128315 },
   transportation: { type: 'public_transport' },
