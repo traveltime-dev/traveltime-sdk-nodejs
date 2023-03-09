@@ -122,7 +122,7 @@ A very fast version of Isochrone API. However, the request parameters are much m
 
 ```typescript
 import {
-  TimeMapFastRequestArrivalSearch,
+  TimeMapFastRequestSearch, TravelTimeClient,
 } from 'traveltime-api';
 
 const arrival_search: TimeMapFastRequestSearch = {
@@ -131,13 +131,12 @@ const arrival_search: TimeMapFastRequestSearch = {
   travel_time: 900,
   coords: { lat: 51.507609, lng: -0.128315 },
   transportation: { type: 'public_transport' },
-  range: { enabled: true, width: 3600 },
 };
 
 travelTimeClient.timeMapFast({
   arrival_searches: {
-    one_to_many: [arrival_search]
-  }
+    one_to_many: [arrival_search],
+  },
 }).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
