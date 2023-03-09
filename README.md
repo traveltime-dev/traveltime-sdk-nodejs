@@ -121,9 +121,7 @@ travelTimeClient.timeMap({
 A very fast version of Isochrone API. However, the request parameters are much more limited.
 
 ```typescript
-import {
-  TimeMapFastRequestSearch, TravelTimeClient,
-} from 'traveltime-api';
+import { TimeMapFastRequestSearch } from 'traveltime-api';
 
 const arrival_search: TimeMapFastRequestSearch = {
   id: 'public transport to Trafalgar Square',
