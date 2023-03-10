@@ -34,6 +34,7 @@ type RequestPayload = {
 }
 
 const DEFAULT_BASE_URL = 'https://api.traveltimeapp.com/v4';
+const sdkVersion = require('../../package.json').version;
 
 function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
   switch (url) {
@@ -88,7 +89,7 @@ export class TravelTimeClient {
         'Content-Type': 'application/json',
         'X-Application-Id': this.applicationId,
         'X-Api-Key': this.apiKey,
-        'User-Agent': 'Travel Time Nodejs SDK',
+        'User-Agent': `Travel Time Nodejs SDK ${sdkVersion}`,
       },
     });
   }
