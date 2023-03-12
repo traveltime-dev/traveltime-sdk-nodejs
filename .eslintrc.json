@@ -18,14 +18,15 @@
         "@typescript-eslint"
     ],
     "rules": {
-        "import/extensions": [
-            "error",
-            "ignorePackages",
-            {
-              "js": "never",
-              "ts": "never"
-            }
-          ],
+      "@typescript-eslint/no-var-requires": "off",
+      "import/extensions": [
+          "error",
+          "ignorePackages",
+          {
+            "js": "never",
+            "ts": "never"
+          }
+        ],
       "import/prefer-default-export": "off",
       "lines-between-class-members": "off",
       "max-len": "off"
