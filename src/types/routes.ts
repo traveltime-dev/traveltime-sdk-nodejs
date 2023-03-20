@@ -34,7 +34,7 @@ export type RoutesRequest = {
 };
 
 export type RoutesResponseProperties = {
-  'travel_time': number;
+  'travel_time'?: number;
   'distance'?: number;
   'fares'?: ResponseFares;
   'route'?: ResponseRoute;
