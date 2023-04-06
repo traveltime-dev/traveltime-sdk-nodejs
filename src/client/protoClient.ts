@@ -30,7 +30,7 @@ export class TravelTimeProtoClient {
   private apiKey: string;
   private applicationId: string;
   private axiosInstance: AxiosInstance;
-  private baseUrl: string;
+  private baseURL: string;
   private protoDistanceUri = 'https://proto-with-distance.api.traveltimeapp.com/api/v2';
   private protoFileDir = `${__dirname}/proto/v2`;
   private transportationMap: Record<TimeFilterFastProtoTransportation, number> = {
@@ -48,7 +48,7 @@ export class TravelTimeProtoClient {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
-    this.baseUrl = parameters?.baseUrl || DEFAULT_BASE_URL;
+    this.baseURL = parameters?.baseUrl || DEFAULT_BASE_URL;
     this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
     this.axiosInstance = axios.create({
       auth: {
@@ -162,13 +162,23 @@ export class TravelTimeProtoClient {
   }
 
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.readProtoFile()
-    .then(async (root) => this.handleProtoFile(root, this.baseUrl, request));
+    .then(async (root) => this.handleProtoFile(root, this.baseURL, request));
 
   private timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.readProtoFile()
     .then(async (root) => this.handleProtoFile(root, this.protoDistanceUri, request, { useDistance: true }));
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
     this.setRateLimitSettings(settings);
+  };
+
+  getBaseURL = () => this.baseURL;
+
+  /**
+   *
+   * @param baseURL Set new base URL. Pass nothing to reset to default
+   */
+  setBaseURL = (baseURL = DEFAULT_BASE_URL) => {
+    this.axiosInstance.defaults.baseURL = baseURL;
   };
 
   setCredentials = (credentials: Credentials) => {
