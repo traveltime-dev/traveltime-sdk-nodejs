@@ -1,7 +1,7 @@
 /* eslint-disable class-methods-use-this */
 import axios, { AxiosInstance } from 'axios';
 import protobuf from 'protobufjs';
-import { Coords } from '../types';
+import { Coords, Credentials } from '../types';
 import {
   TimeFilterFastProtoDistanceRequest, TimeFilterFastProtoRequest, TimeFilterFastProtoResponse, TimeFilterFastProtoTransportation,
 } from '../types/proto';
@@ -42,7 +42,7 @@ export class TravelTimeProtoClient {
   private rateLimiter: RateLimiter;
 
   constructor(
-    credentials: { apiKey: string, applicationId: string },
+    credentials: Credentials,
     parameters?: { rateLimitSettings?: Partial<RateLimitSettings>, baseUrl?: string },
   ) {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
@@ -169,5 +169,10 @@ export class TravelTimeProtoClient {
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
     this.setRateLimitSettings(settings);
+  };
+
+  setCredentials = (credentials: Credentials) => {
+    this.apiKey = credentials.apiKey;
+    this.applicationId = credentials.applicationId;
   };
 }
