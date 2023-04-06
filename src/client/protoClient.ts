@@ -111,35 +111,6 @@ export class TravelTimeProtoClient {
     }
   }
 
-  private readProtoFileSync() {
-    try {
-      return protobuf.loadSync([
-        `${this.protoFileDir}/TimeFilterFastRequest.proto`,
-        `${this.protoFileDir}/TimeFilterFastResponse.proto`,
-      ]);
-    } catch {
-      throw new Error(`Could not load proto file at: ${this.protoFileDir}`);
-    }
-  }
-
-  public encodeRequest(
-    request: TimeFilterFastProtoRequest | TimeFilterFastProtoDistanceRequest,
-    options?: ProtoRequestBuildOptions,
-  ): Uint8Array {
-    const root = this.readProtoFileSync();
-    const TimeFilterFastRequest = root.lookupType('com.igeolise.traveltime.rabbitmq.requests.TimeFilterFastRequest');
-    const messageRequest = this.buildProtoRequest(request, options);
-    const message = TimeFilterFastRequest.create(messageRequest);
-    return TimeFilterFastRequest.encode(message).finish();
-  }
-
-  public decodeResponse(data: any): TimeFilterFastProtoResponse {
-    const root = this.readProtoFileSync();
-    const TimeFilterFastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.TimeFilterFastResponse');
-    const response = TimeFilterFastResponse.decode(data);
-    return response.toJSON() as TimeFilterFastProtoResponse;
-  }
-
   private async handleProtoFile(
     root: protobuf.Root,
     uri: string,
