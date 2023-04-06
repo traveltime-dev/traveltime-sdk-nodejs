@@ -20,6 +20,8 @@ interface TimeFilterFastProtoMessage {
   }
 }
 
+const DEFAULT_BASE_URL = 'http://proto.api.traveltimeapp.com/api/v2';
+
 interface ProtoRequestBuildOptions {
   useDistance?: boolean
 }
@@ -28,7 +30,7 @@ export class TravelTimeProtoClient {
   private apiKey: string;
   private applicationId: string;
   private axiosInstance: AxiosInstance;
-  private baseUri = 'http://proto.api.traveltimeapp.com/api/v2';
+  private baseUrl: string;
   private protoDistanceUri = 'https://proto-with-distance.api.traveltimeapp.com/api/v2';
   private protoFileDir = `${__dirname}/proto/v2`;
   private transportationMap: Record<TimeFilterFastProtoTransportation, number> = {
@@ -41,11 +43,12 @@ export class TravelTimeProtoClient {
 
   constructor(
     credentials: { apiKey: string, applicationId: string },
-    parameters?: { rateLimitSettings?: Partial<RateLimitSettings> },
+    parameters?: { rateLimitSettings?: Partial<RateLimitSettings>, baseUrl?: string },
   ) {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
+    this.baseUrl = parameters?.baseUrl || DEFAULT_BASE_URL;
     this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
     this.axiosInstance = axios.create({
       auth: {
@@ -159,7 +162,7 @@ export class TravelTimeProtoClient {
   }
 
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.readProtoFile()
-    .then(async (root) => this.handleProtoFile(root, this.baseUri, request));
+    .then(async (root) => this.handleProtoFile(root, this.baseUrl, request));
 
   private timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.readProtoFile()
     .then(async (root) => this.handleProtoFile(root, this.protoDistanceUri, request, { useDistance: true }));
