@@ -178,7 +178,7 @@ export class TravelTimeProtoClient {
    * @param baseURL Set new base URL. Pass nothing to reset to default
    */
   setBaseURL = (baseURL = DEFAULT_BASE_URL) => {
-    this.axiosInstance.defaults.baseURL = baseURL;
+    this.baseURL = baseURL;
   };
 
   setCredentials = (credentials: Credentials) => {
