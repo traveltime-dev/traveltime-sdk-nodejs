@@ -1,7 +1,7 @@
 /* eslint-disable class-methods-use-this */
 import axios, { AxiosInstance } from 'axios';
 import protobuf from 'protobufjs';
-import { Coords } from '../types';
+import { Coords, Credentials } from '../types';
 import {
   TimeFilterFastProtoDistanceRequest, TimeFilterFastProtoRequest, TimeFilterFastProtoResponse, TimeFilterFastProtoTransportation,
 } from '../types/proto';
@@ -20,6 +20,8 @@ interface TimeFilterFastProtoMessage {
   }
 }
 
+const DEFAULT_BASE_URL = 'http://proto.api.traveltimeapp.com/api/v2';
+
 interface ProtoRequestBuildOptions {
   useDistance?: boolean
 }
@@ -28,7 +30,7 @@ export class TravelTimeProtoClient {
   private apiKey: string;
   private applicationId: string;
   private axiosInstance: AxiosInstance;
-  private baseUri = 'http://proto.api.traveltimeapp.com/api/v2';
+  private baseURL: string;
   private protoDistanceUri = 'https://proto-with-distance.api.traveltimeapp.com/api/v2';
   private protoFileDir = `${__dirname}/proto/v2`;
   private transportationMap: Record<TimeFilterFastProtoTransportation, number> = {
@@ -40,12 +42,13 @@ export class TravelTimeProtoClient {
   private rateLimiter: RateLimiter;
 
   constructor(
-    credentials: { apiKey: string, applicationId: string },
-    parameters?: { rateLimitSettings?: Partial<RateLimitSettings> },
+    credentials: Credentials,
+    parameters?: { rateLimitSettings?: Partial<RateLimitSettings>, baseUrl?: string },
   ) {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
+    this.baseURL = parameters?.baseUrl || DEFAULT_BASE_URL;
     this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
     this.axiosInstance = axios.create({
       auth: {
@@ -108,35 +111,6 @@ export class TravelTimeProtoClient {
     }
   }
 
-  private readProtoFileSync() {
-    try {
-      return protobuf.loadSync([
-        `${this.protoFileDir}/TimeFilterFastRequest.proto`,
-        `${this.protoFileDir}/TimeFilterFastResponse.proto`,
-      ]);
-    } catch {
-      throw new Error(`Could not load proto file at: ${this.protoFileDir}`);
-    }
-  }
-
-  public encodeRequest(
-    request: TimeFilterFastProtoRequest | TimeFilterFastProtoDistanceRequest,
-    options?: ProtoRequestBuildOptions,
-  ): Uint8Array {
-    const root = this.readProtoFileSync();
-    const TimeFilterFastRequest = root.lookupType('com.igeolise.traveltime.rabbitmq.requests.TimeFilterFastRequest');
-    const messageRequest = this.buildProtoRequest(request, options);
-    const message = TimeFilterFastRequest.create(messageRequest);
-    return TimeFilterFastRequest.encode(message).finish();
-  }
-
-  public decodeResponse(data: any): TimeFilterFastProtoResponse {
-    const root = this.readProtoFileSync();
-    const TimeFilterFastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.TimeFilterFastResponse');
-    const response = TimeFilterFastResponse.decode(data);
-    return response.toJSON() as TimeFilterFastProtoResponse;
-  }
-
   private async handleProtoFile(
     root: protobuf.Root,
     uri: string,
@@ -159,12 +133,27 @@ export class TravelTimeProtoClient {
   }
 
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.readProtoFile()
-    .then(async (root) => this.handleProtoFile(root, this.baseUri, request));
+    .then(async (root) => this.handleProtoFile(root, this.baseURL, request));
 
   private timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.readProtoFile()
     .then(async (root) => this.handleProtoFile(root, this.protoDistanceUri, request, { useDistance: true }));
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
     this.setRateLimitSettings(settings);
+  };
+
+  getBaseURL = () => this.baseURL;
+
+  /**
+   *
+   * @param baseURL Set new base URL. Pass nothing to reset to default
+   */
+  setBaseURL = (baseURL = DEFAULT_BASE_URL) => {
+    this.baseURL = baseURL;
+  };
+
+  setCredentials = (credentials: Credentials) => {
+    this.apiKey = credentials.apiKey;
+    this.applicationId = credentials.applicationId;
   };
 }

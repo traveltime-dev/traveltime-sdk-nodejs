@@ -133,3 +133,5 @@ export type SimpleNumericLevelOfDetail = {
 
 export type LevelOfDetail = CoarseGridLevelOfDetail | SimpleLevelOfDetail| SimpleNumericLevelOfDetail
 export type TransportationFast = 'public_transport' | 'driving' | 'driving+public_transport' | 'driving+ferry' | 'cycling' | 'cycling+ferry' | 'walking' | 'walking+ferry'
+
+export type Credentials = { apiKey: string, applicationId: string }

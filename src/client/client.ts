@@ -22,6 +22,7 @@ import {
   TimeFilterPostcodeSectorsResponse,
   TimeMapFastRequest,
   Coords,
+  Credentials,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
@@ -76,7 +77,7 @@ export class TravelTimeClient {
   private rateLimiter: RateLimiter;
 
   constructor(
-    credentials: { apiKey: string, applicationId: string },
+    credentials: Credentials,
     parameters?: { baseURL?: string, rateLimitSettings?: Partial<RateLimitSettings> },
   ) {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
@@ -203,5 +204,10 @@ export class TravelTimeClient {
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
     this.setRateLimitSettings(settings);
+  };
+
+  setCredentials = (credentials: Credentials) => {
+    this.apiKey = credentials.apiKey;
+    this.applicationId = credentials.applicationId;
   };
 }
