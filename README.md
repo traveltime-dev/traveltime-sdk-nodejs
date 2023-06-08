@@ -117,7 +117,9 @@ travelTimeClient.timeMap({
   .catch((e) => console.error(e));
 ```
 
-Batch processing: 
+#### Batch processing
+
+You may use the batch function to handle multiple requests in parallel. 
 
 ```typescript
   const data: Array<RequestData>; // Your request data 
@@ -135,9 +137,10 @@ Batch processing:
     }
   });
 
-  travelTimeClient.timeMapBatch(requests)
-    .then((data) => console.log(data))
-    .catch((e) => console.error(e));
+  const {responses, errors} = await travelTimeClient.timeMapBatch(requests)
+
+  if (errors.length) console.log(errors) // handle failed requests
+  console.log(responses) // process successful requests
 ```
 ### [Isochrones (Time Map) Fast](https://docs.traveltime.com/api/reference/isochrones-fast)
 A very fast version of Isochrone API. However, the request parameters are much more limited.
