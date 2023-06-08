@@ -163,6 +163,34 @@ export class TravelTimeClient {
     return this.request('/time-map/fast', 'post', { body, config: { headers } });
   }
 
+  async timeMapBatch(
+    bodies: TimeMapRequest[],
+    chunkSize = 10,
+  ) {
+    const responses: TimeMapResponse[] = [];
+    const errors: Array<{ index: number; error: Error }> = [];
+
+    for (let i = 0; i < bodies.length; i += chunkSize) {
+      const chunk = bodies.slice(i, i + chunkSize);
+      const promises = chunk.map((body) => this.timeMap(body));
+
+      // eslint-disable-next-line no-await-in-loop
+      const chunkResults = await Promise.allSettled(promises);
+      chunkResults.forEach((chunkResult, index) => {
+        if (chunkResult.status === 'rejected') {
+          errors.push({ index: i + index, error: chunkResult.reason });
+        } else {
+          responses.push(chunkResult.value);
+        }
+      });
+    }
+
+    return {
+      responses,
+      errors,
+    };
+  }
+
   getBaseURL = () => this.axiosInstance.defaults.baseURL;
 
   /**
