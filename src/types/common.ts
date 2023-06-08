@@ -135,3 +135,10 @@ export type LevelOfDetail = CoarseGridLevelOfDetail | SimpleLevelOfDetail| Simpl
 export type TransportationFast = 'public_transport' | 'driving' | 'driving+public_transport' | 'driving+ferry' | 'cycling' | 'cycling+ferry' | 'walking' | 'walking+ferry'
 
 export type Credentials = { apiKey: string, applicationId: string }
+export interface BatchedResponse<T> {
+  responses: T[];
+  errors: {
+      index: number;
+      error: Error;
+  }[];
+}

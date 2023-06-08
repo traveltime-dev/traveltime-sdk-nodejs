@@ -117,6 +117,28 @@ travelTimeClient.timeMap({
   .catch((e) => console.error(e));
 ```
 
+Batch processing: 
+
+```typescript
+  const data: Array<RequestData>; // Your request data 
+       
+  const requests = data.map((trip) => {
+    return {
+      departure_searches: [{
+        id: trip.id,
+        departure_time: new Date().toISOString(),
+        travel_time: trip.travelTime,
+        coords: trip.coordinates,
+        transportation: { type: trip.transportType },
+        properties: trip.properties,
+      }]
+    }
+  });
+
+  travelTimeClient.timeMapBatch(requests)
+    .then((data) => console.log(data))
+    .catch((e) => console.error(e));
+```
 ### [Isochrones (Time Map) Fast](https://docs.traveltime.com/api/reference/isochrones-fast)
 A very fast version of Isochrone API. However, the request parameters are much more limited.
 

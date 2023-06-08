@@ -23,6 +23,7 @@ import {
   TimeMapFastRequest,
   Coords,
   Credentials,
+  BatchedResponse,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
@@ -162,6 +163,44 @@ export class TravelTimeClient {
   async timeMapFast<T extends keyof TimeMapFastResponseType>(body: TimeMapFastRequest, format?: T) {
     const headers = format ? { Accept: format } : undefined;
     return this.request('/time-map/fast', 'post', { body, config: { headers } });
+  }
+
+  async timeMapBatch(
+    bodies: TimeMapRequest[],
+    chunkSize?: number,
+  ): Promise<BatchedResponse<TimeMapResponse>>
+  async timeMapBatch<T extends keyof TimeMapResponseType>(
+    bodies: TimeMapRequest[],
+    format?: T,
+    chunkSize?: number,
+  ): Promise<BatchedResponse<TimeMapResponseType[T]>>
+  async timeMapBatch<T extends keyof TimeMapResponseType>(
+    bodies: TimeMapRequest[],
+    format: T,
+    chunkSize?: number,
+  ): Promise<BatchedResponse<TimeMapResponseType[T]>> {
+    const responses: TimeMapResponseType[T][] = [];
+    const errors: Array<{ index: number; error: Error }> = [];
+
+    for (let i = 0; i < bodies.length; i += chunkSize || 10) {
+      const chunk = bodies.slice(i, i + (chunkSize || 10));
+      const promises = chunk.map((body) => this.timeMap(body, format));
+
+      // eslint-disable-next-line no-await-in-loop
+      const chunkResults = await Promise.allSettled(promises);
+      chunkResults.forEach((chunkResult, index) => {
+        if (chunkResult.status === 'rejected') {
+          errors.push({ index: i + index, error: chunkResult.reason });
+        } else {
+          responses.push(chunkResult.value);
+        }
+      });
+    }
+
+    return {
+      responses,
+      errors,
+    };
   }
 
   getBaseURL = () => this.axiosInstance.defaults.baseURL;
