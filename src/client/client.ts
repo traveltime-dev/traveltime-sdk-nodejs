@@ -164,8 +164,8 @@ export class TravelTimeClient {
   /**
    * Simplified version of timeMap.
    * Allows you to pass multiple coordinates with same params for isochrones to be made.
-   * @param {TimeMapSimple} body Simplified TimeMapRequest type that accepts multiple coordinates. Default search type is departure.
-   * @param {keyof TimeMapResponseType} [format] Specify in which format response should be returned. Supported version can be found - https://docs.traveltime.com/api/reference/isochrones#Response-Body
+   * @param {TimeMapSimple} body Simplified TimeMapRequest type that accepts multiple coordinates. Default search type is `departure`.
+   * @param {keyof TimeMapResponseType} [format] Specify in which format response should be returned. Supported formats can be found - https://docs.traveltime.com/api/reference/isochrones#Response-Body
    */
   async timeMapSimple(body: TimeMapSimple): Promise<TimeMapResponse>
   async timeMapSimple<T extends keyof TimeMapResponseType>(body: TimeMapSimple, format: T): Promise<TimeMapResponseType[T]>
@@ -181,6 +181,12 @@ export class TravelTimeClient {
     return this.request('/time-map/fast', 'post', { body, config: { headers } });
   }
 
+  /**
+   * Simplified version of timeMapFast.
+   * Allows you to pass multiple coordinates with same params for isochrones to be made.
+   * @param {TimeMapFastSimple} body Simplified TimeMapFastRequest type that accepts multiple coordinates. Default search type is `one_to_many`.
+   * @param {keyof TimeMapResponseType} [format] Specify in which format response should be returned. Supported formats are same as in time map.
+   */
   async timeMapFastSimple(body: TimeMapFastSimple): Promise<TimeMapResponse>
   async timeMapFastSimple<T extends keyof TimeMapFastResponseType>(body: TimeMapFastSimple, format: T): Promise<TimeMapFastResponseType[T]>
   async timeMapFastSimple<T extends keyof TimeMapFastResponseType>(body: TimeMapFastSimple, format?: T) {
