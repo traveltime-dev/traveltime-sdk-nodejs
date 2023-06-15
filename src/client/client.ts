@@ -25,10 +25,11 @@ import {
   Credentials,
   BatchedResponse,
   TimeMapSimple,
+  TimeMapFastSimple,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
-import { timeMapSimpleToRequest } from './mapper';
+import { timeMapFastSimpleToRequest, timeMapSimpleToRequest } from './mapper';
 
 type HttpMethod = 'get' | 'post'
 
@@ -178,6 +179,13 @@ export class TravelTimeClient {
   async timeMapFast<T extends keyof TimeMapFastResponseType>(body: TimeMapFastRequest, format?: T) {
     const headers = format ? { Accept: format } : undefined;
     return this.request('/time-map/fast', 'post', { body, config: { headers } });
+  }
+
+  async timeMapFastSimple(body: TimeMapFastSimple): Promise<TimeMapResponse>
+  async timeMapFastSimple<T extends keyof TimeMapFastResponseType>(body: TimeMapFastSimple, format: T): Promise<TimeMapFastResponseType[T]>
+  async timeMapFastSimple<T extends keyof TimeMapFastResponseType>(body: TimeMapFastSimple, format?: T) {
+    const request = timeMapFastSimpleToRequest(body);
+    return this.timeMapFast(request, format as T);
   }
 
   async timeMapBatch(

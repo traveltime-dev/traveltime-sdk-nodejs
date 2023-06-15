@@ -1,11 +1,13 @@
-import crypto from 'node:crypto';
 import {
+  TimeMapFastRequest,
+  TimeMapFastRequestSearch,
+  TimeMapFastSimple,
   TimeMapRequest, TimeMapRequestSearchBase, TimeMapSimple,
 } from '../types';
 
 export function timeMapSimpleToRequest(body: TimeMapSimple): TimeMapRequest {
-  const searchBases = body.coords.map<TimeMapRequestSearchBase>((coords) => ({
-    id: crypto.randomUUID(),
+  const searchBases = body.coords.map<TimeMapRequestSearchBase>((coords, index) => ({
+    id: `id-${index}`,
     coords,
     transportation: body.transportation,
     travel_time: body.travelTime,
@@ -23,5 +25,20 @@ export function timeMapSimpleToRequest(body: TimeMapSimple): TimeMapRequest {
   }
   return {
     departure_searches: searchBases.map((base) => ({ ...base, departure_time: body.leaveTime })),
+  };
+}
+
+export function timeMapFastSimpleToRequest(body: TimeMapFastSimple): TimeMapFastRequest {
+  return {
+    arrival_searches: {
+      [body.searchType || 'one_to_many']: body.coords.map<TimeMapFastRequestSearch>((coords, index) => ({
+        id: `id-${index}`,
+        coords,
+        transportation: { type: body.transport },
+        arrival_time_period: 'weekday_morning',
+        travel_time: body.travelTime,
+        level_of_detail: body.level_of_detail,
+      })),
+    },
   };
 }
