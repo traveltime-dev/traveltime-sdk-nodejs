@@ -26,10 +26,11 @@ import {
   BatchedResponse,
   TimeMapSimple,
   TimeMapFastSimple,
+  TimeFilterSimple,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
-import { timeMapFastSimpleToRequest, timeMapSimpleToRequest } from './mapper';
+import { timeFilterSimpleToRequest, timeMapFastSimpleToRequest, timeMapSimpleToRequest } from './mapper';
 
 type HttpMethod = 'get' | 'post'
 
@@ -143,6 +144,13 @@ export class TravelTimeClient {
   supportedLocations = async (body: SupportedLocationsRequest) => this.request<SupportedLocationsResponse>('/supported-locations', 'post', { body });
 
   timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', { body });
+
+  /**
+   * Simplified version of timeFilter.
+   * Allows you to pass multiple coordinates with same params for matrixes to be made.
+   * @param {TimeFilterSimple} body Simplified TimeFilterSimple type that accepts multiple searches. Default search type is `departure`.
+   */
+  timeFilterSimple = async (body: TimeFilterSimple) => this.timeFilter(timeFilterSimpleToRequest(body));
 
   timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
 

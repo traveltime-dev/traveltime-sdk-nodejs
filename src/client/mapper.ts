@@ -1,4 +1,7 @@
 import {
+  TimeFilterRequest,
+  TimeFilterRequestSearchBase,
+  TimeFilterSimple,
   TimeMapFastRequest,
   TimeMapFastRequestSearch,
   TimeMapFastSimple,
@@ -48,5 +51,38 @@ export function timeMapFastSimpleToRequest(body: TimeMapFastSimple): TimeMapFast
         level_of_detail: body.level_of_detail,
       })),
     },
+  };
+}
+
+export function timeFilterSimpleToRequest(body: TimeFilterSimple): TimeFilterRequest {
+  const searchBase: Omit<TimeFilterRequestSearchBase, 'id'> = {
+    properties: body.properties,
+    transportation: body.transportation,
+    travel_time: body.travelTime,
+    range: body.range,
+  };
+
+  if (body.searchType === 'arrive') {
+    return {
+      locations: body.locations,
+      arrival_searches: body.searchIds.map((search, index) => ({
+        ...searchBase,
+        id: `id-${index}`,
+        arrival_location_id: search.one,
+        departure_location_ids: search.many,
+        arrival_time: body.leaveTime,
+      })),
+    };
+  }
+
+  return {
+    locations: body.locations,
+    departure_searches: body.searchIds.map((search, index) => ({
+      ...searchBase,
+      id: `id-${index}`,
+      departure_location_id: search.one,
+      arrival_location_ids: search.many,
+      departure_time: body.leaveTime,
+    })),
   };
 }
