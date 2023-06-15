@@ -24,9 +24,11 @@ import {
   Coords,
   Credentials,
   BatchedResponse,
+  TimeMapSimple,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
+import { timeMapSimpleToRequest } from './mapper';
 
 type HttpMethod = 'get' | 'post'
 
@@ -156,6 +158,19 @@ export class TravelTimeClient {
   async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format?: T) {
     const headers = format ? { Accept: format } : undefined;
     return this.request('/time-map', 'post', { body, config: { headers } });
+  }
+
+  /**
+   * Simplified version of timeMap.
+   * Allows you to pass multiple coordinates with same params for isochrones to be made.
+   * @param {TimeMapSimple} body Simplified TimeMapRequest type that accepts multiple coordinates. Default search type is departure.
+   * @param {keyof TimeMapResponseType} [format] Specify in which format response should be returned. Supported version can be found - https://docs.traveltime.com/api/reference/isochrones#Response-Body
+   */
+  async timeMapSimple(body: TimeMapSimple): Promise<TimeMapResponse>
+  async timeMapSimple<T extends keyof TimeMapResponseType>(body: TimeMapSimple, format: T): Promise<TimeMapResponseType[T]>
+  async timeMapSimple<T extends keyof TimeMapResponseType>(body: TimeMapSimple, format?: T) {
+    const request = timeMapSimpleToRequest(body);
+    return this.timeMap(request, format as T);
   }
 
   async timeMapFast(body: TimeMapFastRequest): Promise<TimeMapResponse>
