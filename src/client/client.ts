@@ -28,10 +28,12 @@ import {
   TimeMapFastSimple,
   TimeFilterSimple,
   TimeFilterFastSimple,
+  RoutesSimple,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
 import {
+  routesSimpleToRequest,
   timeFilterFastSimpleToRequest,
   timeFilterSimpleToRequest,
   timeMapFastSimpleToRequest,
@@ -147,6 +149,13 @@ export class TravelTimeClient {
 
   routes = async (body: RoutesRequest) => this.request<RoutesResponse>('/routes', 'post', { body });
 
+  /**
+   * Simplified version of routes.
+   * Allows you to pass multiple coordinates with same params for routes to be made.
+   * @param {RoutesSimple} body Simplified RoutesSimple type that accepts multiple searches. Default search type is `departure`.
+   */
+  routesSimple = async (body: RoutesSimple) => this.routes(routesSimpleToRequest(body));
+
   supportedLocations = async (body: SupportedLocationsRequest) => this.request<SupportedLocationsResponse>('/supported-locations', 'post', { body });
 
   timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', { body });
@@ -163,7 +172,7 @@ export class TravelTimeClient {
   /**
    * Simplified version of timeFilterFast.
    * Allows you to pass multiple coordinates with same params for matrixes to be made.
-   * @param {TimeFilterFastSimple} body Simplified TimeFilterFastSimple type that accepts multiple searches. Default search type is `one_to_many`.
+   * @param {TimeFilterFastSimple} body Simplified TimeFilterFastSimple type that accepts multiple searches. Default search type is `one_to_many`. Default properties are `['travel_time']`.
    */
   timeFilterFastSimple = async (body: TimeFilterFastSimple) => this.timeFilterFast(timeFilterFastSimpleToRequest(body));
 

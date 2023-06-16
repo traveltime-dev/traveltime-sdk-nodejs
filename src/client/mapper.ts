@@ -1,4 +1,6 @@
 import {
+  RoutesRequest,
+  RoutesRequestSearchBase,
   TimeFilterFastRequest,
   TimeFilterFastRequestArrivalSearchBase,
   TimeFilterFastSimple,
@@ -10,6 +12,7 @@ import {
   TimeMapFastSimple,
   TimeMapRequest, TimeMapRequestSearchBase, TimeMapSimple,
 } from '../types';
+import { RoutesSimple } from '../types/routesSimple';
 
 export function timeMapSimpleToRequest(body: TimeMapSimple): TimeMapRequest {
   const searchBase : Omit<TimeMapRequestSearchBase, 'id' | 'coords'> = {
@@ -122,5 +125,38 @@ export function timeFilterFastSimpleToRequest(body: TimeFilterFastSimple): TimeF
         departure_location_id: search.one,
       })),
     },
+  };
+}
+
+export function routesSimpleToRequest(body: RoutesSimple): RoutesRequest {
+  const searchBase: Omit<RoutesRequestSearchBase, 'id'> = {
+    properties: body.properties,
+    transportation: body.transportation,
+    range: body.range,
+  };
+
+  if (body.searchType === 'arrive') {
+    return {
+      locations: body.locations,
+      arrival_searches: body.searchIds.map((search, index) => ({
+        ...searchBase,
+        id: `id-${index}`,
+        departure_location_ids: search.many,
+        arrival_location_id: search.one,
+        arrival_time: body.leaveTime,
+      })),
+    };
+  }
+
+  return {
+    locations: body.locations,
+    departure_searches: body.searchIds.map((search, index) => ({
+      ...searchBase,
+      id: `id-${index}`,
+      arrival_location_ids: search.many,
+      departure_location_id: search.one,
+      departure_time: body.leaveTime,
+
+    })),
   };
 }
