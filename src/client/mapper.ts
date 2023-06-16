@@ -1,4 +1,7 @@
 import {
+  TimeFilterFastRequest,
+  TimeFilterFastRequestArrivalSearchBase,
+  TimeFilterFastSimple,
   TimeFilterRequest,
   TimeFilterRequestSearchBase,
   TimeFilterSimple,
@@ -84,5 +87,40 @@ export function timeFilterSimpleToRequest(body: TimeFilterSimple): TimeFilterReq
       arrival_location_ids: search.many,
       departure_time: body.leaveTime,
     })),
+  };
+}
+
+export function timeFilterFastSimpleToRequest(body: TimeFilterFastSimple): TimeFilterFastRequest {
+  const searchBase: Omit<TimeFilterFastRequestArrivalSearchBase, 'id'> = {
+    transportation: body.transportation,
+    travel_time: body.travelTime,
+    properties: body.properties || ['travel_time'],
+    arrival_time_period: 'weekday_morning',
+  };
+
+  if (body.searchType === 'many_to_one') {
+    return {
+      locations: body.locations,
+      arrival_searches: {
+        many_to_one: body.searchIds.map((search, index) => ({
+          ...searchBase,
+          id: `id-${index}`,
+          departure_location_ids: search.many,
+          arrival_location_id: search.one,
+        })),
+      },
+    };
+  }
+
+  return {
+    locations: body.locations,
+    arrival_searches: {
+      one_to_many: body.searchIds.map((search, index) => ({
+        ...searchBase,
+        id: `id-${index}`,
+        arrival_location_ids: search.many,
+        departure_location_id: search.one,
+      })),
+    },
   };
 }

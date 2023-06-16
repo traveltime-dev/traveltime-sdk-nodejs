@@ -27,10 +27,16 @@ import {
   TimeMapSimple,
   TimeMapFastSimple,
   TimeFilterSimple,
+  TimeFilterFastSimple,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
-import { timeFilterSimpleToRequest, timeMapFastSimpleToRequest, timeMapSimpleToRequest } from './mapper';
+import {
+  timeFilterFastSimpleToRequest,
+  timeFilterSimpleToRequest,
+  timeMapFastSimpleToRequest,
+  timeMapSimpleToRequest,
+} from './mapper';
 
 type HttpMethod = 'get' | 'post'
 
@@ -153,6 +159,13 @@ export class TravelTimeClient {
   timeFilterSimple = async (body: TimeFilterSimple) => this.timeFilter(timeFilterSimpleToRequest(body));
 
   timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
+
+  /**
+   * Simplified version of timeFilterFast.
+   * Allows you to pass multiple coordinates with same params for matrixes to be made.
+   * @param {TimeFilterFastSimple} body Simplified TimeFilterFastSimple type that accepts multiple searches. Default search type is `one_to_many`.
+   */
+  timeFilterFastSimple = async (body: TimeFilterFastSimple) => this.timeFilterFast(timeFilterFastSimpleToRequest(body));
 
   timeFilterPostcodeDistricts = async (body: TimeFilterPostcodeDistrictsRequest) => this
     .request<TimeFilterPostcodeDistrictsResponse>('/time-filter/postcode-districts', 'post', { body });
