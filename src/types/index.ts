@@ -13,3 +13,6 @@ export * from './timeMap';
 export * from './proto';
 export * from './timeMapFast';
 export * from './timeMapResponse';
+export * from './timeMapSimple';
+export * from './timeFilterSimple';
+export * from './routesSimple';
