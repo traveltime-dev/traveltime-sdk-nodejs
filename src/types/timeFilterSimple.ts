@@ -15,11 +15,14 @@ export type TimeFilterSimple = {
    * When Search type is departure search - K[key] corresponds to [departure_location_id](https://docs.traveltime.com/api/reference/travel-time-distance-matrix#departure_searches-departure_location_id).
    * When Search type is arrival search - K[key] corresponds to [arrival_location_id](https://docs.traveltime.com/api/reference/travel-time-distance-matrix#arrival_searches-arrival_location_id)
    *
-   * V - List of search ids that should be calculated to/from its K.
-   * When Search type is departure search - V[ID list] corresponds to [arrival_location_ids](https://docs.traveltime.com/api/reference/travel-time-distance-matrix#departure_searches-arrival_location_ids).
-   * When Search type is arrival search - V[ID list] [departure_location_ids](https://docs.traveltime.com/api/reference/travel-time-distance-matrix#arrival_searches-departure_location_ids)
+   * V - Array of search ids that should be calculated to/from its K.
+   * When Search type is departure search - V[ID array] corresponds to [arrival_location_ids](https://docs.traveltime.com/api/reference/travel-time-distance-matrix#departure_searches-arrival_location_ids).
+   * When Search type is arrival search - V[ID array] [departure_location_ids](https://docs.traveltime.com/api/reference/travel-time-distance-matrix#arrival_searches-departure_location_ids)
    */
   searchIds: Record<string, Array<string>>
+  /**
+   * Default value is `depart`
+   */
   searchType?: 'arrive' | 'depart'
   range?: RangeRequestFull
 }
@@ -33,13 +36,19 @@ export type TimeFilterFastSimple = {
    * When Search type is one_to_many - K[key] corresponds to [departure_location_id](https://docs.traveltime.com/api/reference/time-filter-fast#arrival_searches-one_to_many-departure_location_id).
    * When Search type is many_to_one - K[key] corresponds to [arrival_location_id](https://docs.traveltime.com/api/reference/time-filter-fast#arrival_searches-many_to_one-arrival_location_id)
    *
-   * V - List of search ids that should be calculated to/from its K.
-   * When Search type is one_to_many - V[ID list] corresponds to [arrival_location_ids](https://docs.traveltime.com/api/reference/time-filter-fast#arrival_searches-one_to_many-arrival_location_ids).
-   * When Search type is many_to_one - V[ID list] [departure_location_ids](https://docs.traveltime.com/api/reference/time-filter-fast#arrival_searches-many_to_one-departure_location_ids)
+   * V - Array of search ids that should be calculated to/from its K.
+   * When Search type is one_to_many - V[ID array] corresponds to [arrival_location_ids](https://docs.traveltime.com/api/reference/time-filter-fast#arrival_searches-one_to_many-arrival_location_ids).
+   * When Search type is many_to_one - V[ID array] [departure_location_ids](https://docs.traveltime.com/api/reference/time-filter-fast#arrival_searches-many_to_one-departure_location_ids)
    */
   searchIds: Record<string, Array<string>>
   transportation: TimeFilterFastRequestTransportation
   travelTime: number
+  /**
+   * Default value is `one_to_many`
+   */
   searchType?: 'one_to_many' | 'many_to_one'
+  /**
+   * Default value is `['travel_time']`
+   */
   properties?: Array<TimeFilterFastRequestProperty>;
 }

@@ -20,6 +20,9 @@ export type TimeMapFastSimple = {
   coords: Array<Coords>
   transport: TransportationFast
   travelTime: number
+  /**
+   * Default value is `one_to_many`
+   */
   searchType?: 'one_to_many' | 'many_to_one'
   level_of_detail?: LevelOfDetail
 }

@@ -152,7 +152,7 @@ export class TravelTimeClient {
   /**
    * Simplified version of routes.
    * Allows you to pass multiple coordinates with same params for routes to be made.
-   * @param {RoutesSimple} body Simplified RoutesSimple type that accepts multiple searches. Default search type is `departure`.
+   * @param {RoutesSimple} body Simplified RoutesRequest type. Default search type is `departure`.
    */
   routesSimple = async (body: RoutesSimple) => this.routes(routesSimpleToRequest(body));
 
@@ -163,7 +163,7 @@ export class TravelTimeClient {
   /**
    * Simplified version of timeFilter.
    * Allows you to pass multiple coordinates with same params for matrixes to be made.
-   * @param {TimeFilterSimple} body Simplified TimeFilterSimple type that accepts multiple searches. Default search type is `departure`.
+   * @param {TimeFilterSimple} body Simplified TimeFilterRequest type. Default search type is `departure`.
    */
   timeFilterSimple = async (body: TimeFilterSimple) => this.timeFilter(timeFilterSimpleToRequest(body));
 
@@ -172,7 +172,7 @@ export class TravelTimeClient {
   /**
    * Simplified version of timeFilterFast.
    * Allows you to pass multiple coordinates with same params for matrixes to be made.
-   * @param {TimeFilterFastSimple} body Simplified TimeFilterFastSimple type that accepts multiple searches. Default search type is `one_to_many`. Default properties are `['travel_time']`.
+   * @param {TimeFilterFastSimple} body Simplified TimeFilterFastRequest. Default search type is `one_to_many`. Default properties are `['travel_time']`.
    */
   timeFilterFastSimple = async (body: TimeFilterFastSimple) => this.timeFilterFast(timeFilterFastSimpleToRequest(body));
 
@@ -194,7 +194,7 @@ export class TravelTimeClient {
   /**
    * Simplified version of timeMap.
    * Allows you to pass multiple coordinates with same params for isochrones to be made.
-   * @param {TimeMapSimple} body Simplified TimeMapRequest type that accepts multiple coordinates. Default search type is `departure`.
+   * @param {TimeMapSimple} body Simplified TimeMapRequest. Default search type is `departure`.
    * @param {keyof TimeMapResponseType} [format] Specify in which format response should be returned. Supported formats can be found - https://docs.traveltime.com/api/reference/isochrones#Response-Body
    */
   async timeMapSimple(body: TimeMapSimple): Promise<TimeMapResponse>
@@ -214,7 +214,7 @@ export class TravelTimeClient {
   /**
    * Simplified version of timeMapFast.
    * Allows you to pass multiple coordinates with same params for isochrones to be made.
-   * @param {TimeMapFastSimple} body Simplified TimeMapFastRequest type that accepts multiple coordinates. Default search type is `one_to_many`.
+   * @param {TimeMapFastSimple} body Simplified TimeMapFastRequest. Default search type is `one_to_many`.
    * @param {keyof TimeMapResponseType} [format] Specify in which format response should be returned. Supported formats are same as in time map.
    */
   async timeMapFastSimple(body: TimeMapFastSimple): Promise<TimeMapResponse>
