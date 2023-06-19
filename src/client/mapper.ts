@@ -71,11 +71,11 @@ export function timeFilterSimpleToRequest(body: TimeFilterSimple): TimeFilterReq
   if (body.searchType === 'arrive') {
     return {
       locations: body.locations,
-      arrival_searches: body.searchIds.map((search, index) => ({
+      arrival_searches: Object.entries(body.searchIds).map((search, index) => ({
         ...searchBase,
         id: `id-${index}`,
-        arrival_location_id: search.one,
-        departure_location_ids: search.many,
+        arrival_location_id: search[0],
+        departure_location_ids: search[1],
         arrival_time: body.leaveTime,
       })),
     };
@@ -83,11 +83,11 @@ export function timeFilterSimpleToRequest(body: TimeFilterSimple): TimeFilterReq
 
   return {
     locations: body.locations,
-    departure_searches: body.searchIds.map((search, index) => ({
+    departure_searches: Object.entries(body.searchIds).map((search, index) => ({
       ...searchBase,
       id: `id-${index}`,
-      departure_location_id: search.one,
-      arrival_location_ids: search.many,
+      departure_location_id: search[0],
+      arrival_location_ids: search[1],
       departure_time: body.leaveTime,
     })),
   };
@@ -105,11 +105,11 @@ export function timeFilterFastSimpleToRequest(body: TimeFilterFastSimple): TimeF
     return {
       locations: body.locations,
       arrival_searches: {
-        many_to_one: body.searchIds.map((search, index) => ({
+        many_to_one: Object.entries(body.searchIds).map((search, index) => ({
           ...searchBase,
           id: `id-${index}`,
-          departure_location_ids: search.many,
-          arrival_location_id: search.one,
+          departure_location_ids: search[1],
+          arrival_location_id: search[0],
         })),
       },
     };
@@ -118,11 +118,11 @@ export function timeFilterFastSimpleToRequest(body: TimeFilterFastSimple): TimeF
   return {
     locations: body.locations,
     arrival_searches: {
-      one_to_many: body.searchIds.map((search, index) => ({
+      one_to_many: Object.entries(body.searchIds).map((search, index) => ({
         ...searchBase,
         id: `id-${index}`,
-        arrival_location_ids: search.many,
-        departure_location_id: search.one,
+        arrival_location_ids: search[1],
+        departure_location_id: search[0],
       })),
     },
   };
@@ -138,11 +138,11 @@ export function routesSimpleToRequest(body: RoutesSimple): RoutesRequest {
   if (body.searchType === 'arrive') {
     return {
       locations: body.locations,
-      arrival_searches: body.searchIds.map((search, index) => ({
+      arrival_searches: Object.entries(body.searchIds).map((search, index) => ({
         ...searchBase,
         id: `id-${index}`,
-        departure_location_ids: search.many,
-        arrival_location_id: search.one,
+        departure_location_ids: search[1],
+        arrival_location_id: search[0],
         arrival_time: body.leaveTime,
       })),
     };
@@ -150,11 +150,11 @@ export function routesSimpleToRequest(body: RoutesSimple): RoutesRequest {
 
   return {
     locations: body.locations,
-    departure_searches: body.searchIds.map((search, index) => ({
+    departure_searches: Object.entries(body.searchIds).map((search, index) => ({
       ...searchBase,
       id: `id-${index}`,
-      arrival_location_ids: search.many,
-      departure_location_id: search.one,
+      arrival_location_ids: search[1],
+      departure_location_id: search[0],
       departure_time: body.leaveTime,
 
     })),
