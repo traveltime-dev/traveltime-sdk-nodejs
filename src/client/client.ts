@@ -23,12 +23,12 @@ import {
   TimeMapFastRequest,
   Coords,
   Credentials,
-  BatchedResponse,
   TimeMapSimple,
   TimeMapFastSimple,
   TimeFilterSimple,
   TimeFilterFastSimple,
   RoutesSimple,
+  BatchResponse,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
@@ -83,6 +83,8 @@ function endpointChecksHPM(url: string) {
   ].includes(url);
 }
 
+// TODO ALLOW exposed functions to take in chunk size
+
 export class TravelTimeClient {
   private apiKey: string;
   private applicationId: string;
@@ -126,33 +128,32 @@ export class TravelTimeClient {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  private async requestBatch<T, R>(
-    requestFn: (requestData: T) => Promise<R>,
-    requests: T[],
+  private async batch<T extends(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+...args: any) => any, R extends Awaited<ReturnType<T>>>(
+    requestFn: T,
+    bodies: Parameters<T>[0][],
     chunkSize?: number,
-  ): Promise<BatchedResponse<R>> {
-    const responses: R[] = [];
-    const errors: Array<{ index: number; error: Error }> = [];
+  ): Promise<BatchResponse<R>[]> {
+    const CHUNK_SIZE = 10;
+    const results: BatchResponse<R>[] = [];
 
-    for (let i = 0; i < requests.length; i += chunkSize || 10) {
-      const chunk = requests.slice(i, i + (chunkSize || 10));
+    for (let i = 0; i < bodies.length; i += chunkSize || CHUNK_SIZE) {
+      const chunk = bodies.slice(i, i + (chunkSize || CHUNK_SIZE));
       const promises = chunk.map((request) => requestFn(request));
 
       // eslint-disable-next-line no-await-in-loop
       const chunkResults = await Promise.allSettled(promises);
-      chunkResults.forEach((chunkResult, index) => {
+      chunkResults.forEach((chunkResult) => {
         if (chunkResult.status === 'rejected') {
-          errors.push({ index: i + index, error: chunkResult.reason });
+          results.push({ type: 'error', error: chunkResult.reason });
         } else {
-          responses.push(chunkResult.value);
+          results.push({ type: 'success', body: chunkResult.value });
         }
       });
     }
 
-    return {
-      responses,
-      errors,
-    };
+    return results;
   }
 
   async geocoding(query: string, req?: GeocodingSearchRequest) {
@@ -169,16 +170,18 @@ export class TravelTimeClient {
       },
     });
   }
+  geocodingBatch = async (requests: Coords[], req?: GeocodingSearchRequest) => this.batch((coords) => this.geocoding(coords, req), requests);
 
   async geocodingReverse(coords: Coords, acceptLanguage?: string) {
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
     return this.request<GeocodingResponse>('/geocoding/reverse', 'get', { config: { params: coords, headers } });
   }
+  geocodingReverseBatch = async (requests: Coords[], acceptLanguage?: string) => this.batch((coords) => this.geocodingReverse(coords, acceptLanguage), requests);
 
   mapInfo = async () => this.request<MapInfoResponse>('/map-info', 'get');
 
   routes = async (body: RoutesRequest) => this.request<RoutesResponse>('/routes', 'post', { body });
-  routesBatch = async (requests: RoutesRequest[]) => this.requestBatch(this.routes, requests);
+  routesBatch = async (requests: RoutesRequest[]) => this.batch(this.routes, requests);
 
   /**
    * Simplified version of routes.
@@ -190,7 +193,7 @@ export class TravelTimeClient {
   supportedLocations = async (body: SupportedLocationsRequest) => this.request<SupportedLocationsResponse>('/supported-locations', 'post', { body });
 
   timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', { body });
-  timeFilterBatch = async (requests: TimeFilterRequest[]) => this.requestBatch(this.timeFilter, requests);
+  timeFilterBatch = async (requests: TimeFilterRequest[]) => this.batch(this.timeFilter, requests);
 
   /**
    * Simplified version of timeFilter.
@@ -200,7 +203,8 @@ export class TravelTimeClient {
   timeFilterSimple = async (body: TimeFilterSimple) => this.timeFilter(timeFilterSimpleToRequest(body));
 
   timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
-  timeFilterFastBatch = async (requests: TimeFilterFastRequest[]) => this.requestBatch(this.timeFilterFast, requests);
+  timeFilterFastBatch = async (requests: TimeFilterFastRequest[]) => this.batch(this.timeFilterFast, requests);
+
   /**
    * Simplified version of timeFilterFast.
    * Allows you to pass multiple coordinates with same params for matrixes to be made.
@@ -210,20 +214,37 @@ export class TravelTimeClient {
 
   timeFilterPostcodeDistricts = async (body: TimeFilterPostcodeDistrictsRequest) => this
     .request<TimeFilterPostcodeDistrictsResponse>('/time-filter/postcode-districts', 'post', { body });
-  timeFilterPostcodeDistrictsBatch = async (requests: TimeFilterPostcodeDistrictsRequest[]) => this.requestBatch(this.timeFilterPostcodeDistricts, requests);
+  timeFilterPostcodeDistrictsBatch = async (requests: TimeFilterPostcodeDistrictsRequest[]) => this.batch(this.timeFilterPostcodeDistricts, requests);
 
   timeFilterPostcodeSectors = async (body: TimeFilterPostcodeSectorsRequest) => this
     .request<TimeFilterPostcodeSectorsResponse>('/time-filter/postcode-sectors', 'post', { body });
-  timeFilterPostcodeSectorsBatch = async (requests: TimeFilterPostcodeSectorsRequest[]) => this.requestBatch(this.timeFilterPostcodeSectors, requests);
+  timeFilterPostcodeSectorsBatch = async (requests: TimeFilterPostcodeSectorsRequest[]) => this.batch(this.timeFilterPostcodeSectors, requests);
 
   timeFilterPostcodes = async (body: TimeFilterPostcodesRequest) => this.request<TimeFilterPostcodesResponse>('/time-filter/postcodes', 'post', { body });
-  timeFilterPostcodesBatch = async (requests: TimeFilterPostcodesRequest[]) => this.requestBatch(this.timeFilterPostcodes, requests);
+  timeFilterPostcodesBatch = async (requests: TimeFilterPostcodesRequest[]) => this.batch(this.timeFilterPostcodes, requests);
 
   async timeMap(body: TimeMapRequest): Promise<TimeMapResponse>
   async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format: T): Promise<TimeMapResponseType[T]>
   async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format?: T) {
     const headers = format ? { Accept: format } : undefined;
     return this.request('/time-map', 'post', { body, config: { headers } });
+  }
+  async timeMapBatch(
+    bodies: TimeMapRequest[],
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<TimeMapResponse>>[]>
+  async timeMapBatch<T extends keyof TimeMapResponseType>(
+    bodies: TimeMapRequest[],
+    format: T,
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<TimeMapResponseType[T]>>[]>
+  async timeMapBatch<T extends keyof TimeMapResponseType>(
+    bodies: TimeMapRequest[],
+    format?: T,
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<TimeMapResponseType[T]>>[]> {
+    const requestFn = (body: TimeMapRequest) => this.timeMap(body, format as T);
+    return this.batch(requestFn, bodies, chunkSize);
   }
 
   /**
@@ -245,7 +266,23 @@ export class TravelTimeClient {
     const headers = format ? { Accept: format } : undefined;
     return this.request('/time-map/fast', 'post', { body, config: { headers } });
   }
-
+  async timeMapFastBatch(
+    bodies: TimeMapFastRequest[],
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<TimeMapResponse>>[]>
+  async timeMapFastBatch<T extends keyof TimeMapFastResponseType>(
+    bodies: TimeMapFastRequest[],
+    format: T,
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<TimeMapFastResponseType[T]>>[]>
+  async timeMapFastBatch<T extends keyof TimeMapFastResponseType>(
+    bodies: TimeMapFastRequest[],
+    format?: T,
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<TimeMapFastResponseType[T]>>[]> {
+    const requestFn = (body: TimeMapFastRequest) => this.timeMapFast(body, format as T);
+    return this.batch(requestFn, bodies, chunkSize);
+  }
   /**
    * Simplified version of timeMapFast.
    * Allows you to pass multiple coordinates with same params for isochrones to be made.
@@ -257,44 +294,6 @@ export class TravelTimeClient {
   async timeMapFastSimple<T extends keyof TimeMapFastResponseType>(body: TimeMapFastSimple, format?: T) {
     const request = timeMapFastSimpleToRequest(body);
     return this.timeMapFast(request, format as T);
-  }
-
-  async timeMapBatch(
-    bodies: TimeMapRequest[],
-    chunkSize?: number,
-  ): Promise<BatchedResponse<TimeMapResponse>>
-  async timeMapBatch<T extends keyof TimeMapResponseType>(
-    bodies: TimeMapRequest[],
-    format?: T,
-    chunkSize?: number,
-  ): Promise<BatchedResponse<TimeMapResponseType[T]>>
-  async timeMapBatch<T extends keyof TimeMapResponseType>(
-    bodies: TimeMapRequest[],
-    format: T,
-    chunkSize?: number,
-  ): Promise<BatchedResponse<TimeMapResponseType[T]>> {
-    const responses: TimeMapResponseType[T][] = [];
-    const errors: Array<{ index: number; error: Error }> = [];
-
-    for (let i = 0; i < bodies.length; i += chunkSize || 10) {
-      const chunk = bodies.slice(i, i + (chunkSize || 10));
-      const promises = chunk.map((body) => this.timeMap(body, format));
-
-      // eslint-disable-next-line no-await-in-loop
-      const chunkResults = await Promise.allSettled(promises);
-      chunkResults.forEach((chunkResult, index) => {
-        if (chunkResult.status === 'rejected') {
-          errors.push({ index: i + index, error: chunkResult.reason });
-        } else {
-          responses.push(chunkResult.value);
-        }
-      });
-    }
-
-    return {
-      responses,
-      errors,
-    };
   }
 
   getBaseURL = () => this.axiosInstance.defaults.baseURL;
