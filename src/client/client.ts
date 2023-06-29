@@ -181,7 +181,7 @@ export class TravelTimeClient {
   mapInfo = async () => this.request<MapInfoResponse>('/map-info', 'get');
 
   routes = async (body: RoutesRequest) => this.request<RoutesResponse>('/routes', 'post', { body });
-  routesBatch = async (requests: RoutesRequest[]) => this.batch(this.routes, requests);
+  routesBatch = async (requests: RoutesRequest[], chunkSize?: number) => this.batch(this.routes, requests, chunkSize);
 
   /**
    * Simplified version of routes.
@@ -193,7 +193,7 @@ export class TravelTimeClient {
   supportedLocations = async (body: SupportedLocationsRequest) => this.request<SupportedLocationsResponse>('/supported-locations', 'post', { body });
 
   timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', { body });
-  timeFilterBatch = async (requests: TimeFilterRequest[]) => this.batch(this.timeFilter, requests);
+  timeFilterBatch = async (requests: TimeFilterRequest[], chunkSize?: number) => this.batch(this.timeFilter, requests, chunkSize);
 
   /**
    * Simplified version of timeFilter.
@@ -203,7 +203,7 @@ export class TravelTimeClient {
   timeFilterSimple = async (body: TimeFilterSimple) => this.timeFilter(timeFilterSimpleToRequest(body));
 
   timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
-  timeFilterFastBatch = async (requests: TimeFilterFastRequest[]) => this.batch(this.timeFilterFast, requests);
+  timeFilterFastBatch = async (requests: TimeFilterFastRequest[], chunkSize?: number) => this.batch(this.timeFilterFast, requests, chunkSize);
 
   /**
    * Simplified version of timeFilterFast.
@@ -214,14 +214,14 @@ export class TravelTimeClient {
 
   timeFilterPostcodeDistricts = async (body: TimeFilterPostcodeDistrictsRequest) => this
     .request<TimeFilterPostcodeDistrictsResponse>('/time-filter/postcode-districts', 'post', { body });
-  timeFilterPostcodeDistrictsBatch = async (requests: TimeFilterPostcodeDistrictsRequest[]) => this.batch(this.timeFilterPostcodeDistricts, requests);
+  timeFilterPostcodeDistrictsBatch = async (requests: TimeFilterPostcodeDistrictsRequest[], chunkSize?: number) => this.batch(this.timeFilterPostcodeDistricts, requests, chunkSize);
 
   timeFilterPostcodeSectors = async (body: TimeFilterPostcodeSectorsRequest) => this
     .request<TimeFilterPostcodeSectorsResponse>('/time-filter/postcode-sectors', 'post', { body });
-  timeFilterPostcodeSectorsBatch = async (requests: TimeFilterPostcodeSectorsRequest[]) => this.batch(this.timeFilterPostcodeSectors, requests);
+  timeFilterPostcodeSectorsBatch = async (requests: TimeFilterPostcodeSectorsRequest[], chunkSize?: number) => this.batch(this.timeFilterPostcodeSectors, requests, chunkSize);
 
   timeFilterPostcodes = async (body: TimeFilterPostcodesRequest) => this.request<TimeFilterPostcodesResponse>('/time-filter/postcodes', 'post', { body });
-  timeFilterPostcodesBatch = async (requests: TimeFilterPostcodesRequest[]) => this.batch(this.timeFilterPostcodes, requests);
+  timeFilterPostcodesBatch = async (requests: TimeFilterPostcodesRequest[], chunkSize?: number) => this.batch(this.timeFilterPostcodes, requests, chunkSize);
 
   async timeMap(body: TimeMapRequest): Promise<TimeMapResponse>
   async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format: T): Promise<TimeMapResponseType[T]>
