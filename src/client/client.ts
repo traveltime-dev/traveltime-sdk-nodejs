@@ -243,8 +243,7 @@ export class TravelTimeClient {
     format?: T,
     chunkSize?: number,
   ): Promise<BatchResponse<Awaited<TimeMapResponseType[T]>>[]> {
-    const requestFn = (body: TimeMapRequest) => this.timeMap(body, format as T);
-    return this.batch(requestFn, bodies, chunkSize);
+    return this.batch((body: TimeMapRequest) => this.timeMap(body, format as T), bodies, chunkSize);
   }
 
   /**
@@ -280,8 +279,7 @@ export class TravelTimeClient {
     format?: T,
     chunkSize?: number,
   ): Promise<BatchResponse<Awaited<TimeMapFastResponseType[T]>>[]> {
-    const requestFn = (body: TimeMapFastRequest) => this.timeMapFast(body, format as T);
-    return this.batch(requestFn, bodies, chunkSize);
+    return this.batch((body: TimeMapFastRequest) => this.timeMapFast(body, format as T), bodies, chunkSize);
   }
   /**
    * Simplified version of timeMapFast.
