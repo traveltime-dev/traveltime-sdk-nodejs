@@ -147,5 +147,3 @@ interface BatchSuccessResponse<T> {
 }
 
 export type BatchResponse<T> = BatchErrorResponse | BatchSuccessResponse<T>;
-
-export function isBatchError<T>(resp: BatchResponse<T>): resp is BatchErrorResponse { return resp.type === 'error'; }
