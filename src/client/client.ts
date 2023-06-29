@@ -133,13 +133,12 @@ export class TravelTimeClient {
 ...args: any) => any, R extends Awaited<ReturnType<T>>>(
     requestFn: T,
     bodies: Parameters<T>[0][],
-    chunkSize?: number,
+    chunkSize = 10,
   ): Promise<BatchResponse<R>[]> {
-    const CHUNK_SIZE = 10;
     const results: BatchResponse<R>[] = [];
 
-    for (let i = 0; i < bodies.length; i += chunkSize || CHUNK_SIZE) {
-      const chunk = bodies.slice(i, i + (chunkSize || CHUNK_SIZE));
+    for (let i = 0; i < bodies.length; i += chunkSize) {
+      const chunk = bodies.slice(i, i + (chunkSize));
       const promises = chunk.map((request) => requestFn(request));
 
       // eslint-disable-next-line no-await-in-loop
