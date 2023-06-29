@@ -57,6 +57,42 @@ Now you'll be able to call all TravelTime API endpoints from `travelTimeClient` 
 
 Every instance function returns Object with type of `Promise<AxiosResponse<EndpointResponseType>>`.
 
+#### Batch Processing
+
+Most endpoints are available with batch processing: 
+
+```typescript
+const departure_search: TimeMapRequestDepartureSearch = {
+  id: 'public transport from Trafalgar Square',
+  departure_time: new Date().toISOString(),
+  travel_time: 900,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  properties: ['is_only_walking'],
+};
+
+const searches = Array(100).fill({ departure_searches: [departure_search] });
+
+travelTimeClient.timeMapBatch(searches, 'application/geo+json')
+  .then((data) => {
+    data.forEach((search) => console.log(search));
+  })
+  .catch((e) => console.error(e));
+```
+
+Batch processing endpoints always return the same amount of responses and does not crash on an invalid request. It is up to the user to inspect whether the response was a success. `isBatchError` utility function is provided to facilitate inspecting batch responses.
+
+```typescript
+const response: BatchResponse<any> = { type: 'error', error: new Error('') };
+
+if (isBatchError(response)) {
+  response.error; // handle error
+} else {
+  response.body; // handle success
+}
+```
+
+
 ### [Isochrones (Time Map)](https://traveltime.com/docs/api/reference/isochrones)
 Given origin coordinates, find shapes of zones reachable within corresponding travel time.
 Find unions/intersections between different searches.

@@ -136,7 +136,7 @@ export type TransportationFast = 'public_transport' | 'driving' | 'driving+publi
 
 export type Credentials = { apiKey: string, applicationId: string }
 
-interface BatchErrorResponse {
+export interface BatchErrorResponse {
   error: Error;
   type: 'error';
 }
