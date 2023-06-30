@@ -29,6 +29,7 @@ import {
   TimeFilterFastSimple,
   RoutesSimple,
   BatchResponse,
+  GenericFunction,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
@@ -83,8 +84,6 @@ function endpointChecksHPM(url: string) {
   ].includes(url);
 }
 
-// TODO ALLOW exposed functions to take in chunk size
-
 export class TravelTimeClient {
   private apiKey: string;
   private applicationId: string;
@@ -128,9 +127,7 @@ export class TravelTimeClient {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  private async batch<T extends(
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-...args: any) => any, R extends Awaited<ReturnType<T>>>(
+  private async batch<T extends GenericFunction, R extends Awaited<ReturnType<T>>>(
     requestFn: T,
     bodies: Parameters<T>[0][],
     chunkSize = 10,

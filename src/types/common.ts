@@ -147,3 +147,4 @@ interface BatchSuccessResponse<T> {
 }
 
 export type BatchResponse<T> = BatchErrorResponse | BatchSuccessResponse<T>;
+export type GenericFunction = (...args: any) => any
