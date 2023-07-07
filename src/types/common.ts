@@ -141,7 +141,7 @@ export interface BatchErrorResponse {
   type: 'error';
 }
 
-interface BatchSuccessResponse<T> {
+export interface BatchSuccessResponse<T> {
   body: T;
   type: 'success';
 }

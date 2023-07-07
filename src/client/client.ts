@@ -34,9 +34,11 @@ import {
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
 import {
+  mergeTimeFilterResponses,
   routesSimpleToRequest,
   timeFilterFastSimpleToRequest,
   timeFilterSimpleToRequest,
+  timeFilterSimpleToRequest2,
   timeMapFastSimpleToRequest,
   timeMapSimpleToRequest,
 } from './mapper';
@@ -197,6 +199,11 @@ export class TravelTimeClient {
    * @param {TimeFilterSimple} body Simplified TimeFilterRequest type. Default search type is `departure`.
    */
   timeFilterSimple = async (body: TimeFilterSimple) => this.timeFilter(timeFilterSimpleToRequest(body));
+  timeFilterSimple2 = async (body: TimeFilterSimple) => {
+    const rez = await this.timeFilterBatch(timeFilterSimpleToRequest2(body));
+    const merged = mergeTimeFilterResponses(rez);
+    return merged;
+  };
 
   timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
   timeFilterFastBatch = async (requests: TimeFilterFastRequest[], chunkSize?: number) => this.batch(this.timeFilterFast, requests, chunkSize);
