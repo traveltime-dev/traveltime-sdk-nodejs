@@ -22,7 +22,6 @@ import {
   TimeMapRequest, TimeMapRequestSearchBase, TimeMapSimple,
 } from '../types';
 import { RoutesSimple } from '../types/routesSimple';
-import { isBatchError } from '../utils';
 
 export function timeMapSimpleToRequest(body: TimeMapSimple): TimeMapRequest {
   const searchBase : Omit<TimeMapRequestSearchBase, 'id' | 'coords'> = {
@@ -103,8 +102,7 @@ export function timeFilterSimpleToRequest(body: TimeFilterSimple): TimeFilterReq
   };
 }
 
-export function timeFilterSimpleToRequest2(body: TimeFilterSimple) {
-  const max = 2000;
+export function timeFilterSimpleToFullMatrix(body: TimeFilterSimple, max = 2000) {
   const searchBase: Omit<TimeFilterRequestSearchBase, 'id'> = {
     properties: body.properties,
     transportation: body.transportation,
@@ -118,7 +116,6 @@ export function timeFilterSimpleToRequest2(body: TimeFilterSimple) {
   const timeType = body.searchType === 'arrive' ? 'arrival_time' : 'departure_time';
 
   if (body.locations.length > max) {
-    // return TimeFilterRequest[][] where one is max and other is remainder
     const searches: TimeFilterRequest[][] = [];
     let i = 0;
     while (i < body.locations.length) {
@@ -127,7 +124,7 @@ export function timeFilterSimpleToRequest2(body: TimeFilterSimple) {
         locations: search,
         [searchType]: [{
           ...searchBase,
-          id: `id-${index}`,
+          id: `location-${index}`,
           [origin]: loc.id,
           [destinations]: [...search.slice(0, index).map((l) => l.id), ...search.slice(index + 1).map((l) => l.id)],
           [timeType]: body.leaveTime,
@@ -143,7 +140,7 @@ export function timeFilterSimpleToRequest2(body: TimeFilterSimple) {
     locations: body.locations,
     [searchType]: [{
       ...searchBase,
-      id: `id-${index}`,
+      id: `location-${index}`,
       [origin]: search.id,
       [destinations]: [...body.locations.slice(0, index).map((loc) => loc.id), ...body.locations.slice(index + 1).map((loc) => loc.id)],
       [timeType]: body.leaveTime,
@@ -187,6 +184,54 @@ export function timeFilterFastSimpleToRequest(body: TimeFilterFastSimple): TimeF
       })),
     },
   };
+}
+
+export function timeFilterFastSimpleToFullMatrix(body: TimeFilterFastSimple, max = 100000): TimeFilterFastRequest[] {
+  const searchBase: Omit<TimeFilterFastRequestArrivalSearchBase, 'id'> = {
+    transportation: body.transportation,
+    travel_time: body.travelTime,
+    properties: body.properties || ['travel_time'],
+    arrival_time_period: 'weekday_morning',
+  };
+
+  const searchType = body.searchType === 'many_to_one' ? 'many_to_one' : 'one_to_many';
+  const origin = body.searchType === 'many_to_one' ? 'arrival_location_id' : 'departure_location_id';
+  const destinations = body.searchType === 'many_to_one' ? 'departure_location_ids' : 'arrival_location_ids';
+
+  if (body.locations.length > max) {
+    const searches: TimeFilterFastRequest[][] = [];
+    let i = 0;
+    while (i < body.locations.length) {
+      const search = body.locations.slice(i, i + max);
+      searches.push(search.map((loc, index) => ({
+        locations: body.locations,
+        arrival_searches: {
+          [searchType]: [{
+            ...searchBase,
+            id: `id-${index}`,
+            [origin]: loc.id,
+            [destinations]: [...body.locations.slice(0, index).map((l) => l.id), ...body.locations.slice(index + 1).map((l) => l.id)],
+          }],
+        },
+      })));
+      i += max;
+    }
+    return searches.flat();
+  }
+
+  const searches: TimeFilterFastRequest[] = body.locations.map((search, index) => ({
+    locations: body.locations,
+    arrival_searches: {
+      [searchType]: [{
+        ...searchBase,
+        id: `id-${index}`,
+        [origin]: search.id,
+        [destinations]: [...body.locations.slice(0, index).map((loc) => loc.id), ...body.locations.slice(index + 1).map((loc) => loc.id)],
+      }],
+    },
+  }));
+
+  return searches;
 }
 
 export function routesSimpleToRequest(body: RoutesSimple): RoutesRequest {
