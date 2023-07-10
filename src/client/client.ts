@@ -100,7 +100,7 @@ export class TravelTimeClient {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
-    this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings || { enabled: true });
+    this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
     this.axiosInstance = axios.create({
       baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
       headers: {
