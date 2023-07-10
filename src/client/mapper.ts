@@ -128,7 +128,6 @@ export function timeFilterSimpleToFullMatrix(body: TimeFilterSimple, max = 2000)
           [origin]: loc.id,
           [destinations]: [...search.slice(0, index).map((l) => l.id), ...search.slice(index + 1).map((l) => l.id)],
           [timeType]: body.leaveTime,
-          departure_time: body.leaveTime,
         }],
       })));
       i += max;
@@ -144,7 +143,6 @@ export function timeFilterSimpleToFullMatrix(body: TimeFilterSimple, max = 2000)
       [origin]: search.id,
       [destinations]: [...body.locations.slice(0, index).map((loc) => loc.id), ...body.locations.slice(index + 1).map((loc) => loc.id)],
       [timeType]: body.leaveTime,
-      departure_time: body.leaveTime,
     }],
   }));
 
@@ -267,7 +265,6 @@ export function routesSimpleToRequest(body: RoutesSimple): RoutesRequest {
   };
 }
 
-// same merger could be used
 export function mergeTimeFilterResponses<T extends TimeFilterResponse | TimeFilterFastResponse>(responses: BatchResponse<T>[]): BatchResponse<T>[] {
   const mergedResults: { [searchId: string]: T['results'][0] } = {};
 
@@ -280,7 +277,7 @@ export function mergeTimeFilterResponses<T extends TimeFilterResponse | TimeFilt
         if (!mergedResults[search_id]) {
           mergedResults[search_id] = { ...result };
         } else {
-          mergedResults[search_id].locations.push(...locations as any); // hacky
+          mergedResults[search_id].locations.push(...locations as any);
           mergedResults[search_id].unreachable.push(...unreachable);
         }
       }
