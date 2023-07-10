@@ -260,7 +260,6 @@ export function routesSimpleToRequest(body: RoutesSimple): RoutesRequest {
       arrival_location_ids: search[1],
       departure_location_id: search[0],
       departure_time: body.leaveTime,
-
     })),
   };
 }
