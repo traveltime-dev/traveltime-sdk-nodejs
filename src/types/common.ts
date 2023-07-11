@@ -135,10 +135,16 @@ export type LevelOfDetail = CoarseGridLevelOfDetail | SimpleLevelOfDetail| Simpl
 export type TransportationFast = 'public_transport' | 'driving' | 'driving+public_transport' | 'driving+ferry' | 'cycling' | 'cycling+ferry' | 'walking' | 'walking+ferry'
 
 export type Credentials = { apiKey: string, applicationId: string }
-export interface BatchedResponse<T> {
-  responses: T[];
-  errors: {
-      index: number;
-      error: Error;
-  }[];
+
+export interface BatchErrorResponse {
+  error: Error;
+  type: 'error';
 }
+
+export interface BatchSuccessResponse<T> {
+  body: T;
+  type: 'success';
+}
+
+export type BatchResponse<T> = BatchErrorResponse | BatchSuccessResponse<T>;
+export type GenericFunction = (...args: any) => any

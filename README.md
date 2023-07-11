@@ -46,7 +46,7 @@ const travelTimeClient = new TravelTimeClient({
 You can apply additional optional parameters to client constructor’s second argument `parameters` object:
  - `baseURL` [string] - you can change base URL of client. Default value is `https://api.traveltimeapp.com/v4`.
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. When using rate limiter if the response status is `429` we will retry your request up to 3 times. This object accepts these arguments:
-    - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
+    - `enabled` [boolean] - pass `false` to disable rate limiter on this SDK instance. Default is set to `true`.
     - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`.
 
 If you need to change any of these parameters you can call setter methods: `travelTimeClient.setBaseURL`, `travelTimeClient.setRateLimitSettings`.
@@ -56,6 +56,42 @@ If you need to change any of these parameters you can call setter methods: `trav
 Now you'll be able to call all TravelTime API endpoints from `travelTimeClient` instance.
 
 Every instance function returns Object with type of `Promise<AxiosResponse<EndpointResponseType>>`.
+
+#### Batch Processing
+
+Most endpoints are available with batch processing: 
+
+```typescript
+const departure_search: TimeMapRequestDepartureSearch = {
+  id: 'public transport from Trafalgar Square',
+  departure_time: new Date().toISOString(),
+  travel_time: 900,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'public_transport' },
+  properties: ['is_only_walking'],
+};
+
+const searches = Array(100).fill({ departure_searches: [departure_search] });
+
+travelTimeClient.timeMapBatch(searches, 'application/geo+json')
+  .then((data) => {
+    data.forEach((search) => console.log(search));
+  })
+  .catch((e) => console.error(e));
+```
+
+Batch processing endpoints always return the same amount of responses and does not crash on an invalid request. It is up to the user to inspect whether the response was a success. `isBatchError` utility function is provided to facilitate inspecting batch responses.
+
+```typescript
+const response: BatchResponse<any> = { type: 'error', error: new Error('') };
+
+if (isBatchError(response)) {
+  response.error; // handle error
+} else {
+  response.body; // handle success
+}
+```
+
 
 ### [Isochrones (Time Map)](https://traveltime.com/docs/api/reference/isochrones)
 Given origin coordinates, find shapes of zones reachable within corresponding travel time.

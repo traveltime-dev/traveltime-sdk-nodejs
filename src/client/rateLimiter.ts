@@ -21,7 +21,7 @@ export class RateLimiter {
     this.isThrottleActive = false;
     this.isRequestInProgress = false;
     this.rateLimitSettings = {
-      enabled: false,
+      enabled: true,
       hitsPerMinute: 60,
       ...rateLimitSettings,
     };
