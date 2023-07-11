@@ -153,31 +153,6 @@ travelTimeClient.timeMap({
   .catch((e) => console.error(e));
 ```
 
-#### Batch processing
-
-You may use the batch function to handle multiple requests in parallel. 
-
-```typescript
-  const data: Array<RequestData>; // Your request data 
-       
-  const requests = data.map((trip) => {
-    return {
-      departure_searches: [{
-        id: trip.id,
-        departure_time: new Date().toISOString(),
-        travel_time: trip.travelTime,
-        coords: trip.coordinates,
-        transportation: { type: trip.transportType },
-        properties: trip.properties,
-      }]
-    }
-  });
-
-  const {responses, errors} = await travelTimeClient.timeMapBatch(requests)
-
-  if (errors.length) console.log(errors) // handle failed requests
-  console.log(responses) // process successful requests
-```
 ### [Isochrones (Time Map) Fast](https://docs.traveltime.com/api/reference/isochrones-fast)
 A very fast version of Isochrone API. However, the request parameters are much more limited.
 
@@ -352,7 +327,7 @@ Body attributes:
 
 You can apply additional optional parameters to client constructor’s second argument `parameters` object:
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. This object accepts these arguments:
-    - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
+    - `enabled` [boolean] - pass `false` to disable rate limiter on this SDK instance. Default is set to `true`.
     - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`.
 
 If you need to change any of these parameters you can call setter methods: `travelTimeClient.setRateLimitSettings`.
