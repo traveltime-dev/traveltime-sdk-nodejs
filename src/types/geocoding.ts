@@ -27,6 +27,7 @@ export type GeocodingResponseProperties = TravelTimeResponseFeature & {
 
 export type GeocodingResponseFeature = {
   'type': 'Feature',
+  'attribution': string,
   'geometry': GeocodingResponseGeometry
   properties: GeocodingResponseProperties
 }
