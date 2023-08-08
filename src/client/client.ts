@@ -103,6 +103,8 @@ export class TravelTimeClient {
     this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
     this.axiosInstance = axios.create({
       baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
       headers: {
         'Content-Type': 'application/json',
         'X-Application-Id': this.applicationId,
