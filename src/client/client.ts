@@ -30,6 +30,8 @@ import {
   RoutesSimple,
   BatchResponse,
   GenericFunction,
+  DistanceMapRequest,
+  DistanceMapResponseType,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
@@ -67,6 +69,7 @@ function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
     case '/time-filter/fast': {
       return (body.arrival_searches.one_to_many?.length || 0) + (body.arrival_searches.many_to_one?.length || 0);
     }
+    case '/distance-map':
     case '/time-map': {
       return (body.departure_searches?.length || 0) + (body.arrival_searches?.length || 0) + (body.unions?.length || 0) + (body.intersections?.length || 0);
     }
@@ -84,6 +87,7 @@ function endpointChecksHPM(url: string) {
     '/time-map/fast',
     '/time-filter/fast',
     '/time-map',
+    '/distance-map',
   ].includes(url);
 }
 
@@ -155,6 +159,13 @@ export class TravelTimeClient {
     }
 
     return results;
+  }
+
+  async distanceMap(body: DistanceMapRequest): Promise<TimeMapResponse>
+  async distanceMap<T extends keyof DistanceMapResponseType>(body: DistanceMapRequest, format: T): Promise<DistanceMapResponseType[T]>
+  async distanceMap<T extends keyof DistanceMapResponseType>(body: DistanceMapRequest, format?: T) {
+    const headers = format ? { Accept: format } : undefined;
+    return this.request('/distance-map', 'post', { body, config: { headers } });
   }
 
   async geocoding(query: string, req?: GeocodingSearchRequest) {
