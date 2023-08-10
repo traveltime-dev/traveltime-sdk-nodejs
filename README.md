@@ -189,6 +189,65 @@ travelTimeClient.timeMap(
 
 Requesting an unsupported response format will result in an error.
 
+### Distance Map
+Given origin coordinates, find shapes of zones reachable within corresponding travel distance.
+Find unions/intersections between different searches.
+
+Body attributes:
+* departure_searches: Searches based on departure times. Leave departure location at no earlier than given time. You can define a maximum of 10 searches.
+* arrival_searches: Searches based on arrival times. Arrive at destination location at no later than given time. You can define a maximum of 10 searches.
+* unions: Define unions of shapes that are results of previously defined searches.
+* intersections: Define intersections of shapes that are results of previously defined searches.
+ 
+Function accepts object that matches API json spec.
+
+```typescript
+import {
+  DistanceMapRequestArrivalSearch,
+  DistanceMapRequestDepartureSearch,
+  DistanceMapRequestUnionOrIntersection,
+} from 'traveltime-api';
+
+const departure_search1: DistanceMapRequestDepartureSearch = {
+  id: 'cycling from Trafalgar Square',
+  departure_time: new Date().toISOString(),
+  travel_distance: 900,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'driving' },
+};
+const departure_search2: DistanceMapRequestDepartureSearch = {
+  id: 'driving from Trafalgar Square',
+  departure_time: new Date().toISOString(),
+  travel_distance: 900,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'driving' },
+};
+const arrival_search: DistanceMapRequestArrivalSearch = {
+  id: 'cycling to Trafalgar Square',
+  arrival_time: new Date().toISOString(),
+  travel_distance: 900,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'cycling' },
+  range: { enabled: true, width: 3600 },
+};
+const union: DistanceMapRequestUnionOrIntersection = {
+  id: 'union of driving and cycling',
+  search_ids: ['driving from Trafalgar Square', 'cycling from Trafalgar Square'],
+};
+const intersection: DistanceMapRequestUnionOrIntersection = {
+  id: 'intersection of driving and cycling',
+  search_ids: ['driving from Trafalgar Square', 'cycling from Trafalgar Square'],
+};
+
+travelTimeClient.distanceMap({
+  departure_searches: [departure_search1, departure_search2],
+  arrival_searches: [arrival_search],
+  unions: [union],
+  intersections: [intersection],
+}).then((data) => console.log(data))
+  .catch((e) => console.error(e));
+
+```
 ### [Distance Matrix (Time Filter)](https://traveltime.com/docs/api/reference/distance-matrix)
 Given origin and destination points filter out points that cannot be reached within specified time limit.
 Find out travel times, distances and costs between an origin and up to 2,000 destination points.
