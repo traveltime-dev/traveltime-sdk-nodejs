@@ -3,6 +3,7 @@ export type Coords = {
   'lng': number;
 }
 
+export type TransportationTypeNoPt = 'walking' | 'cycling' | 'driving' | 'ferry' | 'cycling_ferry' | 'driving_ferry'
 export type TransportationType = 'cycling' | 'driving' | 'driving+train' | 'public_transport' | 'walking' | 'coach' | 'bus' | 'train' | 'ferry' | 'driving+ferry' | 'cycling+ferry' | 'cycling+public_transport';
 export type RouteResponseTransportationMode = 'car' | 'parking' | 'boarding' | 'walk' | 'bike' | 'bike_parking' | 'train' | 'rail_national' | 'rail_overground' | 'rail_underground' | 'rail_dlr' | 'bus' | 'cable_car' | 'plane' | 'ferry' | 'coach';
 export type RoutesResponseRoutePartType = 'basic' | 'start_end' | 'road' | 'public_transport'
@@ -28,6 +29,12 @@ export type TransportationRequestCommons = {
   'parking_time'?: number
   'boarding_time'?: number
   'max_changes'?: MaxChangesRequest
+}
+
+export type TransportationNoPtRequestCommons = {
+  'type': TransportationTypeNoPt
+  'disable_border_crossing'?: boolean
+  'boarding_time'?: number
 }
 
 export type ResponseRoutePart = {
@@ -148,3 +155,12 @@ export interface BatchSuccessResponse<T> {
 
 export type BatchResponse<T> = BatchErrorResponse | BatchSuccessResponse<T>;
 export type GenericFunction = (...args: any) => any
+
+export type BoundingBox = {
+  min_lat: number,
+  max_lat: number,
+  min_lng: number,
+  max_lng: number,
+}
+
+export type Position = number[];

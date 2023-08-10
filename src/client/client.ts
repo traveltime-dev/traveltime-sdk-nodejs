@@ -30,10 +30,15 @@ import {
   RoutesSimple,
   BatchResponse,
   GenericFunction,
+  DistanceMapRequest,
+  DistanceMapResponseType,
+  DistanceMapResponse,
+  DistanceMapSimple,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
 import {
+  distanceMapSimpleToRequest,
   mergeTimeFilterResponses,
   routesSimpleToRequest,
   timeFilterFastSimpleToFullMatrix,
@@ -67,6 +72,7 @@ function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
     case '/time-filter/fast': {
       return (body.arrival_searches.one_to_many?.length || 0) + (body.arrival_searches.many_to_one?.length || 0);
     }
+    case '/distance-map':
     case '/time-map': {
       return (body.departure_searches?.length || 0) + (body.arrival_searches?.length || 0) + (body.unions?.length || 0) + (body.intersections?.length || 0);
     }
@@ -84,6 +90,7 @@ function endpointChecksHPM(url: string) {
     '/time-map/fast',
     '/time-filter/fast',
     '/time-map',
+    '/distance-map',
   ].includes(url);
 }
 
@@ -155,6 +162,43 @@ export class TravelTimeClient {
     }
 
     return results;
+  }
+
+  async distanceMap(body: DistanceMapRequest): Promise<DistanceMapResponse>
+  async distanceMap<T extends keyof DistanceMapResponseType>(body: DistanceMapRequest, format: T): Promise<DistanceMapResponseType[T]>
+  async distanceMap<T extends keyof DistanceMapResponseType>(body: DistanceMapRequest, format?: T) {
+    const headers = format ? { Accept: format } : undefined;
+    return this.request('/distance-map', 'post', { body, config: { headers } });
+  }
+
+  async distanceMapBatch(
+    bodies: DistanceMapRequest[],
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<DistanceMapResponse>>[]>
+  async distanceMapBatch<T extends keyof DistanceMapResponseType>(
+    bodies: DistanceMapRequest[],
+    format: T,
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<DistanceMapResponseType[T]>>[]>
+  async distanceMapBatch<T extends keyof DistanceMapResponseType>(
+    bodies: DistanceMapRequest[],
+    format?: T,
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<DistanceMapResponseType[T]>>[]> {
+    return this.batch((body: DistanceMapRequest) => this.distanceMap(body, format as T), bodies, chunkSize);
+  }
+
+  /**
+   * Simplified version of distanceMap.
+   * Allows you to pass multiple coordinates with same params for shape to be made.
+   * @param {DistanceMapSimple} body Simplified DistanceMapRequest. Default search type is `departure`.
+   * @param {keyof DistanceMapResponseType} [format] Specify in which format response should be returned.
+   */
+  async distanceMapSimple(body: DistanceMapSimple): Promise<TimeMapResponse>
+  async distanceMapSimple<T extends keyof DistanceMapResponseType>(body: DistanceMapSimple, format: T): Promise<DistanceMapResponseType[T]>
+  async distanceMapSimple<T extends keyof DistanceMapResponseType>(body: DistanceMapSimple, format?: T) {
+    const request = distanceMapSimpleToRequest(body);
+    return this.distanceMap(request, format as T);
   }
 
   async geocoding(query: string, req?: GeocodingSearchRequest) {

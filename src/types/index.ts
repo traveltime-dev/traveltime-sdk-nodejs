@@ -16,3 +16,6 @@ export * from './timeMapResponse';
 export * from './timeMapSimple';
 export * from './timeFilterSimple';
 export * from './routesSimple';
+export * from './distanceMap';
+export * from './distanceMapResponse';
+export * from './distanceMapSimple';

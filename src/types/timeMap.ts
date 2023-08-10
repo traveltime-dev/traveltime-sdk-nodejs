@@ -1,6 +1,8 @@
 import {
+  BoundingBox,
   Coords,
   LevelOfDetail,
+  Position,
   RangeRequestNoMaxResults,
   TransportationRequestCommons,
 } from './common';
@@ -62,8 +64,6 @@ export type TimeMapResponse = {
   results: Array<TimeMapResponseResult>
 }
 
-export type Position = number[];
-
 export type TimeMapResponseGeoJSONPolygon = {
   type: 'MultiPolygon';
   coordinates: Position[][][];
@@ -90,23 +90,9 @@ export type TimeMapResponseVndWkt = {
   results: Array<TimeMapResponseVndWktResult>;
 }
 
-export type Envelope = {
-  min_lat: number,
-  max_lat: number,
-  min_lng: number,
-  max_lng: number,
-}
-
-export type Boxes = {
-  min_lat: number,
-  max_lat: number,
-  min_lng: number,
-  max_lng: number,
-}
-
 export type TimeMapResponseVndBoundingBoxesBoundingBox = {
-  envelope: Envelope;
-  boxes: Array<Boxes>;
+  envelope: BoundingBox;
+  boxes: Array<BoundingBox>;
 }
 
 export type TimeMapResponseVndBoundingBoxesResult = {
