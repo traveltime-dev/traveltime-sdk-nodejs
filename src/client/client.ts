@@ -32,6 +32,7 @@ import {
   GenericFunction,
   DistanceMapRequest,
   DistanceMapResponseType,
+  DistanceMapResponse,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
@@ -161,11 +162,28 @@ export class TravelTimeClient {
     return results;
   }
 
-  async distanceMap(body: DistanceMapRequest): Promise<TimeMapResponse>
+  async distanceMap(body: DistanceMapRequest): Promise<DistanceMapResponse>
   async distanceMap<T extends keyof DistanceMapResponseType>(body: DistanceMapRequest, format: T): Promise<DistanceMapResponseType[T]>
   async distanceMap<T extends keyof DistanceMapResponseType>(body: DistanceMapRequest, format?: T) {
     const headers = format ? { Accept: format } : undefined;
     return this.request('/distance-map', 'post', { body, config: { headers } });
+  }
+
+  async distanceMapBatch(
+    bodies: DistanceMapRequest[],
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<DistanceMapResponse>>[]>
+  async distanceMapBatch<T extends keyof DistanceMapResponseType>(
+    bodies: DistanceMapRequest[],
+    format: T,
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<DistanceMapResponseType[T]>>[]>
+  async distanceMapBatch<T extends keyof DistanceMapResponseType>(
+    bodies: DistanceMapRequest[],
+    format?: T,
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<DistanceMapResponseType[T]>>[]> {
+    return this.batch((body: DistanceMapRequest) => this.distanceMap(body, format as T), bodies, chunkSize);
   }
 
   async geocoding(query: string, req?: GeocodingSearchRequest) {
