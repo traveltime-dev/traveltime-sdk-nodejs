@@ -1,5 +1,5 @@
 import {
-  MinMaxLatLngBox,
+  BoundingBox,
   Coords,
   LevelOfDetail,
   Position,
@@ -91,8 +91,8 @@ export type TimeMapResponseVndWkt = {
 }
 
 export type TimeMapResponseVndBoundingBoxesBoundingBox = {
-  envelope: MinMaxLatLngBox;
-  boxes: Array<MinMaxLatLngBox>;
+  envelope: BoundingBox;
+  boxes: Array<BoundingBox>;
 }
 
 export type TimeMapResponseVndBoundingBoxesResult = {

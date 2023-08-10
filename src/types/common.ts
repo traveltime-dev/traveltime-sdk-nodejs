@@ -156,7 +156,7 @@ export interface BatchSuccessResponse<T> {
 export type BatchResponse<T> = BatchErrorResponse | BatchSuccessResponse<T>;
 export type GenericFunction = (...args: any) => any
 
-export type MinMaxLatLngBox = {
+export type BoundingBox = {
   min_lat: number,
   max_lat: number,
   min_lng: number,
