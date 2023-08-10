@@ -3,24 +3,26 @@
 import {
   BatchResponse,
   BatchSuccessResponse,
+  DistanceMapRequest,
+  DistanceMapRequestSearchBase,
   RoutesRequest,
   RoutesRequestSearchBase,
   TimeFilterFastRequest,
   TimeFilterFastRequestArrivalSearchBase,
   TimeFilterFastResponse,
-  TimeFilterFastResponseLocation,
   TimeFilterFastSimple,
   TimeFilterRequest,
   TimeFilterRequestSearchBase,
   TimeFilterResponse,
-  TimeFilterResponseLocation,
-  TimeFilterResponseResult,
   TimeFilterSimple,
   TimeMapFastRequest,
   TimeMapFastRequestSearch,
   TimeMapFastSimple,
-  TimeMapRequest, TimeMapRequestSearchBase, TimeMapSimple,
+  TimeMapRequest,
+  TimeMapRequestSearchBase,
+  TimeMapSimple,
 } from '../types';
+import { DistanceMapSimple } from '../types/distanceMapSimple';
 import { RoutesSimple } from '../types/routesSimple';
 
 export function timeMapSimpleToRequest(body: TimeMapSimple): TimeMapRequest {
@@ -300,4 +302,34 @@ export function mergeTimeFilterResponses<T extends TimeFilterResponse | TimeFilt
   const errors = responses.filter((response) => response.type === 'error');
 
   return [...mergedResponses, ...errors];
+}
+
+export function distanceMapSimpleToRequest(body: DistanceMapSimple): DistanceMapRequest {
+  const searchBase : Omit<DistanceMapRequestSearchBase, 'id' | 'coords'> = {
+    transportation: body.transportation,
+    travel_distance: body.travelDistance,
+    level_of_detail: body.level_of_detail,
+    no_holes: body.no_holes,
+    range: body.range,
+    single_shape: body.single_shape,
+  };
+
+  if (body.searchType === 'arrive') {
+    return {
+      arrival_searches: body.coords.map((coords, index) => ({
+        ...searchBase,
+        coords,
+        id: `id-${index}`,
+        arrival_time: body.leaveTime,
+      })),
+    };
+  }
+  return {
+    departure_searches: body.coords.map((coords, index) => ({
+      ...searchBase,
+      coords,
+      id: `id-${index}`,
+      departure_time: body.leaveTime,
+    })),
+  };
 }

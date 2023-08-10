@@ -33,10 +33,12 @@ import {
   DistanceMapRequest,
   DistanceMapResponseType,
   DistanceMapResponse,
+  DistanceMapSimple,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
 import {
+  distanceMapSimpleToRequest,
   mergeTimeFilterResponses,
   routesSimpleToRequest,
   timeFilterFastSimpleToFullMatrix,
@@ -184,6 +186,19 @@ export class TravelTimeClient {
     chunkSize?: number,
   ): Promise<BatchResponse<Awaited<DistanceMapResponseType[T]>>[]> {
     return this.batch((body: DistanceMapRequest) => this.distanceMap(body, format as T), bodies, chunkSize);
+  }
+
+  /**
+   * Simplified version of distanceMap.
+   * Allows you to pass multiple coordinates with same params for shape to be made.
+   * @param {DistanceMapSimple} body Simplified DistanceMapRequest. Default search type is `departure`.
+   * @param {keyof DistanceMapResponseType} [format] Specify in which format response should be returned.
+   */
+  async distanceMapSimple(body: DistanceMapSimple): Promise<TimeMapResponse>
+  async distanceMapSimple<T extends keyof DistanceMapResponseType>(body: DistanceMapSimple, format: T): Promise<DistanceMapResponseType[T]>
+  async distanceMapSimple<T extends keyof DistanceMapResponseType>(body: DistanceMapSimple, format?: T) {
+    const request = distanceMapSimpleToRequest(body);
+    return this.distanceMap(request, format as T);
   }
 
   async geocoding(query: string, req?: GeocodingSearchRequest) {
