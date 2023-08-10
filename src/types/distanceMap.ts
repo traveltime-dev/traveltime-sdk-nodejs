@@ -4,13 +4,13 @@ import {
   LevelOfDetail,
   Position,
   RangeRequestNoMaxResults,
-  TransportationRequestCommons,
+  TransportationNoPtRequestCommons,
 } from './common';
 
 export type DistanceMapRequestSearchBase = {
   id: string
   coords: Coords
-  transportation: TransportationRequestCommons
+  transportation: TransportationNoPtRequestCommons
   travel_distance: number
   range?: RangeRequestNoMaxResults
   level_of_detail?: LevelOfDetail
