@@ -3,7 +3,6 @@ import {
   Coords,
   LevelOfDetail,
   Position,
-  RangeRequestNoMaxResults,
   TransportationNoPtRequestCommons,
 } from './common';
 
@@ -12,7 +11,6 @@ export type DistanceMapRequestSearchBase = {
   coords: Coords
   transportation: TransportationNoPtRequestCommons
   travel_distance: number
-  range?: RangeRequestNoMaxResults
   level_of_detail?: LevelOfDetail
   single_shape?: boolean
   no_holes?: boolean
