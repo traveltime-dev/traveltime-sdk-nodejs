@@ -1,5 +1,4 @@
 import {
-  RangeRequestNoMaxResults,
   LevelOfDetail,
   Coords,
   TransportationNoPtRequestCommons,
@@ -11,7 +10,6 @@ export type DistanceMapSimple = {
   travelDistance: number
   leaveTime: string
   searchType?: 'arrive' | 'depart'
-  range?: RangeRequestNoMaxResults
   level_of_detail?: LevelOfDetail
   single_shape?: boolean
   no_holes?: boolean

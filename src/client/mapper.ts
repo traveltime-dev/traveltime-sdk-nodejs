@@ -310,7 +310,6 @@ export function distanceMapSimpleToRequest(body: DistanceMapSimple): DistanceMap
     travel_distance: body.travelDistance,
     level_of_detail: body.level_of_detail,
     no_holes: body.no_holes,
-    range: body.range,
     single_shape: body.single_shape,
   };
 
