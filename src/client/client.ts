@@ -292,21 +292,30 @@ export class TravelTimeClient {
     const headers = format ? { Accept: format } : undefined;
     return this.request('/time-map', 'post', { body, config: { headers } });
   }
+
   async timeMapBatch(
     bodies: TimeMapRequest[],
-    chunkSize?: number,
-  ): Promise<BatchResponse<Awaited<TimeMapResponse>>[]>
-  async timeMapBatch<T extends keyof TimeMapResponseType>(
-    bodies: TimeMapRequest[],
-    format: T,
-    chunkSize?: number,
-  ): Promise<BatchResponse<Awaited<TimeMapResponseType[T]>>[]>
-  async timeMapBatch<T extends keyof TimeMapResponseType>(
-    bodies: TimeMapRequest[],
-    format?: T,
-    chunkSize?: number,
-  ): Promise<BatchResponse<Awaited<TimeMapResponseType[T]>>[]> {
-    return this.batch((body: TimeMapRequest) => this.timeMap(body, format as T), bodies, chunkSize);
+    chunkSize = 10,
+  ): Promise<BatchResponse<TimeMapResponse>[]> {
+
+    const slices: TimeMapRequest[][] = Array
+      .from({ length: (bodies.length / chunkSize) }, (_, index) => index)
+      .map((i) => bodies.slice(i * chunkSize, (i + 1) * chunkSize));
+
+    const promises = await Promise.allSettled(slices.flatMap((requests => requests.map(request => this.timeMap(request)))));
+
+    const results: BatchResponse<TimeMapResponse>[] = [];
+
+    promises.forEach(promise => {
+        if (promise.status === 'rejected') {
+          results.push({ type: 'error', error: promise.reason });
+        } else {
+          results.push({ type: 'success', body: promise.value });
+        }
+    });
+    
+
+    return results;
   }
 
   /**
