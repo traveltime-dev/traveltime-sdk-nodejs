@@ -33,7 +33,7 @@ import {
   DistanceMapRequest,
   DistanceMapResponseType,
   DistanceMapResponse,
-  DistanceMapSimple,
+  DistanceMapSimple, TimeMapRequestSearchBase, TimeMapRequestDepartureSearch,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
@@ -78,6 +78,12 @@ function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
     }
     default: return 0;
   }
+}
+
+function getTimeMap(departureSearches: TimeMapRequestDepartureSearch[]) : TimeMapRequest {
+  return {
+    departure_searches: departureSearches,
+  };
 }
 
 function endpointChecksHPM(url: string) {
@@ -293,20 +299,17 @@ export class TravelTimeClient {
     return this.request('/time-map', 'post', { body, config: { headers } });
   }
   async timeMapBatch(
-    bodies: TimeMapRequest[],
-    chunkSize?: number,
-  ): Promise<BatchResponse<Awaited<TimeMapResponse>>[]>
-  async timeMapBatch<T extends keyof TimeMapResponseType>(
-    bodies: TimeMapRequest[],
-    format: T,
-    chunkSize?: number,
-  ): Promise<BatchResponse<Awaited<TimeMapResponseType[T]>>[]>
-  async timeMapBatch<T extends keyof TimeMapResponseType>(
-    bodies: TimeMapRequest[],
-    format?: T,
-    chunkSize?: number,
-  ): Promise<BatchResponse<Awaited<TimeMapResponseType[T]>>[]> {
-    return this.batch((body: TimeMapRequest) => this.timeMap(body, format as T), bodies, chunkSize);
+    bodies: TimeMapRequestDepartureSearch[],
+  ): Promise<TimeMapResponse[]>
+  async timeMapBatch(
+    bodies: TimeMapRequestDepartureSearch[],
+    chunk = 10,
+  ): Promise<TimeMapResponse[]> {
+    const slices: TimeMapRequest[] = Array
+      .from({ length: (bodies.length / chunk) }, (_, index) => index)
+      .map((i) => bodies.slice(i * chunk, (i + 1) * chunk))
+      .map((slice) => getTimeMap(slice));
+    return Promise.all(slices.map((request) => this.timeMap(request)));
   }
 
   /**
