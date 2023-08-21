@@ -144,22 +144,21 @@ export class TravelTimeClient {
     bodies: Parameters<T>[0][],
     chunkSize = 10,
   ): Promise<BatchResponse<R>[]> {
+    const slices: Parameters<T>[][] = Array
+      .from({ length: (bodies.length / chunkSize) }, (_, index) => index)
+      .map((i) => bodies.slice(i * chunkSize, (i + 1) * chunkSize));
+
+    const promises = await Promise.allSettled(slices.flatMap((requests => requests.map(request => requestFn(request)))));
+
     const results: BatchResponse<R>[] = [];
 
-    for (let i = 0; i < bodies.length; i += chunkSize) {
-      const chunk = bodies.slice(i, i + (chunkSize));
-      const promises = chunk.map((request) => requestFn(request));
-
-      // eslint-disable-next-line no-await-in-loop
-      const chunkResults = await Promise.allSettled(promises);
-      chunkResults.forEach((chunkResult) => {
-        if (chunkResult.status === 'rejected') {
-          results.push({ type: 'error', error: chunkResult.reason });
+    promises.forEach(promise => {
+        if (promise.status === 'rejected') {
+          results.push({ type: 'error', error: promise.reason });
         } else {
-          results.push({ type: 'success', body: chunkResult.value });
+          results.push({ type: 'success', body: promise.value });
         }
-      });
-    }
+    });
 
     return results;
   }
@@ -295,27 +294,19 @@ export class TravelTimeClient {
 
   async timeMapBatch(
     bodies: TimeMapRequest[],
-    chunkSize = 10,
-  ): Promise<BatchResponse<TimeMapResponse>[]> {
-
-    const slices: TimeMapRequest[][] = Array
-      .from({ length: (bodies.length / chunkSize) }, (_, index) => index)
-      .map((i) => bodies.slice(i * chunkSize, (i + 1) * chunkSize));
-
-    const promises = await Promise.allSettled(slices.flatMap((requests => requests.map(request => this.timeMap(request)))));
-
-    const results: BatchResponse<TimeMapResponse>[] = [];
-
-    promises.forEach(promise => {
-        if (promise.status === 'rejected') {
-          results.push({ type: 'error', error: promise.reason });
-        } else {
-          results.push({ type: 'success', body: promise.value });
-        }
-    });
-    
-
-    return results;
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<TimeMapResponse>>[]>
+  async timeMapBatch<T extends keyof TimeMapResponseType>(
+    bodies: TimeMapRequest[],
+    format: T,
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<TimeMapResponseType[T]>>[]>
+  async timeMapBatch<T extends keyof TimeMapResponseType>(
+    bodies: TimeMapRequest[],
+    format?: T,
+    chunkSize?: number,
+  ): Promise<BatchResponse<Awaited<TimeMapResponseType[T]>>[]> {
+    return this.batch((body: TimeMapRequest) => this.timeMap(body, format as T), bodies, chunkSize);
   }
 
   /**
