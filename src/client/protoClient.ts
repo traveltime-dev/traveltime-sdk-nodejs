@@ -31,10 +31,10 @@ export class TravelTimeProtoClient {
   private applicationId: string;
   private axiosInstance: AxiosInstance;
   private baseURL: string;
-  private protoDistanceUri = 'https://proto-with-distance.api.traveltimeapp.com/api/v2';
   private protoFileDir = `${__dirname}/proto/v2`;
   private transportationMap: Record<TimeFilterFastProtoTransportation, number> = {
     pt: 0,
+    driving: 1,
     'driving+ferry': 3,
     'cycling+ferry': 6,
     'walking+ferry': 7,
@@ -135,8 +135,8 @@ export class TravelTimeProtoClient {
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.readProtoFile()
     .then(async (root) => this.handleProtoFile(root, this.baseURL, request));
 
-  private timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.readProtoFile()
-    .then(async (root) => this.handleProtoFile(root, this.protoDistanceUri, request, { useDistance: true }));
+  timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.readProtoFile()
+    .then(async (root) => this.handleProtoFile(root, this.baseURL, request, { useDistance: true }));
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
     this.setRateLimitSettings(settings);
