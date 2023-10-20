@@ -142,24 +142,18 @@ export class TravelTimeClient {
   private async batch<T extends GenericFunction, R extends Awaited<ReturnType<T>>>(
     requestFn: T,
     bodies: Parameters<T>[0][],
-    chunkSize = 10,
   ): Promise<BatchResponse<R>[]> {
     const results: BatchResponse<R>[] = [];
 
-    for (let i = 0; i < bodies.length; i += chunkSize) {
-      const chunk = bodies.slice(i, i + (chunkSize));
-      const promises = chunk.map((request) => requestFn(request));
-
-      // eslint-disable-next-line no-await-in-loop
-      const chunkResults = await Promise.allSettled(promises);
-      chunkResults.forEach((chunkResult) => {
-        if (chunkResult.status === 'rejected') {
-          results.push({ type: 'error', error: chunkResult.reason });
-        } else {
-          results.push({ type: 'success', body: chunkResult.value });
-        }
-      });
-    }
+    // eslint-disable-next-line no-await-in-loop
+    const chunkResults = await Promise.allSettled(bodies.map((request) => requestFn(request)));
+    chunkResults.forEach((chunkResult) => {
+      if (chunkResult.status === 'rejected') {
+        results.push({ type: 'error', error: chunkResult.reason });
+      } else {
+        results.push({ type: 'success', body: chunkResult.value });
+      }
+    });
 
     return results;
   }
@@ -173,19 +167,16 @@ export class TravelTimeClient {
 
   async distanceMapBatch(
     bodies: DistanceMapRequest[],
-    chunkSize?: number,
   ): Promise<BatchResponse<Awaited<DistanceMapResponse>>[]>
   async distanceMapBatch<T extends keyof DistanceMapResponseType>(
     bodies: DistanceMapRequest[],
     format: T,
-    chunkSize?: number,
   ): Promise<BatchResponse<Awaited<DistanceMapResponseType[T]>>[]>
   async distanceMapBatch<T extends keyof DistanceMapResponseType>(
     bodies: DistanceMapRequest[],
     format?: T,
-    chunkSize?: number,
   ): Promise<BatchResponse<Awaited<DistanceMapResponseType[T]>>[]> {
-    return this.batch((body: DistanceMapRequest) => this.distanceMap(body, format as T), bodies, chunkSize);
+    return this.batch((body: DistanceMapRequest) => this.distanceMap(body, format as T), bodies);
   }
 
   /**
@@ -226,7 +217,7 @@ export class TravelTimeClient {
   mapInfo = async () => this.request<MapInfoResponse>('/map-info', 'get');
 
   routes = async (body: RoutesRequest) => this.request<RoutesResponse>('/routes', 'post', { body });
-  routesBatch = async (requests: RoutesRequest[], chunkSize?: number) => this.batch(this.routes, requests, chunkSize);
+  routesBatch = async (requests: RoutesRequest[]) => this.batch(this.routes, requests);
 
   /**
    * Simplified version of routes.
@@ -238,7 +229,7 @@ export class TravelTimeClient {
   supportedLocations = async (body: SupportedLocationsRequest) => this.request<SupportedLocationsResponse>('/supported-locations', 'post', { body });
 
   timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', { body });
-  timeFilterBatch = async (requests: TimeFilterRequest[], chunkSize?: number) => this.batch(this.timeFilter, requests, chunkSize);
+  timeFilterBatch = async (requests: TimeFilterRequest[]) => this.batch(this.timeFilter, requests);
 
   /**
    * Simplified version of timeFilter.
@@ -257,7 +248,7 @@ export class TravelTimeClient {
   };
 
   timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
-  timeFilterFastBatch = async (requests: TimeFilterFastRequest[], chunkSize?: number) => this.batch(this.timeFilterFast, requests, chunkSize);
+  timeFilterFastBatch = async (requests: TimeFilterFastRequest[]) => this.batch(this.timeFilterFast, requests);
   /**
    * Generates a data frame (full matrix).
    * Travel times are calculated from each point to the remaining points passed into the function.
@@ -277,14 +268,14 @@ export class TravelTimeClient {
 
   timeFilterPostcodeDistricts = async (body: TimeFilterPostcodeDistrictsRequest) => this
     .request<TimeFilterPostcodeDistrictsResponse>('/time-filter/postcode-districts', 'post', { body });
-  timeFilterPostcodeDistrictsBatch = async (requests: TimeFilterPostcodeDistrictsRequest[], chunkSize?: number) => this.batch(this.timeFilterPostcodeDistricts, requests, chunkSize);
+  timeFilterPostcodeDistrictsBatch = async (requests: TimeFilterPostcodeDistrictsRequest[]) => this.batch(this.timeFilterPostcodeDistricts, requests);
 
   timeFilterPostcodeSectors = async (body: TimeFilterPostcodeSectorsRequest) => this
     .request<TimeFilterPostcodeSectorsResponse>('/time-filter/postcode-sectors', 'post', { body });
-  timeFilterPostcodeSectorsBatch = async (requests: TimeFilterPostcodeSectorsRequest[], chunkSize?: number) => this.batch(this.timeFilterPostcodeSectors, requests, chunkSize);
+  timeFilterPostcodeSectorsBatch = async (requests: TimeFilterPostcodeSectorsRequest[]) => this.batch(this.timeFilterPostcodeSectors, requests);
 
   timeFilterPostcodes = async (body: TimeFilterPostcodesRequest) => this.request<TimeFilterPostcodesResponse>('/time-filter/postcodes', 'post', { body });
-  timeFilterPostcodesBatch = async (requests: TimeFilterPostcodesRequest[], chunkSize?: number) => this.batch(this.timeFilterPostcodes, requests, chunkSize);
+  timeFilterPostcodesBatch = async (requests: TimeFilterPostcodesRequest[]) => this.batch(this.timeFilterPostcodes, requests);
 
   async timeMap(body: TimeMapRequest): Promise<TimeMapResponse>
   async timeMap<T extends keyof TimeMapResponseType>(body: TimeMapRequest, format: T): Promise<TimeMapResponseType[T]>
@@ -294,19 +285,16 @@ export class TravelTimeClient {
   }
   async timeMapBatch(
     bodies: TimeMapRequest[],
-    chunkSize?: number,
   ): Promise<BatchResponse<Awaited<TimeMapResponse>>[]>
   async timeMapBatch<T extends keyof TimeMapResponseType>(
     bodies: TimeMapRequest[],
     format: T,
-    chunkSize?: number,
   ): Promise<BatchResponse<Awaited<TimeMapResponseType[T]>>[]>
   async timeMapBatch<T extends keyof TimeMapResponseType>(
     bodies: TimeMapRequest[],
     format?: T,
-    chunkSize?: number,
   ): Promise<BatchResponse<Awaited<TimeMapResponseType[T]>>[]> {
-    return this.batch((body: TimeMapRequest) => this.timeMap(body, format as T), bodies, chunkSize);
+    return this.batch((body: TimeMapRequest) => this.timeMap(body, format as T), bodies);
   }
 
   /**
@@ -330,19 +318,16 @@ export class TravelTimeClient {
   }
   async timeMapFastBatch(
     bodies: TimeMapFastRequest[],
-    chunkSize?: number,
   ): Promise<BatchResponse<Awaited<TimeMapResponse>>[]>
   async timeMapFastBatch<T extends keyof TimeMapFastResponseType>(
     bodies: TimeMapFastRequest[],
     format: T,
-    chunkSize?: number,
   ): Promise<BatchResponse<Awaited<TimeMapFastResponseType[T]>>[]>
   async timeMapFastBatch<T extends keyof TimeMapFastResponseType>(
     bodies: TimeMapFastRequest[],
     format?: T,
-    chunkSize?: number,
   ): Promise<BatchResponse<Awaited<TimeMapFastResponseType[T]>>[]> {
-    return this.batch((body: TimeMapFastRequest) => this.timeMapFast(body, format as T), bodies, chunkSize);
+    return this.batch((body: TimeMapFastRequest) => this.timeMapFast(body, format as T), bodies);
   }
   /**
    * Simplified version of timeMapFast.
