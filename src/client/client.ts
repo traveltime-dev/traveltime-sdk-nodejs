@@ -145,7 +145,6 @@ export class TravelTimeClient {
   ): Promise<BatchResponse<R>[]> {
     const results: BatchResponse<R>[] = [];
 
-    // eslint-disable-next-line no-await-in-loop
     const chunkResults = await Promise.allSettled(bodies.map((request) => requestFn(request)));
     chunkResults.forEach((chunkResult) => {
       if (chunkResult.status === 'rejected') {
