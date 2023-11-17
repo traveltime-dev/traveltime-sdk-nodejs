@@ -18,7 +18,7 @@
   "author": "TravelTime <support@traveltime.com> (https://traveltime.com/)",
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.27.2",
+    "axios": "^1.6.2",
     "protobufjs": "^7.0.0"
   },
   "devDependencies": {
