@@ -1,6 +1,6 @@
 {
   "name": "traveltime-api",
-  "version": "5.2.1",
+  "version": "5.3.0",
   "description": "TravelTime API SDK for node js with TypeScript",
   "main": "target/index.js",
   "types": "target/index.d.ts",
@@ -18,7 +18,7 @@
   "author": "TravelTime <support@traveltime.com> (https://traveltime.com/)",
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.27.2",
+    "axios": "^1.6.2",
     "protobufjs": "^7.0.0"
   },
   "devDependencies": {

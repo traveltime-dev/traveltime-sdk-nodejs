@@ -8,7 +8,8 @@ export type TimeMapResponseType = {
     'application/vnd.wkt-no-holes+json': TimeMapResponseVndWkt
     'application/geo+json': TimeMapResponseGeoJSON
     'application/kml+xml': string
+    'application/vnd.google-earth.kml+xml': string
     'application/vnd.bounding-boxes+json': TimeMapResponseVndBoundingBoxes
 }
 
-export type TimeMapFastResponseType = Omit<TimeMapResponseType, 'application/kml+xml'>
+export type TimeMapFastResponseType = Omit<TimeMapResponseType, 'application/kml+xml' | 'application/vnd.google-earth.kml+xml'>
