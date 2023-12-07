@@ -164,3 +164,7 @@ export type BoundingBox = {
 }
 
 export type Position = number[];
+
+export type PolygonsFilter = {
+  limit: number
+}

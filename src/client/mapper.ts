@@ -34,6 +34,7 @@ export function timeMapSimpleToRequest(body: TimeMapSimple): TimeMapRequest {
     properties: body.properties,
     range: body.range,
     single_shape: body.single_shape,
+    polygons_filter: body.polygons_filter,
   };
 
   if (body.searchType === 'arrive') {
@@ -311,6 +312,7 @@ export function distanceMapSimpleToRequest(body: DistanceMapSimple): DistanceMap
     level_of_detail: body.level_of_detail,
     no_holes: body.no_holes,
     single_shape: body.single_shape,
+    polygons_filter: body.polygons_filter,
   };
 
   if (body.searchType === 'arrive') {

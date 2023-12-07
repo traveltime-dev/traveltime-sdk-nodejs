@@ -2,6 +2,7 @@ import {
   LevelOfDetail,
   Coords,
   TransportationNoPtRequestCommons,
+  PolygonsFilter,
 } from './common';
 
 export type DistanceMapSimple = {
@@ -11,6 +12,10 @@ export type DistanceMapSimple = {
   leaveTime: string
   searchType?: 'arrive' | 'depart'
   level_of_detail?: LevelOfDetail
+  /**
+   * @deprecated Use {@link DistanceMapSimple.polygons_filter} instead.
+   */
   single_shape?: boolean
+  polygons_filter?: PolygonsFilter
   no_holes?: boolean
 }
