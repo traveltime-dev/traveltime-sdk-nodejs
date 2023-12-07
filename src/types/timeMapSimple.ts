@@ -1,5 +1,5 @@
 import {
-  RangeRequestNoMaxResults, LevelOfDetail, Coords, TransportationRequestCommons, TransportationFast,
+  RangeRequestNoMaxResults, LevelOfDetail, Coords, TransportationRequestCommons, TransportationFast, PolygonsFilter,
 } from './common';
 import { TimeMapRequestProperty } from './timeMap';
 
@@ -12,7 +12,11 @@ export type TimeMapSimple = {
   properties?: Array<TimeMapRequestProperty>
   range?: RangeRequestNoMaxResults
   level_of_detail?: LevelOfDetail
+  /**
+   * @deprecated Use {@link TimeMapSimple.polygons_filter} instead.
+   */
   single_shape?: boolean
+  polygons_filter?: PolygonsFilter
   no_holes?: boolean
 }
 

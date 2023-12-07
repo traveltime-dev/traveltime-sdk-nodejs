@@ -2,6 +2,7 @@ import {
   BoundingBox,
   Coords,
   LevelOfDetail,
+  PolygonsFilter,
   Position,
   RangeRequestNoMaxResults,
   TransportationRequestCommons,
@@ -17,7 +18,11 @@ export type TimeMapRequestSearchBase = {
   properties?: Array<TimeMapRequestProperty>
   range?: RangeRequestNoMaxResults
   level_of_detail?: LevelOfDetail
+  /**
+   * @deprecated Use {@link TimeMapRequestSearchBase.polygons_filter} instead.
+   */
   single_shape?: boolean
+  polygons_filter?: PolygonsFilter
   no_holes?: boolean
 }
 
