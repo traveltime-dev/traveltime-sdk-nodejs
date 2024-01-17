@@ -1,6 +1,20 @@
 export type RateLimitSettings = {
   enabled: boolean
   hitsPerMinute: number
+  /**
+   * Determines how many times request should be repeated when API returns status `429`.
+   *
+   * Default is `3`
+   */
+  retryCount: number
+  /**
+   * Determines how often retry should happen.
+   *
+   * Time units - `milliseconds`.
+   *
+   * Default is `1000`
+   */
+  timeBetweenRetries: number
 }
 type Task<T = any> = () => Promise<T> | T;
 
@@ -10,6 +24,7 @@ export class RateLimiter {
   private completedQueueSize: number;
   private isThrottleActive: boolean;
   private isRequestInProgress: boolean;
+  private isSleeping: boolean;
 
   constructor(
     rateLimitSettings?: Partial<RateLimitSettings>,
@@ -18,9 +33,12 @@ export class RateLimiter {
     this.completedQueueSize = 0;
     this.isThrottleActive = false;
     this.isRequestInProgress = false;
+    this.isSleeping = false;
     this.rateLimitSettings = {
       enabled: false,
       hitsPerMinute: 60,
+      retryCount: 3,
+      timeBetweenRetries: 1000,
       ...rateLimitSettings,
     };
   }
@@ -43,7 +61,7 @@ export class RateLimiter {
   }
 
   private async execute() {
-    if (this.isRequestInProgress || this.isThrottleActive) return;
+    if (this.isRequestInProgress || this.isThrottleActive || this.isSleeping) return;
     const request = this.requestQueue.shift();
     if (!request) return;
     if (this.completedQueueSize + request.hits <= this.rateLimitSettings.hitsPerMinute) {
@@ -58,8 +76,12 @@ export class RateLimiter {
     }
   }
 
-  addAndExecute(request: Task, hits: number) {
-    this.requestQueue.push({ task: request, hits });
+  addAndExecute(request: Task, hits: number, priority = false) {
+    if (priority) {
+      this.requestQueue.unshift({ task: request, hits });
+    } else {
+      this.requestQueue.push({ task: request, hits });
+    }
     this.execute();
   }
 
@@ -72,5 +94,11 @@ export class RateLimiter {
       ...this.rateLimitSettings,
       ...settings,
     };
+  };
+
+  getRetryCount = () => this.rateLimitSettings.retryCount;
+  getTimeBetweenRetries = () => this.rateLimitSettings.timeBetweenRetries;
+  setIsSleeping = (isSleeping: boolean) => {
+    this.isSleeping = isSleeping;
   };
 }

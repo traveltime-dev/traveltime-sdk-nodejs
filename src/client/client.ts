@@ -126,13 +126,19 @@ export class TravelTimeClient {
     const rq = () => (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
     try {
       const promise = (this.rateLimiter.isEnabled() && endpointChecksHPM(url)) ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-        this.rateLimiter.addAndExecute(() => resolve(rq()), getHitAmountFromRequest(url, body || {}));
+        this.rateLimiter.addAndExecute(() => resolve(rq()), getHitAmountFromRequest(url, body || {}), retryCount > 0);
       }) : rq();
       const { data } = await promise;
       return data;
     } catch (error) {
-      if (this.rateLimiter.isEnabled() && retryCount < 3 && axios.isAxiosError(error) && error.response?.status === 429) {
-        return this.request(url, method, payload, retryCount + 1);
+      if (this.rateLimiter.isEnabled() && retryCount < this.rateLimiter.getRetryCount() && axios.isAxiosError(error) && error.response?.status === 429) {
+        return new Promise((resolve) => {
+          this.rateLimiter.setIsSleeping(true);
+          setTimeout(() => {
+            this.rateLimiter.setIsSleeping(false);
+            resolve(this.request(url, method, payload, retryCount + 1));
+          }, this.rateLimiter.getTimeBetweenRetries());
+        });
       }
       throw TravelTimeError.makeError(error);
     }
