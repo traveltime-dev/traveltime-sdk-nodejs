@@ -1,9 +1,10 @@
+import { protoCountries } from '../client/proto/countries';
 import { Coords } from './common';
 
 export type TimeFilterFastProtoDistanceTransportation = 'driving+ferry' | 'walking+ferry' | 'driving'
 export type TimeFilterFastProtoDistanceCountry = 'uk' | 'ie'
 export type TimeFilterFastProtoTransportation = 'pt' | 'cycling+ferry' | TimeFilterFastProtoDistanceTransportation;
-export type TimeFilterFastProtoCountry = 'us' | 'nl' | 'at' | 'be' | 'de' | 'fr' | 'lt' | TimeFilterFastProtoDistanceCountry
+export type TimeFilterFastProtoCountry = typeof protoCountries[number]
 
 export interface TimeFilterFastProtoProperties {
   fares?: boolean,
