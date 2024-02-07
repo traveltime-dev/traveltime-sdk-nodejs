@@ -390,6 +390,8 @@ You can apply additional optional parameters to client constructor’s second ar
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
     - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`.
+    - `retryCount` [number] - Determines how many times request should be repeated when API returns status `429`. Default is `3`.
+    - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `1000`.
 
 If you need to change any of these parameters you can call setter methods: `travelTimeClient.setRateLimitSettings`.
 
@@ -496,7 +498,7 @@ travelTimeClient.geocodingReverse({
 ```
 
 ### [Time Filter (Postcodes)](https://traveltime.com/docs/api/reference/postcode-search)
-Find reachable postcodes from origin (or to destination) and get statistics about such postcodes.
+Find districts that have a certain coverage from origin (or to destination) and get statistics about postcodes within such districts.
 Currently only supports United Kingdom.
 
 Function accepts object that matches API json spec.
