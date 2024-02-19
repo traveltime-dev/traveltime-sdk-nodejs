@@ -191,7 +191,7 @@ travelTimeClient.timeMap(
 
 Requesting an unsupported response format will result in an error.
 
-### Distance Map
+### [Distance Map](https://docs.traveltime.com/api/reference/distance-map)
 Given origin coordinates, find shapes of zones reachable within corresponding travel distance.
 Find unions/intersections between different searches.
 
