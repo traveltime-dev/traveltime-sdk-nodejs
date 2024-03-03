@@ -211,7 +211,7 @@ export class TravelTimeClient {
       },
     });
   }
-  geocodingBatch = async (requests: Coords[], req?: GeocodingSearchRequest) => this.batch((coords) => this.geocoding(coords, req), requests);
+  geocodingBatch = async (requests: string[], req?: GeocodingSearchRequest) => this.batch((coords) => this.geocoding(coords, req), requests);
 
   async geocodingReverse(coords: Coords, acceptLanguage?: string) {
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
