@@ -27,7 +27,7 @@ export class TravelTimeError extends Error {
   }
 
   static isTravelTimeError(payload: any): payload is TraveltimeErrorConstructor {
-    return !!payload.error_code && !!payload.description;
+    return !!payload && (!!payload.error_code && !!payload.description);
   }
 
   static makeError(error: any) {
