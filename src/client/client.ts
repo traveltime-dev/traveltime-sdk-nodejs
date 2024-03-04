@@ -1,4 +1,7 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosInstance, AxiosRequestConfig, CreateAxiosDefaults,
+} from 'axios';
+import HttpAgent, { HttpsAgent } from 'agentkeepalive';
 import { TravelTimeError } from '../error';
 import {
   MapInfoResponse,
@@ -59,6 +62,9 @@ type RequestPayload = {
 const DEFAULT_BASE_URL = 'https://api.traveltimeapp.com/v4';
 const sdkVersion = require('../../package.json').version;
 
+const defaultHttpsAgent = new HttpsAgent({ keepAlive: true, maxSockets: 100 });
+const defaultHttpAgent = new HttpAgent({ keepAlive: true, maxSockets: 100 });
+
 function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
   switch (url) {
     case '/time-filter':
@@ -102,23 +108,41 @@ export class TravelTimeClient {
 
   constructor(
     credentials: Credentials,
-    parameters?: { baseURL?: string, rateLimitSettings?: Partial<RateLimitSettings> },
+    parameters?: {
+      baseURL?: string,
+      rateLimitSettings?: Partial<RateLimitSettings>,
+      axiosInstance?: AxiosInstance
+    },
   ) {
     if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
     this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
-    this.axiosInstance = axios.create({
-      baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
-      maxBodyLength: Infinity,
-      maxContentLength: Infinity,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Application-Id': this.applicationId,
-        'X-Api-Key': this.apiKey,
-        'User-Agent': `Travel Time Nodejs SDK ${sdkVersion}`,
-      },
-    });
+    const headers: CreateAxiosDefaults['headers'] = {
+      'Content-Type': 'application/json',
+      'X-Application-Id': this.applicationId,
+      'X-Api-Key': this.apiKey,
+      'User-Agent': `Travel Time Nodejs SDK ${sdkVersion}`,
+    };
+    if (parameters?.axiosInstance) {
+      this.axiosInstance = parameters.axiosInstance;
+      if (!this.axiosInstance.defaults.baseURL) this.axiosInstance.defaults.baseURL = parameters?.baseURL ?? DEFAULT_BASE_URL;
+      this.axiosInstance.defaults.headers.common = {
+        ...headers,
+        ...this.axiosInstance.defaults.headers.common,
+      };
+    } else {
+      this.axiosInstance = axios.create({
+        baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+        httpAgent: defaultHttpAgent,
+        httpsAgent: defaultHttpsAgent,
+        headers: {
+          common: headers,
+        },
+      });
+    }
   }
 
   private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload, retryCount = 0): Promise<Response> {
@@ -211,7 +235,7 @@ export class TravelTimeClient {
       },
     });
   }
-  geocodingBatch = async (requests: Coords[], req?: GeocodingSearchRequest) => this.batch((coords) => this.geocoding(coords, req), requests);
+  geocodingBatch = async (requests: string[], req?: GeocodingSearchRequest) => this.batch((coords) => this.geocoding(coords, req), requests);
 
   async geocodingReverse(coords: Coords, acceptLanguage?: string) {
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
