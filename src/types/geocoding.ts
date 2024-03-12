@@ -10,6 +10,8 @@ export type GeocodingResponseGeometry = {
 export type GeocodingResponseProperties = TravelTimeResponseFeature & {
   name: string
   label: string
+  type: string
+  category: string
   score?: number
   house_number?: string
   street?: string
