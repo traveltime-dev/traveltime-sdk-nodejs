@@ -1,4 +1,6 @@
-import { Coords, LevelOfDetail, TransportationFast } from './common';
+import {
+  Coords, LevelOfDetail, PolygonsFilter, TransportationFast,
+} from './common';
 
 export type TimeMapFastRequestSearch = {
   id: string,
@@ -9,6 +11,8 @@ export type TimeMapFastRequestSearch = {
   arrival_time_period : 'weekday_morning',
   travel_time: number,
   level_of_detail?: LevelOfDetail
+  polygons_filter?: PolygonsFilter
+  no_holes?: boolean
 }
 
 export type TimeMapFastRequestArrivalSearch = {
