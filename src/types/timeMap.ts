@@ -24,6 +24,7 @@ export type TimeMapRequestSearchBase = {
   single_shape?: boolean
   polygons_filter?: PolygonsFilter
   no_holes?: boolean
+  snap_penalty?: 'enabled' | 'disabled'
 }
 
 export type TimeMapRequestDepartureSearch = TimeMapRequestSearchBase & {
