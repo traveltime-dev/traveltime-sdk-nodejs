@@ -168,3 +168,12 @@ export type Position = number[];
 export type PolygonsFilter = {
   limit: number
 }
+
+export type Snapping = {
+  snapping?: {
+    /** Default - `enabled` */
+    penalty?: 'enabled' | 'disabled'
+    /** Default - `both_drivable_and_walkable` */
+    accept_roads?: 'both_drivable_and_walkable' | 'any_drivable'
+  }
+}
