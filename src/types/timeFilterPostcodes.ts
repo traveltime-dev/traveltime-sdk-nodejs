@@ -1,12 +1,13 @@
 import {
   Coords,
   RangeRequestFull,
+  Snapping,
   TransportationRequestCommons,
 } from './common';
 
 export type TimeFilterPostcodesRequestProperty = 'travel_time' | 'distance';
 
-export type TimeFilterPostcodesSearchBase = {
+export type TimeFilterPostcodesSearchBase = Snapping & {
   'id': string;
   'coords': Coords
   'transportation': TransportationRequestCommons;

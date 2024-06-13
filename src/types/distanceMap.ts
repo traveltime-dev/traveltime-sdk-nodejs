@@ -4,10 +4,11 @@ import {
   LevelOfDetail,
   PolygonsFilter,
   Position,
+  Snapping,
   TransportationNoPtRequestCommons,
 } from './common';
 
-export type DistanceMapRequestSearchBase = {
+export type DistanceMapRequestSearchBase = Snapping & {
   id: string
   coords: Coords
   transportation: TransportationNoPtRequestCommons

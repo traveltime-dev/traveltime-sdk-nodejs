@@ -4,12 +4,13 @@ import {
   ResponseFares,
   ResponseRoute,
   RouteResponseTransportationMode,
+  Snapping,
   TransportationRequestCommons,
 } from './common';
 
 export declare type TimeFilterRequestProperty = 'travel_time' | 'distance' | 'distance_breakdown' | 'fares' | 'route';
 
-export type TimeFilterRequestSearchBase = {
+export type TimeFilterRequestSearchBase = Snapping & {
   'id': string;
   'transportation': TransportationRequestCommons;
   'travel_time': number;

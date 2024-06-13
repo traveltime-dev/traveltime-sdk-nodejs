@@ -5,12 +5,13 @@ import {
   PolygonsFilter,
   Position,
   RangeRequestNoMaxResults,
+  Snapping,
   TransportationRequestCommons,
 } from './common';
 
 export type TimeMapRequestProperty = 'is_only_walking';
 
-export type TimeMapRequestSearchBase = {
+export type TimeMapRequestSearchBase = Snapping & {
   id: string
   coords: Coords
   transportation: TransportationRequestCommons
@@ -24,6 +25,9 @@ export type TimeMapRequestSearchBase = {
   single_shape?: boolean
   polygons_filter?: PolygonsFilter
   no_holes?: boolean
+  /**
+   * @deprecated Use {@link TimeMapRequestSearchBase.snapping} instead.
+   */
   snap_penalty?: 'enabled' | 'disabled'
 }
 

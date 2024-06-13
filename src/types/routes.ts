@@ -4,11 +4,12 @@ import {
   TransportationRequestCommons,
   ResponseRoute,
   ResponseFares,
+  Snapping,
 } from './common';
 
 export type RoutesRequestProperty = 'travel_time' | 'distance' | 'fares' | 'route';
 
-export type RoutesRequestSearchBase = {
+export type RoutesRequestSearchBase = Snapping & {
   'id': string;
   'transportation': TransportationRequestCommons;
   'properties': Array<RoutesRequestProperty>;
