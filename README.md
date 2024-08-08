@@ -231,7 +231,6 @@ const arrival_search: DistanceMapRequestArrivalSearch = {
   travel_distance: 900,
   coords: { lat: 51.507609, lng: -0.128315 },
   transportation: { type: 'cycling' },
-  range: { enabled: true, width: 3600 },
 };
 const union: DistanceMapRequestUnionOrIntersection = {
   id: 'union of driving and cycling',
