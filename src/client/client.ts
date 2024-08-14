@@ -42,13 +42,10 @@ import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapRe
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
 import {
   distanceMapSimpleToRequest,
-  mergeTimeFilterResponses,
   routesSimpleToRequest,
   timeFilterFastManyToManyMatrixResponseMapper,
   timeFilterFastManyToManyMatrixToRequest,
-  timeFilterFastSimpleToFullMatrix,
   timeFilterFastSimpleToRequest,
-  timeFilterSimpleToFullMatrix,
   timeFilterSimpleToRequest,
   timeMapFastSimpleToRequest,
   timeMapSimpleToRequest,
@@ -269,27 +266,9 @@ export class TravelTimeClient {
    * @param {TimeFilterSimple} body Simplified TimeFilterRequest type. Default search type is `departure`.
    */
   timeFilterSimple = async (body: TimeFilterSimple) => this.timeFilter(timeFilterSimpleToRequest(body));
-  /**
-   * Generates a data frame (full matrix).
-   * Travel times are calculated from each point to the remaining points passed into the function.
-   * @param {TimeFilterSimple} body Simplified TimeFilterRequest type. Default search type is `departure`.
-   */
-  timeFilterFullMatrix = async (body: TimeFilterSimple) => {
-    const responses = await this.timeFilterBatch(timeFilterSimpleToFullMatrix(body));
-    return mergeTimeFilterResponses(responses);
-  };
 
   timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
   timeFilterFastBatch = async (requests: TimeFilterFastRequest[]) => this.batch(this.timeFilterFast, requests);
-  /**
-   * Generates a data frame (full matrix).
-   * Travel times are calculated from each point to the remaining points passed into the function.
-   * @param {TimeFilterFastSimple} body Simplified TimeFilterFastRequest type. Default search type is `departure`.
-   */
-  timeFilterFastFullMatrix = async (body: TimeFilterFastSimple) => {
-    const responses = await this.timeFilterFastBatch(timeFilterFastSimpleToFullMatrix(body));
-    return mergeTimeFilterResponses(responses);
-  };
   manyToManyMatrixFast = async (body: TimeFilterFastManyToManyMatrixRequest) => {
     const requests = timeFilterFastManyToManyMatrixToRequest(body);
     const responses = await this.timeFilterFastBatch(requests);
