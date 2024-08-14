@@ -5,7 +5,7 @@ import {
 } from './common';
 
 export type TimeFilterFastRequestArrivalTimePeriod = 'weekday_morning';
-export type TimeFilterFastRequestProperty = 'travel_time' | 'fares';
+export type TimeFilterFastRequestProperty = 'travel_time' | 'fares' | 'distance';
 
 export type TimeFilterFastRequestTransportation = {
   'type': TransportationFast;
