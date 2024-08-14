@@ -44,6 +44,8 @@ import {
   distanceMapSimpleToRequest,
   mergeTimeFilterResponses,
   routesSimpleToRequest,
+  timeFilterFastManyToManyMatrixResponseMapper,
+  timeFilterFastManyToManyMatrixToRequest,
   timeFilterFastSimpleToFullMatrix,
   timeFilterFastSimpleToRequest,
   timeFilterSimpleToFullMatrix,
@@ -51,6 +53,7 @@ import {
   timeMapFastSimpleToRequest,
   timeMapSimpleToRequest,
 } from './mapper';
+import { TimeFilterFastManyToManyMatrixRequest } from '../types/timeFilterFastMatrix';
 
 type HttpMethod = 'get' | 'post'
 
@@ -286,6 +289,11 @@ export class TravelTimeClient {
   timeFilterFastFullMatrix = async (body: TimeFilterFastSimple) => {
     const responses = await this.timeFilterFastBatch(timeFilterFastSimpleToFullMatrix(body));
     return mergeTimeFilterResponses(responses);
+  };
+  manyToManyMatrixFast = async (body: TimeFilterFastManyToManyMatrixRequest) => {
+    const requests = timeFilterFastManyToManyMatrixToRequest(body);
+    const responses = await this.timeFilterFastBatch(requests);
+    return timeFilterFastManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
   };
 
   /**
