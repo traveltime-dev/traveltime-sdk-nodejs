@@ -43,14 +43,13 @@ import { RateLimiter, RateLimitSettings } from './rateLimiter';
 import {
   distanceMapSimpleToRequest,
   routesSimpleToRequest,
-  timeFilterFastManyToManyMatrixResponseMapper,
-  timeFilterFastManyToManyMatrixToRequest,
   timeFilterFastSimpleToRequest,
   timeFilterSimpleToRequest,
   timeMapFastSimpleToRequest,
   timeMapSimpleToRequest,
 } from './mapper';
 import { TimeFilterFastManyToManyMatrixRequest } from '../types/timeFilterMatrix';
+import { timeFilterFastManyToManyMatrixResponseMapper, timeFilterFastManyToManyMatrixToRequest } from './matrixMapper';
 
 type HttpMethod = 'get' | 'post'
 
