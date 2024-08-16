@@ -24,7 +24,7 @@ import {
 } from '../types';
 import { DistanceMapSimple } from '../types/distanceMapSimple';
 import { RoutesSimple } from '../types/routesSimple';
-import { TimeFilterFastManyToManyMatrixRequest, TimeFilterFastManyToManyMatrixResponse } from '../types/timeFilterFastMatrix';
+import { TimeFilterFastManyToManyMatrixRequest, TimeFilterFastManyToManyMatrixResponse } from '../types/timeFilterMatrix';
 
 export function timeMapSimpleToRequest(body: TimeMapSimple): TimeMapRequest {
   const searchBase : Omit<TimeMapRequestSearchBase, 'id' | 'coords'> = {

@@ -50,7 +50,7 @@ import {
   timeMapFastSimpleToRequest,
   timeMapSimpleToRequest,
 } from './mapper';
-import { TimeFilterFastManyToManyMatrixRequest } from '../types/timeFilterFastMatrix';
+import { TimeFilterFastManyToManyMatrixRequest } from '../types/timeFilterMatrix';
 
 type HttpMethod = 'get' | 'post'
 
