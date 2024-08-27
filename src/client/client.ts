@@ -48,8 +48,10 @@ import {
   timeMapFastSimpleToRequest,
   timeMapSimpleToRequest,
 } from './mapper';
-import { TimeFilterFastManyToManyMatrixRequest } from '../types/timeFilterMatrix';
-import { timeFilterFastManyToManyMatrixResponseMapper, timeFilterFastManyToManyMatrixToRequest } from './matrixMapper';
+import { TimeFilterFastManyToManyMatrixRequest, TimeFilterManyToManyMatrixRequest } from '../types/timeFilterMatrix';
+import {
+  timeFilterFastManyToManyMatrixResponseMapper, timeFilterFastManyToManyMatrixToRequest, timeFilterManyToManyMatrixResponseMapper, timeFilterManyToManyMatrixToRequest,
+} from './matrixMapper';
 
 type HttpMethod = 'get' | 'post'
 
@@ -258,6 +260,11 @@ export class TravelTimeClient {
 
   timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', { body });
   timeFilterBatch = async (requests: TimeFilterRequest[]) => this.batch(this.timeFilter, requests);
+  manyToManyMatrix = async (body: TimeFilterManyToManyMatrixRequest) => {
+    const requests = timeFilterManyToManyMatrixToRequest(body);
+    const responses = await this.timeFilterBatch(requests);
+    return timeFilterManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
+  };
 
   /**
    * Simplified version of timeFilter.
