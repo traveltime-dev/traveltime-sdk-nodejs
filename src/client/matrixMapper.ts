@@ -53,6 +53,19 @@ function generateRequestsFromChunks<R>(body: {
   return requests;
 }
 
+const parseSingleIdToNumber = (locationId: string) => Number.parseInt(locationId.substring(3), 10);
+
+function getPrimaryIndex(searchId: string) {
+  const rgx = /.*-(\d+)-.*(\d+)/;
+  const rgxMatch = rgx.exec(searchId);
+  if (rgxMatch) {
+    const primaryIndex = Number.parseInt(rgxMatch[1], 10);
+    if (!Number.isNaN(primaryIndex)) return primaryIndex;
+  }
+
+  return false;
+}
+
 const generateSearchId = (indexFrom: number, chunkOffset: number) => `from-${indexFrom}-chunk-${chunkOffset}`;
 const generateFromId = (indexFrom: number) => `from-${indexFrom}`;
 const generateToIds = (chunk: Coords[], chunkOffset: number) => chunk.map((_, iTo) => `to-${iTo + chunkOffset}`);
@@ -86,17 +99,15 @@ export function timeFilterFastManyToManyMatrixResponseMapper(responses: BatchRes
   responses.forEach((response) => {
     if (response.type === 'success') {
       const resp = response.body.results[0];
-      const rgx = /.*-(\d+)-.*(\d+)/;
-      const rgxMatch = rgx.exec(resp.search_id);
-      if (rgxMatch) {
-        const primaryIndex = Number.parseInt(rgxMatch[1], 10);
-        const unreachableIndexes = resp.unreachable.map((_) => Number.parseInt(_.substring(3), 10));
+      const primaryIndex = getPrimaryIndex(resp.search_id);
+      if (primaryIndex) {
+        const unreachableIndexes = resp.unreachable.map(parseSingleIdToNumber);
         unreachableIndexes.forEach((i) => {
           if (timeArray) timeArray[primaryIndex][i] = -1;
           if (distanceArray) distanceArray[primaryIndex][i] = -1;
         });
         resp.locations.forEach((location) => {
-          const i = Number.parseInt(location.id.substring(3), 10);
+          const i = parseSingleIdToNumber(location.id);
           if (timeArray) timeArray[primaryIndex][i] = location.properties.travel_time;
           if (distanceArray) distanceArray[primaryIndex][i] = location.properties.travel_time;
         });
@@ -152,17 +163,15 @@ export function timeFilterManyToManyMatrixResponseMapper(responses: BatchRespons
   responses.forEach((response) => {
     if (response.type === 'success') {
       const resp = response.body.results[0];
-      const rgx = /.*-(\d+)-.*(\d+)/;
-      const rgxMatch = rgx.exec(resp.search_id);
-      if (rgxMatch) {
-        const primaryIndex = Number.parseInt(rgxMatch[1], 10);
-        const unreachableIndexes = resp.unreachable.map((_) => Number.parseInt(_.substring(3), 10));
+      const primaryIndex = getPrimaryIndex(resp.search_id);
+      if (primaryIndex) {
+        const unreachableIndexes = resp.unreachable.map(parseSingleIdToNumber);
         unreachableIndexes.forEach((i) => {
           if (timeArray) timeArray[primaryIndex][i] = -1;
           if (distanceArray) distanceArray[primaryIndex][i] = -1;
         });
         resp.locations.forEach((location) => {
-          const i = Number.parseInt(location.id.substring(3), 10);
+          const i = parseSingleIdToNumber(location.id);
           if (timeArray) timeArray[primaryIndex][i] = location.properties[0].travel_time;
           if (distanceArray) distanceArray[primaryIndex][i] = location.properties[0].travel_time;
         });
