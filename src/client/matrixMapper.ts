@@ -100,7 +100,7 @@ export function timeFilterFastManyToManyMatrixResponseMapper(responses: BatchRes
     if (response.type === 'success') {
       const resp = response.body.results[0];
       const primaryIndex = getPrimaryIndex(resp.search_id);
-      if (primaryIndex) {
+      if (primaryIndex !== false) {
         const unreachableIndexes = resp.unreachable.map(parseSingleIdToNumber);
         unreachableIndexes.forEach((i) => {
           if (timeArray) timeArray[primaryIndex][i] = -1;
@@ -164,7 +164,7 @@ export function timeFilterManyToManyMatrixResponseMapper(responses: BatchRespons
     if (response.type === 'success') {
       const resp = response.body.results[0];
       const primaryIndex = getPrimaryIndex(resp.search_id);
-      if (primaryIndex) {
+      if (primaryIndex !== false) {
         const unreachableIndexes = resp.unreachable.map(parseSingleIdToNumber);
         unreachableIndexes.forEach((i) => {
           if (timeArray) timeArray[primaryIndex][i] = -1;
