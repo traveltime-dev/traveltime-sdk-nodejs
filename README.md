@@ -345,7 +345,6 @@ const matrix = await travelTimeClient.manyToManyMatrix({
     transportation: { type: 'driving' },
     properties: ['travel_time', 'distance'],
     travelTime: 1800,
-    maxSearchesPerRequest: 2,
     leaveTime: new Date().toISOString(),
   });
 ```
@@ -446,7 +445,6 @@ const matrix = await travelTimeClient.manyToManyMatrixFast({
     transportation: { type: 'driving' },
     properties: ['travel_time', 'distance'],
     travelTime: 1800,
-    maxSearchesPerRequest: 2,
   });
 ```
 
