@@ -62,7 +62,7 @@ function getPrimaryIndex(searchId: string) {
     if (!Number.isNaN(primaryIndex)) return primaryIndex;
   }
 
-  return false;
+  return -1;
 }
 
 const generateSearchId = (indexFrom: number, chunkOffset: number) => `from-${indexFrom}-chunk-${chunkOffset}`;
@@ -99,7 +99,7 @@ export function timeFilterFastManyToManyMatrixResponseMapper(responses: BatchRes
     if (response.type === 'success') {
       const resp = response.body.results[0];
       const primaryIndex = getPrimaryIndex(resp.search_id);
-      if (primaryIndex !== false) {
+      if (primaryIndex !== -1) {
         const unreachableIndexes = resp.unreachable.map(parseSingleIdToNumber);
         unreachableIndexes.forEach((i) => {
           if (timeArray) timeArray[primaryIndex][i] = -1;
@@ -163,7 +163,7 @@ export function timeFilterManyToManyMatrixResponseMapper(responses: BatchRespons
     if (response.type === 'success') {
       const resp = response.body.results[0];
       const primaryIndex = getPrimaryIndex(resp.search_id);
-      if (primaryIndex !== false) {
+      if (primaryIndex !== -1) {
         const unreachableIndexes = resp.unreachable.map(parseSingleIdToNumber);
         unreachableIndexes.forEach((i) => {
           if (timeArray) timeArray[primaryIndex][i] = -1;
