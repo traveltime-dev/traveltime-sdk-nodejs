@@ -42,15 +42,16 @@ import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapRe
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
 import {
   distanceMapSimpleToRequest,
-  mergeTimeFilterResponses,
   routesSimpleToRequest,
-  timeFilterFastSimpleToFullMatrix,
   timeFilterFastSimpleToRequest,
-  timeFilterSimpleToFullMatrix,
   timeFilterSimpleToRequest,
   timeMapFastSimpleToRequest,
   timeMapSimpleToRequest,
 } from './mapper';
+import { TimeFilterFastManyToManyMatrixRequest, TimeFilterManyToManyMatrixRequest } from '../types/timeFilterMatrix';
+import {
+  timeFilterFastManyToManyMatrixResponseMapper, timeFilterFastManyToManyMatrixToRequest, timeFilterManyToManyMatrixResponseMapper, timeFilterManyToManyMatrixToRequest,
+} from './matrixMapper';
 
 type HttpMethod = 'get' | 'post'
 
@@ -259,6 +260,11 @@ export class TravelTimeClient {
 
   timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', { body });
   timeFilterBatch = async (requests: TimeFilterRequest[]) => this.batch(this.timeFilter, requests);
+  manyToManyMatrix = async (body: TimeFilterManyToManyMatrixRequest) => {
+    const requests = timeFilterManyToManyMatrixToRequest(body);
+    const responses = await this.timeFilterBatch(requests);
+    return timeFilterManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
+  };
 
   /**
    * Simplified version of timeFilter.
@@ -266,26 +272,13 @@ export class TravelTimeClient {
    * @param {TimeFilterSimple} body Simplified TimeFilterRequest type. Default search type is `departure`.
    */
   timeFilterSimple = async (body: TimeFilterSimple) => this.timeFilter(timeFilterSimpleToRequest(body));
-  /**
-   * Generates a data frame (full matrix).
-   * Travel times are calculated from each point to the remaining points passed into the function.
-   * @param {TimeFilterSimple} body Simplified TimeFilterRequest type. Default search type is `departure`.
-   */
-  timeFilterFullMatrix = async (body: TimeFilterSimple) => {
-    const responses = await this.timeFilterBatch(timeFilterSimpleToFullMatrix(body));
-    return mergeTimeFilterResponses(responses);
-  };
 
   timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
   timeFilterFastBatch = async (requests: TimeFilterFastRequest[]) => this.batch(this.timeFilterFast, requests);
-  /**
-   * Generates a data frame (full matrix).
-   * Travel times are calculated from each point to the remaining points passed into the function.
-   * @param {TimeFilterFastSimple} body Simplified TimeFilterFastRequest type. Default search type is `departure`.
-   */
-  timeFilterFastFullMatrix = async (body: TimeFilterFastSimple) => {
-    const responses = await this.timeFilterFastBatch(timeFilterFastSimpleToFullMatrix(body));
-    return mergeTimeFilterResponses(responses);
+  manyToManyMatrixFast = async (body: TimeFilterFastManyToManyMatrixRequest) => {
+    const requests = timeFilterFastManyToManyMatrixToRequest(body);
+    const responses = await this.timeFilterFastBatch(requests);
+    return timeFilterFastManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
   };
 
   /**

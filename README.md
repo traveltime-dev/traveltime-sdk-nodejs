@@ -321,6 +321,58 @@ travelTimeClient.timeFilter({
   .catch((e) => console.error(e));
 ```
 
+### Time Filter Many to Many Utility
+
+This utility function leverages `travelTimeClient.timeFilter` (as described in the previous section) to efficiently construct Many-to-Many matrices in batches.
+
+
+```ts
+const matrix = await travelTimeClient.manyToManyMatrix({
+    coordsFrom: [
+      { lat: 51.5055, lng: -0.0754 },
+      { lat: 51.5171, lng: -0.1062 },
+      { lat: 51.5309, lng: -0.1215 },
+      { lat: 51.5022, lng: -0.1149 },
+      { lat: 51.5144, lng: -0.1427 },
+    ],
+    coordsTo: [
+      { lat: 51.5055, lng: -0.0754 },
+      { lat: 51.5171, lng: -0.1062 },
+      { lat: 51.5309, lng: -0.1215 },
+      { lat: 51.5022, lng: -0.1149 },
+      { lat: 51.5144, lng: -0.1427 },
+    ],
+    transportation: { type: 'driving' },
+    properties: ['travel_time', 'distance'],
+    travelTime: 1800,
+    leaveTime: new Date().toISOString(),
+  });
+```
+
+The response will be in the following format:
+
+```json
+{
+  "travelTimes":[
+    [0,1637,-1,1516,-1],
+    [1689,0,956,991,-1],
+    [-1,815,0,1193,1178],
+    [1550,1072,1522,0,1748],
+    [-1,1702,1414,1556,0]
+  ],
+  "distances":[
+    [0,1637,-1,1516,-1],
+    [1689,0,956,991,-1],
+    [-1,815,0,1193,1178],
+    [1550,1072,1522,0,1748],
+    [-1,1702,1414,1556,0]
+  ],
+  "errors":[]
+}
+```
+
+The `travelTimes` and `distances` arrays are structured so that you can access specific values using `response.travelTimes[indexOfLocationFrom][indexOfLocationTo]`. Unreachable destinations are represented by `-1`. If there was an error while fetching the response, those entries will be marked as `null`. You can view all errors in the `response.errors` field.
+
 ### [Time Filter (Fast)](https://traveltime.com/docs/api/reference/time-filter-fast)
 A very fast version of `time_filter()`.
 However, the request parameters are much more limited.
@@ -368,6 +420,57 @@ travelTimeClient.timeFilterFast({
 }).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
+
+### Time Filter Fast Many to Many Utility
+
+This utility function leverages `travelTimeClient.timeFilterFast` (as described in the previous section) to efficiently construct Many-to-Many matrices in batches.
+
+
+```ts
+const matrix = await travelTimeClient.manyToManyMatrixFast({
+    coordsFrom: [
+      { lat: 51.5055, lng: -0.0754 },
+      { lat: 51.5171, lng: -0.1062 },
+      { lat: 51.5309, lng: -0.1215 },
+      { lat: 51.5022, lng: -0.1149 },
+      { lat: 51.5144, lng: -0.1427 },
+    ],
+    coordsTo: [
+      { lat: 51.5055, lng: -0.0754 },
+      { lat: 51.5171, lng: -0.1062 },
+      { lat: 51.5309, lng: -0.1215 },
+      { lat: 51.5022, lng: -0.1149 },
+      { lat: 51.5144, lng: -0.1427 },
+    ],
+    transportation: { type: 'driving' },
+    properties: ['travel_time', 'distance'],
+    travelTime: 1800,
+  });
+```
+
+The response will be in the following format:
+
+```json
+{
+  "travelTimes":[
+    [0,1143,-1,1472,-1],
+    [1254,0,949,1080,1733],
+    [-1,997,0,1629,1462],
+    [1522,953,1285,0,1638],
+    [-1,-1,1249,-1,0]
+  ],
+  "distances":[
+    [0,1143,-1,1472,-1],
+    [1254,0,949,1080,1733],
+    [-1,997,0,1629,1462],
+    [1522,953,1285,0,1638],
+    [-1,-1,1249,-1,0]
+  ],
+  "errors":[]
+}
+```
+
+The `travelTimes` and `distances` arrays are structured so that you can access specific values using `response.travelTimes[indexOfLocationFrom][indexOfLocationTo]`. Unreachable destinations are represented by `-1`. If there was an error while fetching the response, those entries will be marked as `null`. You can view all errors in the `response.errors` field.
 
 ### [Time Filter Fast (Proto)](https://traveltime.com/docs/api/reference/travel-time-distance-matrix-proto)
 A fast version of time filter communicating using [protocol buffers](https://github.com/protocolbuffers/protobuf).
