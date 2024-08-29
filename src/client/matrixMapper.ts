@@ -9,7 +9,6 @@ import {
   TimeFilterRequest,
   TimeFilterRequestProperty,
   TimeFilterResponse,
-
 } from '../types';
 import {
   TimeFilterFastManyToManyMatrixRequest, TimeFilterFastManyToManyMatrixResponse, TimeFilterManyToManyMatrixRequest, TimeFilterManyToManyMatrixResponse,
@@ -35,18 +34,18 @@ function generateRequestsFromChunks<R>(body: {
   coordsFrom: Coords[]
   coordsTo: Coords[]
 }, makeRequest: (params: {
-  iFrom: number,
+  indexFrom: number,
   coordsFrom: Coords,
   chunk: Coords[],
   chunkOffset: number,
 }) => R): R[] {
   const maxSearchesPerRequest = validateMaxSearchLimit(100_000, body.maxSearchesPerRequest);
   const requests: R[] = [];
-  body.coordsFrom.forEach((coordsFrom, iFrom) => {
+  body.coordsFrom.forEach((coordsFrom, indexFrom) => {
     for (let index = 0; index < body.coordsTo.length; index += maxSearchesPerRequest) {
       const chunk = body.coordsTo.slice(index, index + maxSearchesPerRequest);
       requests.push(makeRequest({
-        iFrom, coordsFrom, chunk, chunkOffset: index,
+        indexFrom, coordsFrom, chunk, chunkOffset: index,
       }));
     }
   });
@@ -76,13 +75,13 @@ export function timeFilterFastManyToManyMatrixToRequest(body: TimeFilterFastMany
     coordsTo: body.coordsTo,
     maxSearchesPerRequest: body.maxSearchesPerRequest,
   }, ({
-    iFrom, coordsFrom, chunk, chunkOffset,
+    indexFrom, coordsFrom, chunk, chunkOffset,
   }) => ({
-    locations: generateLocationsForChunk(iFrom, coordsFrom, chunk, chunkOffset),
+    locations: generateLocationsForChunk(indexFrom, coordsFrom, chunk, chunkOffset),
     arrival_searches: {
       one_to_many: [{
-        id: generateSearchId(iFrom, chunkOffset),
-        departure_location_id: generateFromId(iFrom),
+        id: generateSearchId(indexFrom, chunkOffset),
+        departure_location_id: generateFromId(indexFrom),
         arrival_location_ids: generateToIds(chunk, chunkOffset),
         arrival_time_period: 'weekday_morning',
         properties: body.properties || ['travel_time'],
@@ -128,14 +127,14 @@ export function timeFilterManyToManyMatrixToRequest(body: TimeFilterManyToManyMa
     coordsTo: body.coordsTo,
     maxSearchesPerRequest: body.maxSearchesPerRequest,
   }, ({
-    iFrom, coordsFrom, chunk, chunkOffset,
+    indexFrom, coordsFrom, chunk, chunkOffset,
   }) => ({
-    locations: generateLocationsForChunk(iFrom, coordsFrom, chunk, chunkOffset),
+    locations: generateLocationsForChunk(indexFrom, coordsFrom, chunk, chunkOffset),
     ...(body.searchType === 'depart' ? {
       departure_searches: [{
-        id: generateSearchId(iFrom, chunkOffset),
+        id: generateSearchId(indexFrom, chunkOffset),
         arrival_location_ids: generateToIds(chunk, chunkOffset),
-        departure_location_id: generateFromId(iFrom),
+        departure_location_id: generateFromId(indexFrom),
         departure_time: body.leaveTime,
         properties: body.properties || ['travel_time'],
         transportation: body.transportation,
@@ -144,9 +143,9 @@ export function timeFilterManyToManyMatrixToRequest(body: TimeFilterManyToManyMa
       }],
     } : {
       arrival_searches: [{
-        id: generateSearchId(iFrom, chunkOffset),
+        id: generateSearchId(indexFrom, chunkOffset),
         departure_location_ids: generateToIds(chunk, chunkOffset),
-        arrival_location_id: generateFromId(iFrom),
+        arrival_location_id: generateFromId(indexFrom),
         arrival_time: body.leaveTime,
         properties: body.properties || ['travel_time'],
         transportation: body.transportation,
