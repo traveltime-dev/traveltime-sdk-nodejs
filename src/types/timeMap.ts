@@ -26,6 +26,14 @@ export type TimeMapRequestSearchBase = Snapping & {
   polygons_filter?: PolygonsFilter
   no_holes?: boolean
   /**
+   * Default: `approximate_time_filter`
+   */
+  render_mode?: 'approximate_time_filter' | 'road_buffering'
+  /**
+   * Default: true
+   */
+  remove_water_bodies?: boolean
+  /**
    * @deprecated Use {@link TimeMapRequestSearchBase.snapping} instead.
    */
   snap_penalty?: 'enabled' | 'disabled'
