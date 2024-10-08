@@ -1,8 +1,8 @@
 import { protoCountries } from '../client/proto/countries';
 import { Coords } from './common';
 
-export type TimeFilterFastProtoDistanceTransportation = 'driving+ferry' | 'walking+ferry' | 'driving'
-export type TimeFilterFastProtoTransportation = 'pt' | 'cycling+ferry' | TimeFilterFastProtoDistanceTransportation;
+export type TimeFilterFastProtoDistanceTransportation = 'driving+ferry' | 'walking+ferry' | 'driving' | 'cycling+ferry'
+export type TimeFilterFastProtoTransportation = 'pt' | TimeFilterFastProtoDistanceTransportation;
 export type TimeFilterFastProtoCountry = typeof protoCountries[number]
 export type TimeFilterFastProtoDistanceCountry = TimeFilterFastProtoCountry
 
