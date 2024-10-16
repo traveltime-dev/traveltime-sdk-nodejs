@@ -71,7 +71,7 @@ export class TravelTimeProtoClient {
   }
 
   private encodeFixedPoint(sourcePoint: number, targetPoint: number) {
-    return Math.round((targetPoint - sourcePoint) * (10 ** 5));
+    return Math.round((targetPoint - sourcePoint) * 100000);
   }
 
   private buildRequestUrl(uri: string, { country, transportation }: TimeFilterFastProtoRequest): string {
