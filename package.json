@@ -1,6 +1,6 @@
 {
   "name": "traveltime-api",
-  "version": "6.1.2",
+  "version": "6.1.3",
   "description": "TravelTime API SDK for node js with TypeScript",
   "main": "target/index.js",
   "types": "target/index.d.ts",
