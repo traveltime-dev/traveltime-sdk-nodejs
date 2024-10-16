@@ -40,6 +40,8 @@ export class TravelTimeProtoClient {
     'walking+ferry': 7,
   };
   private rateLimiter: RateLimiter;
+  private TimeFilterFastRequest: protobuf.Type;
+  private TimeFilterFastResponse: protobuf.Type;
 
   constructor(
     credentials: Credentials,
@@ -62,6 +64,10 @@ export class TravelTimeProtoClient {
       },
       responseType: 'arraybuffer',
     });
+
+    const root = this.readProtoFile();
+    this.TimeFilterFastRequest = root.lookupType('com.igeolise.traveltime.rabbitmq.requests.TimeFilterFastRequest');
+    this.TimeFilterFastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.TimeFilterFastResponse');
   }
 
   private encodeFixedPoint(sourcePoint: number, targetPoint: number) {
@@ -100,9 +106,9 @@ export class TravelTimeProtoClient {
     };
   }
 
-  private async readProtoFile() {
+  private readProtoFile() {
     try {
-      return await protobuf.load([
+      return protobuf.loadSync([
         `${this.protoFileDir}/TimeFilterFastRequest.proto`,
         `${this.protoFileDir}/TimeFilterFastResponse.proto`,
       ]);
@@ -112,31 +118,26 @@ export class TravelTimeProtoClient {
   }
 
   private async handleProtoFile(
-    root: protobuf.Root,
     uri: string,
     request: TimeFilterFastProtoRequest | TimeFilterFastProtoDistanceRequest,
     options?: ProtoRequestBuildOptions,
   ) {
-    const TimeFilterFastRequest = root.lookupType('com.igeolise.traveltime.rabbitmq.requests.TimeFilterFastRequest');
-    const TimeFilterFastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.TimeFilterFastResponse');
     const messageRequest = this.buildProtoRequest(request, options);
-    const message = TimeFilterFastRequest.create(messageRequest);
-    const buffer = TimeFilterFastRequest.encode(message).finish();
+    const message = this.TimeFilterFastRequest.create(messageRequest);
+    const buffer = this.TimeFilterFastRequest.encode(message).finish();
     const rq = () => this.axiosInstance.post(this.buildRequestUrl(uri, request), buffer);
 
     const promise = this.rateLimiter.isEnabled() ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
       this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
     }) : rq();
     const { data } = await promise;
-    const response = TimeFilterFastResponse.decode(data);
+    const response = this.TimeFilterFastResponse.decode(data);
     return response.toJSON() as TimeFilterFastProtoResponse;
   }
 
-  timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.readProtoFile()
-    .then(async (root) => this.handleProtoFile(root, this.baseURL, request));
+  timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(this.baseURL, request);
 
-  timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.readProtoFile()
-    .then(async (root) => this.handleProtoFile(root, this.baseURL, request, { useDistance: true }));
+  timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.handleProtoFile(this.baseURL, request, { useDistance: true });
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
     this.setRateLimitSettings(settings);
