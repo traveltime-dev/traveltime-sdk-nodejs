@@ -4,7 +4,7 @@ export type Coords = {
 }
 
 export type TransportationTypeNoPt = 'walking' | 'cycling' | 'driving' | 'ferry' | 'cycling+ferry' | 'driving+ferry'
-export type TransportationType = 'cycling' | 'driving' | 'driving+train' | 'public_transport' | 'walking' | 'coach' | 'bus' | 'train' | 'ferry' | 'driving+ferry' | 'cycling+ferry' | 'cycling+public_transport';
+export type TransportationType = 'cycling' | 'driving' | 'driving+train' | 'public_transport' | 'walking' | 'coach' | 'bus' | 'train' | 'ferry' | 'driving+ferry' | 'cycling+ferry' | 'cycling+public_transport' | 'driving+public_transport';
 export type RouteResponseTransportationMode = 'car' | 'parking' | 'boarding' | 'walk' | 'bike' | 'bike_parking' | 'train' | 'rail_national' | 'rail_overground' | 'rail_underground' | 'rail_dlr' | 'bus' | 'cable_car' | 'plane' | 'ferry' | 'coach';
 export type RoutesResponseRoutePartType = 'basic' | 'start_end' | 'road' | 'public_transport'
 export type RoutesResponseFareTicketType = 'single' | 'week' | 'month' | 'year';
