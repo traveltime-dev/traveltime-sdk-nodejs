@@ -1,6 +1,7 @@
 import {
   LocationRequest,
   ResponseFareTicket,
+  Snapping,
   TransportationFast,
 } from './common';
 
@@ -11,7 +12,7 @@ export type TimeFilterFastRequestTransportation = {
   'type': TransportationFast;
 }
 
-export type TimeFilterFastRequestArrivalSearchBase = {
+export type TimeFilterFastRequestArrivalSearchBase = Snapping & {
   'id': string;
   'transportation': TimeFilterFastRequestTransportation;
   'travel_time': number;
