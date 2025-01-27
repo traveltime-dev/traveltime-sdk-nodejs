@@ -1,8 +1,8 @@
 import {
-  Coords, LevelOfDetail, PolygonsFilter, TransportationFast,
+  Coords, LevelOfDetail, PolygonsFilter, Snapping, TransportationFast,
 } from './common';
 
-export type TimeMapFastRequestSearch = {
+export type TimeMapFastRequestSearch = Snapping & {
   id: string,
   coords: Coords,
   transportation: {
@@ -13,6 +13,10 @@ export type TimeMapFastRequestSearch = {
   level_of_detail?: LevelOfDetail
   polygons_filter?: PolygonsFilter
   no_holes?: boolean
+  /**
+   * Default: `approximate_time_filter`
+   */
+  render_mode?: 'approximate_time_filter' | 'road_buffering'
 }
 
 export type TimeMapFastRequestArrivalSearch = {
