@@ -21,7 +21,10 @@ export type GeocodingResponseProperties = TravelTimeResponseFeature & {
   county?: string
   macroregion?: string
   city?: string
+  town?: string
+  district?: string
   country?: string
+  local_admin?: string
   country_code?: string
   continent?: string
   postcode?: string
