@@ -332,7 +332,7 @@ const intersection: UnionOrIntersection = {
   search_ids: ['driving from Trafalgar Square', 'public transport to Trafalgar Square'],
 };
 
-travelTimeClient.geoHash(
+travelTimeClient.geohash(
   {
     resolution: 6,
     properties: ['mean'],
@@ -342,6 +342,64 @@ travelTimeClient.geoHash(
   },
 ).then((data) => console.log(data))
   .catch((e) => console.error(e));
+```
+
+### [Geohash Fast](https://docs.traveltime.com/api/reference/geohash-fast)
+A very fast version of Geohash API. However, the request parameters are much more limited.
+
+```typescript
+import {
+  TravelTimeClient,
+  UnionOrIntersection,
+  GeohashFastRequestSearch,
+} from 'traveltime-api';
+
+const drivingSearch: GeohashFastRequestSearch = {
+  id: 'driving to Trafalgar Square',
+  travel_time: 360,
+  coords: {
+    lat: 51.507609,
+    lng: -0.128315,
+  },
+  transportation: {
+    type: 'public_transport',
+  },
+  arrival_time_period: 'weekday_morning',
+};
+
+const publicTransportSearch: GeohashFastRequestSearch = {
+  id: 'public transport to Trafalgar Square',
+  travel_time: 360,
+  coords: {
+    lat: 51.507609,
+    lng: -0.128315,
+  },
+  transportation: {
+    type: 'driving',
+  },
+  arrival_time_period: 'weekday_morning',
+};
+
+const union: UnionOrIntersection = {
+  id: 'driving and public transport to Trafalgar Square',
+  search_ids: [drivingSearch.id, publicTransportSearch.id],
+};
+
+travelTimeClient.geohashFast(
+  {
+    resolution: 6,
+    properties: ['mean'],
+    arrival_searches: {
+      one_to_many: [
+        drivingSearch,
+        publicTransportSearch,
+      ],
+    },
+    unions: [union],
+  },
+).then((data) => console.log(data))
+  .catch((e) => console.error(e));
+
 ```
 
 ### Time Map Response Formats
