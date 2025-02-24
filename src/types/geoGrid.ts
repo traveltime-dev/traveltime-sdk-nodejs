@@ -15,10 +15,6 @@ export type GeoGridRequestSearchBase = Snapping & {
   travel_time: number
   properties?: Array<GeoGridRequestSearchProperty>
   range?: RangeRequestNoMaxResults
-  /**
-   * Default: true
-   */
-  remove_water_bodies?: boolean
 }
 
 export type GeoGridRequestDepartureSearch = GeoGridRequestSearchBase & {
