@@ -2,6 +2,7 @@ import {
   Coords,
   RangeRequestNoMaxResults,
   Snapping,
+  TransportationFast,
   TransportationRequestCommons,
 } from './common';
 
@@ -41,4 +42,14 @@ export type GeoGridResult = {
 
 export type GeoGridResponse = {
   results: Array<GeoGridResult>
+}
+
+export type GeoGridFastRequestSearchBase = Snapping & {
+  id: string,
+  coords: Coords,
+  transportation: {
+    type: TransportationFast
+  },
+  arrival_time_period : 'weekday_morning',
+  travel_time: number,
 }
