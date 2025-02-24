@@ -178,6 +178,63 @@ travelTimeClient.timeMapFast({
   .catch((e) => console.error(e));
 ```
 
+### [H3](https://docs.traveltime.com/api/reference/h3)
+
+```typescript
+import {
+  TravelTimeClient,
+  UnionOrIntersection,
+  H3RequestArrivalSearch,
+  H3RequestDepartureSearch,
+} from 'traveltime-api';
+
+const departureSearch: H3RequestDepartureSearch = {
+  id: 'public transport from Trafalgar Square',
+  coords: {
+    lat: 51.507609,
+    lng: -0.128315,
+  },
+  travel_time: 1800,
+  transportation: {
+    type: 'public_transport',
+  },
+  departure_time: new Date().toISOString(),
+};
+
+const arrivalSearch: H3RequestArrivalSearch = {
+  id: 'driving to Trafalgar Square',
+  coords: {
+    lat: 51.507609,
+    lng: -0.128315,
+  },
+  travel_time: 900,
+  transportation: {
+    type: 'driving',
+  },
+  arrival_time: new Date().toISOString(),
+};
+
+const union: UnionOrIntersection = {
+  id: 'union of driving to and transit from Trafalgar Square',
+  search_ids: [
+    'public transport from Trafalgar Square',
+    'driving to Trafalgar Square',
+  ],
+};
+
+travelTimeClient.h3(
+  {
+    resolution: 7,
+    properties: ['mean'],
+    departure_searches: [departureSearch],
+    arrival_searches: [arrivalSearch],
+    unions: [union],
+  },
+).then((data) => console.log(data))
+  .catch((e) => console.error(e));
+```
+
+
 ### Time Map Response Formats
 
 Time Map and Time Map Fast endpoints support multiple response formats. [See full list](https://docs.traveltime.com/api/reference/isochrones#Response-Body). You may pass a `format` parameter alongside your payload to specify particular response format. 
