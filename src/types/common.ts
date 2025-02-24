@@ -178,8 +178,6 @@ export type Snapping = {
   }
 }
 
-export type H3AndGeoHashProperties = 'min' | 'max' | 'mean'
-
 export type UnionOrIntersection = {
   id: string;
   search_ids: Array<string>;
