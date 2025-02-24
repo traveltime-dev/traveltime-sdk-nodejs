@@ -52,6 +52,10 @@ import { TimeFilterFastManyToManyMatrixRequest, TimeFilterManyToManyMatrixReques
 import {
   timeFilterFastManyToManyMatrixResponseMapper, timeFilterFastManyToManyMatrixToRequest, timeFilterManyToManyMatrixResponseMapper, timeFilterManyToManyMatrixToRequest,
 } from './matrixMapper';
+import { H3Request, H3Response } from '../types/h3';
+import { H3FastRequest, H3FastResponse } from '../types/h3Fast';
+import { GeohashRequest, GeohashResponse } from '../types/geohash';
+import { GeohashFastRequest, GeohashFastResponse } from '../types/geohashFast';
 
 type HttpMethod = 'get' | 'post'
 
@@ -382,4 +386,16 @@ export class TravelTimeClient {
     this.apiKey = credentials.apiKey;
     this.applicationId = credentials.applicationId;
   };
+
+  h3 = async (body: H3Request) => this
+    .request<H3Response>('/h3', 'post', { body });
+
+  h3Fast = async (body: H3FastRequest) => this
+    .request<H3FastResponse>('/h3/fast', 'post', { body });
+
+  geoHash = async (body: GeohashRequest) => this
+    .request<GeohashResponse>('/geohash', 'post', { body });
+
+  geoHashFast = async (body: GeohashFastRequest) => this
+    .request<GeohashFastResponse>('/geohash/fast', 'post', { body });
 }
