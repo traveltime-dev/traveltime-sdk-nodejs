@@ -234,6 +234,58 @@ travelTimeClient.h3(
   .catch((e) => console.error(e));
 ```
 
+### [Geohash](https://docs.traveltime.com/api/reference/geohash)
+
+```typescript
+import {
+  TravelTimeClient,
+  UnionOrIntersection,
+  GeohashRequestArrivalSearch,
+  GeohashRequestDepartureSearch,
+} from 'traveltime-api';
+
+const departureSearch: GeohashRequestDepartureSearch = {
+  id: 'driving from Trafalgar Square',
+  coords: {
+    lat: 51.507609,
+    lng: -0.128315,
+  },
+  travel_time: 600,
+  transportation: {
+    type: 'driving',
+  },
+  departure_time: new Date().toISOString(),
+};
+
+const arrivalSearch: GeohashRequestArrivalSearch = {
+  id: 'public transport to Trafalgar Square',
+  coords: {
+    lat: 51.507609,
+    lng: -0.128315,
+  },
+  travel_time: 900,
+  transportation: {
+    type: 'public_transport',
+  },
+  arrival_time: new Date().toISOString(),
+};
+
+const intersection: UnionOrIntersection = {
+  id: 'intersection of driving and public transport near Trafalgar Square',
+  search_ids: ['driving from Trafalgar Square', 'public transport to Trafalgar Square'],
+};
+
+travelTimeClient.geoHash(
+  {
+    resolution: 6,
+    properties: ['mean'],
+    departure_searches: [departureSearch],
+    arrival_searches: [arrivalSearch],
+    intersections: [intersection],
+  },
+).then((data) => console.log(data))
+  .catch((e) => console.error(e));
+```
 
 ### Time Map Response Formats
 
