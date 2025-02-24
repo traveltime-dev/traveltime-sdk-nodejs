@@ -393,9 +393,9 @@ export class TravelTimeClient {
   h3Fast = async (body: H3FastRequest) => this
     .request<H3FastResponse>('/h3/fast', 'post', { body });
 
-  geoHash = async (body: GeohashRequest) => this
+  geohash = async (body: GeohashRequest) => this
     .request<GeohashResponse>('/geohash', 'post', { body });
 
-  geoHashFast = async (body: GeohashFastRequest) => this
+  geohashFast = async (body: GeohashFastRequest) => this
     .request<GeohashFastResponse>('/geohash/fast', 'post', { body });
 }
