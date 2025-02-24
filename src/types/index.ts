@@ -19,3 +19,8 @@ export * from './routesSimple';
 export * from './distanceMap';
 export * from './distanceMapResponse';
 export * from './distanceMapSimple';
+export * from './h3';
+export * from './h3Fast';
+export * from './geohash';
+export * from './geohashFast';
+export * from './geoGrid';
