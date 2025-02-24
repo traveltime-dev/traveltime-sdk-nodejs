@@ -7,26 +7,26 @@ import {
   GeoGridResponse,
 } from './geoGrid';
 
-export type GeoHashRequestSearchBase = GeoGridRequestSearchBase
+export type GeohashRequestSearchBase = GeoGridRequestSearchBase
 
-export type GeoHashRequestDepartureSearch = GeoHashRequestSearchBase & {
+export type GeohashRequestDepartureSearch = GeohashRequestSearchBase & {
   departure_time: string;
 }
 
-export type GeoHashRequestArrivalSearch = GeoHashRequestSearchBase & {
+export type GeohashRequestArrivalSearch = GeohashRequestSearchBase & {
   arrival_time: string
 }
 
-export type GeoHashRequest = {
+export type GeohashRequest = {
   /**
    * Values can be in range [1, 6]
    */
   resolution: number
   properties: Array<GeoGridProperties>
-  departure_searches?: Array<GeoHashRequestDepartureSearch>
-  arrival_searches?: Array<GeoHashRequestArrivalSearch>
+  departure_searches?: Array<GeohashRequestDepartureSearch>
+  arrival_searches?: Array<GeohashRequestArrivalSearch>
   unions?: Array<UnionOrIntersection>
   intersections?: Array<UnionOrIntersection>
 }
 
-export type GeoHashResponse = GeoGridResponse
+export type GeohashResponse = GeoGridResponse

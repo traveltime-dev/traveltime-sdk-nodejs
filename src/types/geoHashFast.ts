@@ -1,22 +1,22 @@
 import { UnionOrIntersection } from './common';
 import { GeoGridFastRequestSearchBase, GeoGridProperties, GeoGridResponse } from './geoGrid';
 
-export type GeoHashFastRequestSearch = GeoGridFastRequestSearchBase
+export type GeohashFastRequestSearch = GeoGridFastRequestSearchBase
 
-export type GeoHashFastRequestArrivalSearch = {
-  one_to_many?: Array<GeoHashFastRequestSearch>,
-  many_to_one?: Array<GeoHashFastRequestSearch>
+export type GeohashFastRequestArrivalSearch = {
+  one_to_many?: Array<GeohashFastRequestSearch>,
+  many_to_one?: Array<GeohashFastRequestSearch>
 }
 
-export type GeoHashFastRequest = {
+export type GeohashFastRequest = {
   /**
    * Values can be in range [1, 6]
    */
   resolution: number
   properties: Array<GeoGridProperties>
-  arrival_searches: GeoHashFastRequestArrivalSearch
+  arrival_searches: GeohashFastRequestArrivalSearch
   unions?: Array<UnionOrIntersection>
   intersections?: Array<UnionOrIntersection>
 }
 
-export type GeoHashFastResponse = GeoGridResponse
+export type GeohashFastResponse = GeoGridResponse
