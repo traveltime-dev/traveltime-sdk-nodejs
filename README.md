@@ -234,6 +234,63 @@ travelTimeClient.h3(
   .catch((e) => console.error(e));
 ```
 
+### [H3 Fast](https://docs.traveltime.com/api/reference/h3-fast)
+A very fast version of H3 API. However, the request parameters are much more limited.
+
+```typescript
+import {
+  TravelTimeClient,
+  UnionOrIntersection,
+  H3FastRequestSearch,
+} from 'traveltime-api';
+
+const drivingSearch: H3FastRequestSearch = {
+  id: 'driving to Trafalgar Square',
+  travel_time: 300,
+  coords: {
+    lat: 51.507609,
+    lng: -0.128315,
+  },
+  transportation: {
+    type: 'driving',
+  },
+  arrival_time_period: 'weekday_morning',
+};
+
+const publicTransportSearch: H3FastRequestSearch = {
+  id: 'public transit to Trafalgar Square',
+  travel_time: 300,
+  coords: {
+    lat: 51.507609,
+    lng: -0.128315,
+  },
+  transportation: {
+    type: 'public_transport',
+  },
+  arrival_time_period: 'weekday_morning',
+};
+
+const intersection: UnionOrIntersection = {
+  id: 'driving and public transport to Trafalgar Square',
+  search_ids: [drivingSearch.id, publicTransportSearch.id],
+};
+
+travelTimeClient.h3Fast(
+  {
+    resolution: 8,
+    properties: ['mean'],
+    arrival_searches: {
+      one_to_many: [
+        drivingSearch,
+        publicTransportSearch,
+      ],
+    },
+    intersections: [intersection],
+  },
+).then((data) => console.log(data))
+  .catch((e) => console.error(e));
+```
+
 ### [Geohash](https://docs.traveltime.com/api/reference/geohash)
 
 ```typescript
