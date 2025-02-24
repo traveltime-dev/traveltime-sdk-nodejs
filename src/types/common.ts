@@ -177,3 +177,10 @@ export type Snapping = {
     accept_roads?: 'both_drivable_and_walkable' | 'any_drivable'
   }
 }
+
+export type H3AndGeoHashProperties = 'min' | 'max' | 'mean'
+
+export type UnionOrIntersection = {
+  id: string;
+  search_ids: Array<string>;
+}

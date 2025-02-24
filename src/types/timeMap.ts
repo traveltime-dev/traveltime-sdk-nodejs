@@ -7,6 +7,7 @@ import {
   RangeRequestNoMaxResults,
   Snapping,
   TransportationRequestCommons,
+  UnionOrIntersection,
 } from './common';
 
 export type TimeMapRequestProperty = 'is_only_walking';
@@ -47,10 +48,7 @@ export type TimeMapRequestArrivalSearch = TimeMapRequestSearchBase & {
   arrival_time: string
 };
 
-export type TimeMapRequestUnionOrIntersection = {
-  id: string;
-  search_ids: Array<string>;
-}
+export type TimeMapRequestUnionOrIntersection = UnionOrIntersection
 
 export type TimeMapRequest = {
   departure_searches?: Array<TimeMapRequestDepartureSearch>
