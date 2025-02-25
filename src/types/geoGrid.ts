@@ -44,9 +44,9 @@ export type GeoGridResponse = {
   results: Array<GeoGridResult>
 }
 
-export type GeoGridFastRequestSearchBase = Snapping & {
+export type GeoGridFastRequestSearchBase<Centroid> = Snapping & {
   id: string,
-  coords: Coords,
+  coords: Coords | Centroid,
   transportation: {
     type: TransportationFast
   },
