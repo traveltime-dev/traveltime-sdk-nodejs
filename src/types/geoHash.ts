@@ -5,9 +5,10 @@ import {
   GeoGridProperties,
   GeoGridRequestSearchBase,
   GeoGridResponse,
+  GeohashCentroid,
 } from './geoGrid';
 
-export type GeohashRequestSearchBase = GeoGridRequestSearchBase
+export type GeohashRequestSearchBase = GeoGridRequestSearchBase<GeohashCentroid>
 
 export type GeohashRequestDepartureSearch = GeohashRequestSearchBase & {
   departure_time: string;

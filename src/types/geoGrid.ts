@@ -9,21 +9,13 @@ import {
 export type GeoGridProperties = 'min' | 'max' | 'mean'
 export type GeoGridRequestSearchProperty = 'is_only_walking';
 
-export type GeoGridRequestSearchBase = Snapping & {
+export type GeoGridRequestSearchBase<Centroid> = Snapping & {
   id: string
-  coords: Coords
+  coords: Coords | Centroid
   transportation: TransportationRequestCommons
   travel_time: number
   properties?: Array<GeoGridRequestSearchProperty>
   range?: RangeRequestNoMaxResults
-}
-
-export type GeoGridRequestDepartureSearch = GeoGridRequestSearchBase & {
-  departure_time: string;
-}
-
-export type GeoGridRequestArrivalSearch = GeoGridRequestSearchBase & {
-  arrival_time: string
 }
 
 export type GeoGridCell = {
@@ -52,4 +44,12 @@ export type GeoGridFastRequestSearchBase<Centroid> = Snapping & {
   },
   arrival_time_period : 'weekday_morning',
   travel_time: number,
+}
+
+export type GeohashCentroid = {
+  geohash_centroid: string
+}
+
+export type H3Centroid = {
+  h3_centroid: string
 }

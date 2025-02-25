@@ -1,11 +1,12 @@
 import { UnionOrIntersection } from './common';
-import { GeoGridFastRequestSearchBase, GeoGridProperties, GeoGridResponse } from './geoGrid';
+import {
+  GeoGridFastRequestSearchBase,
+  GeoGridProperties,
+  GeoGridResponse,
+  GeohashCentroid,
+} from './geoGrid';
 
-export type GeohashFastCentroid = {
-  geohash_centroid: string
-}
-
-export type GeohashFastRequestSearch = GeoGridFastRequestSearchBase<GeohashFastCentroid>
+export type GeohashFastRequestSearch = GeoGridFastRequestSearchBase<GeohashCentroid>
 
 export type GeohashFastRequestArrivalSearch = {
   one_to_many?: Array<GeohashFastRequestSearch>,

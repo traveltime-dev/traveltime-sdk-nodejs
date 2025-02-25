@@ -5,9 +5,10 @@ import {
   GeoGridProperties,
   GeoGridRequestSearchBase,
   GeoGridResponse,
+  H3Centroid,
 } from './geoGrid';
 
-export type H3RequestSearchBase = GeoGridRequestSearchBase
+export type H3RequestSearchBase = GeoGridRequestSearchBase<H3Centroid>
 
 export type H3RequestDepartureSearch = H3RequestSearchBase & {
   departure_time: string;
