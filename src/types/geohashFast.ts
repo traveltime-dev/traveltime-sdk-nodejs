@@ -4,7 +4,7 @@ import {
   GeoGridProperties,
   GeoGridResponse,
   GeohashCentroid,
-} from './geoGrid';
+} from './geogrid';
 
 export type GeohashFastRequestSearch = GeoGridFastRequestSearchBase<GeohashCentroid>
 
