@@ -4,7 +4,7 @@ import {
   GeoGridProperties,
   GeoGridResponse,
   H3Centroid,
-} from './geoGrid';
+} from './geogrid';
 
 export type H3FastRequestSearch = GeoGridFastRequestSearchBase<H3Centroid>
 

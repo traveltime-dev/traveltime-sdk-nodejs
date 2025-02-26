@@ -6,7 +6,7 @@ import {
   GeoGridRequestSearchBase,
   GeoGridResponse,
   H3Centroid,
-} from './geoGrid';
+} from './geogrid';
 
 export type H3RequestSearchBase = GeoGridRequestSearchBase<H3Centroid>
 

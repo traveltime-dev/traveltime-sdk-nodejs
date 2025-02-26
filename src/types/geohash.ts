@@ -6,7 +6,7 @@ import {
   GeoGridRequestSearchBase,
   GeoGridResponse,
   GeohashCentroid,
-} from './geoGrid';
+} from './geogrid';
 
 export type GeohashRequestSearchBase = GeoGridRequestSearchBase<GeohashCentroid>
 

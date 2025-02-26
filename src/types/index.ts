@@ -23,4 +23,4 @@ export * from './h3';
 export * from './h3Fast';
 export * from './geohash';
 export * from './geohashFast';
-export * from './geoGrid';
+export * from './geogrid';
