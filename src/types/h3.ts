@@ -20,7 +20,7 @@ export type H3RequestArrivalSearch = H3RequestSearchBase & {
 
 export type H3Request = {
   /**
-   * Values can be in range [1, 8]
+   * Values can be in range [1, 9]
    */
   resolution: number
   properties: Array<GeoGridProperties>
