@@ -12,7 +12,15 @@ interface TimeFilterFastProtoMessage {
     departureLocation: Coords
     locationDeltas: Array<number>,
     transportation: {
-      type: number
+      type: number,
+      publicTransport?: {
+        walkingTimeToStation?: number
+      },
+      drivingAndPublicTransport?: {
+        walkingTimeToStation?: number,
+        drivingTimeToStation?: number,
+        parkingTime?: number
+      }
     },
     arrivalTimePeriod: 0,
     travelTime: number,
@@ -26,18 +34,26 @@ interface ProtoRequestBuildOptions {
   useDistance?: boolean
 }
 
+interface TransportationConfig {
+  code: number;
+  urlName: string;
+}
+
 export class TravelTimeProtoClient {
   private apiKey: string;
   private applicationId: string;
   private axiosInstance: AxiosInstance;
   private baseURL: string;
   private protoFileDir = `${__dirname}/proto/v2`;
-  private transportationMap: Record<TimeFilterFastProtoTransportation, number> = {
-    pt: 0,
-    driving: 1,
-    'driving+ferry': 3,
-    'cycling+ferry': 6,
-    'walking+ferry': 7,
+  private transportationMap: Record<TimeFilterFastProtoTransportation, TransportationConfig> = {
+    pt: { code: 0, urlName: 'pt' },
+    'driving+pt': { code: 2, urlName: 'pt' },
+    driving: { code: 1, urlName: 'driving' },
+    walking: { code: 4, urlName: 'walking' },
+    cycling: { code: 5, urlName: 'driving' },
+    'driving+ferry': { code: 3, urlName: 'driving+ferry' },
+    'cycling+ferry': { code: 6, urlName: 'cycling+ferry' },
+    'walking+ferry': { code: 7, urlName: 'walking+ferry' },
   };
   private rateLimiter: RateLimiter;
   private TimeFilterFastRequest: protobuf.Type;
@@ -75,7 +91,8 @@ export class TravelTimeProtoClient {
   }
 
   private buildRequestUrl(uri: string, { country, transportation }: TimeFilterFastProtoRequest): string {
-    return `${uri}/${country}/time-filter/fast/${transportation}`;
+    const { urlName } = this.transportationMap[transportation];
+    return `${uri}/${country}/time-filter/fast/${urlName}`;
   }
 
   private buildDeltas(departure: Coords, destinations: Array<Coords>) {
@@ -86,18 +103,53 @@ export class TravelTimeProtoClient {
     departureLocation,
     destinationCoordinates,
     transportation,
+    transportationDetails,
     travelTime,
   }: TimeFilterFastProtoRequest, options?: ProtoRequestBuildOptions): TimeFilterFastProtoMessage {
     if (!(transportation in this.transportationMap)) {
       throw new Error('Transportation type is not supported');
     }
+    const protoTransportationDetails = (() => {
+      if (!transportationDetails) {
+        return undefined;
+      }
+
+      if ('publicTransport' in transportationDetails) {
+        if (transportation !== 'pt') {
+          throw new Error('publicTransport details can only be used with transportation type "pt"');
+        }
+
+        return {
+          publicTransport: {
+            walkingTimeToStation: transportationDetails.publicTransport.walkingTimeToStation,
+          },
+        };
+      }
+
+      if ('drivingAndPublicTransport' in transportationDetails) {
+        if (transportation !== 'driving+pt') {
+          throw new Error('drivingAndPublicTransport details can only be used with transportation type "driving+pt"');
+        }
+
+        return {
+          drivingAndPublicTransport: {
+            walkingTimeToStation: transportationDetails.drivingAndPublicTransport.walkingTimeToStation,
+            drivingTimeToStation: transportationDetails.drivingAndPublicTransport.drivingTimeToStation,
+            parkingTime: transportationDetails.drivingAndPublicTransport.parkingTime,
+          },
+        };
+      }
+
+      return undefined;
+    })();
 
     return {
       oneToManyRequest: {
         departureLocation,
         locationDeltas: this.buildDeltas(departureLocation, destinationCoordinates),
         transportation: {
-          type: this.transportationMap[transportation],
+          type: this.transportationMap[transportation].code,
+          ...protoTransportationDetails,
         },
         arrivalTimePeriod: 0,
         travelTime,
