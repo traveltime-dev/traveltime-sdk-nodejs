@@ -15,7 +15,7 @@ export type H3FastRequestArrivalSearch = {
 
 export type H3FastRequest = {
   /**
-   * Values can be in range [1, 8]
+   * Values can be in range [1, 9]
    */
   resolution: number
   properties: Array<GeoGridProperties>
