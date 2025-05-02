@@ -762,7 +762,6 @@ travelTimeProtoClient.timeFilterFast(requestData)
       console.error(`Travel Time API proto request failed with error code: ${e.response.status}`);
       console.error(`X-ERROR-CODE: ${errorCode || 'Not provided'}`);
       console.error(`X-ERROR-DETAILS: ${errorDetails || 'Not provided'}`);
-      console.error(`X-ERROR-DETAILS: No details provided`);
       console.error(`X-ERROR-MESSAGE: ${errorMessage || 'Not provided'}`);
     } else {
       console.error(e);
