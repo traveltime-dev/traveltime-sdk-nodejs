@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import protobuf from 'protobufjs';
 import { Coords, Credentials } from '../types';
 import {
+    DetailedTransportation,
   TimeFilterFastProtoDistanceRequest, TimeFilterFastProtoRequest, TimeFilterFastProtoResponse, TimeFilterFastProtoTransportation,
 } from '../types/proto';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
@@ -37,6 +38,11 @@ interface ProtoRequestBuildOptions {
 interface TransportationConfig {
   code: number;
   urlName: string;
+}
+
+interface TimeFilterProtoMessageWithUrl {
+  requestMessage: TimeFilterFastProtoMessage,
+  requestUrl: string
 }
 
 export class TravelTimeProtoClient {
@@ -86,75 +92,107 @@ export class TravelTimeProtoClient {
     this.TimeFilterFastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.TimeFilterFastResponse');
   }
 
+  private isTransportationObject(transport: any): transport is DetailedTransportation {
+    return (
+      typeof transport === 'object' && 
+        transport !== null && 
+        'mode' in transport
+        // 'details' is nullable, so we don't assert for it
+    );
+  }
+
   private encodeFixedPoint(sourcePoint: number, targetPoint: number) {
     return Math.round((targetPoint - sourcePoint) * 100000);
   }
 
-  private buildRequestUrl(uri: string, { country, transportation }: TimeFilterFastProtoRequest): string {
-    const { urlName } = this.transportationMap[transportation];
-    return `${uri}/${country}/time-filter/fast/${urlName}`;
+  private buildRequestUrl(uri: string, country: String, transportModeUrlName: string): string {
+    return `${uri}/${country}/time-filter/fast/${transportModeUrlName}`;
   }
 
   private buildDeltas(departure: Coords, destinations: Array<Coords>) {
     return destinations.flatMap((destination) => [this.encodeFixedPoint(departure.lat, destination.lat), this.encodeFixedPoint(departure.lng, destination.lng)]);
   }
 
+  private extractTransportationMode(transportation: TimeFilterFastProtoTransportation | DetailedTransportation): TimeFilterFastProtoTransportation {
+    return this.isTransportationObject(transportation) ? transportation.mode : transportation;
+  }
+
+  private validateTransportationMode(mode: TimeFilterFastProtoTransportation): void {
+    if (!(mode in this.transportationMap)) {
+      throw new Error('Transportation mode is not supported');
+    }
+  }
+
+  private extractTransportationDetails(
+    transportation: TimeFilterFastProtoTransportation | DetailedTransportation,
+    transportationMode: TimeFilterFastProtoTransportation
+  ): Record<string, any> | undefined {
+    if (!this.isTransportationObject(transportation) || !transportation.details) {
+      return undefined;
+    }
+
+    const { details } = transportation;
+
+    if ('publicTransport' in details) {
+      if (transportationMode !== 'pt') {
+        throw new Error('publicTransport details can only be used with transportation type "pt"');
+      }
+      return {
+        publicTransport: {
+          walkingTimeToStation: details.publicTransport.walkingTimeToStation,
+        },
+      };
+    }
+
+    if ('drivingAndPublicTransport' in details) {
+      if (transportationMode !== 'driving+pt') {
+        throw new Error('drivingAndPublicTransport details can only be used with transportation type "driving+pt"');
+      }
+      return {
+        drivingAndPublicTransport: {
+          walkingTimeToStation: details.drivingAndPublicTransport.walkingTimeToStation,
+          drivingTimeToStation: details.drivingAndPublicTransport.drivingTimeToStation,
+          parkingTime: details.drivingAndPublicTransport.parkingTime,
+        },
+      };
+    }
+
+    return undefined;
+  }
+
   private buildProtoRequest({
+    country,
     departureLocation,
     destinationCoordinates,
     transportation,
-    transportationDetails,
     travelTime,
-  }: TimeFilterFastProtoRequest, options?: ProtoRequestBuildOptions): TimeFilterFastProtoMessage {
-    if (!(transportation in this.transportationMap)) {
-      throw new Error('Transportation type is not supported');
-    }
-    const protoTransportationDetails = (() => {
-      if (!transportationDetails) {
-        return undefined;
-      }
+  }: TimeFilterFastProtoRequest, uri: string, options?: ProtoRequestBuildOptions): TimeFilterProtoMessageWithUrl {
+    const transportationMode = this.extractTransportationMode(transportation);
+    this.validateTransportationMode(transportationMode);
 
-      if ('publicTransport' in transportationDetails) {
-        if (transportation !== 'pt') {
-          throw new Error('publicTransport details can only be used with transportation type "pt"');
-        }
+    const transportationConfig = this.transportationMap[transportationMode];
 
-        return {
-          publicTransport: {
-            walkingTimeToStation: transportationDetails.publicTransport.walkingTimeToStation,
-          },
-        };
-      }
+    const protoTransportationDetails = this.extractTransportationDetails(transportation, transportationMode);
 
-      if ('drivingAndPublicTransport' in transportationDetails) {
-        if (transportation !== 'driving+pt') {
-          throw new Error('drivingAndPublicTransport details can only be used with transportation type "driving+pt"');
-        }
-
-        return {
-          drivingAndPublicTransport: {
-            walkingTimeToStation: transportationDetails.drivingAndPublicTransport.walkingTimeToStation,
-            drivingTimeToStation: transportationDetails.drivingAndPublicTransport.drivingTimeToStation,
-            parkingTime: transportationDetails.drivingAndPublicTransport.parkingTime,
-          },
-        };
-      }
-
-      return undefined;
-    })();
-
-    return {
+    const requestMessage = {
       oneToManyRequest: {
         departureLocation,
         locationDeltas: this.buildDeltas(departureLocation, destinationCoordinates),
         transportation: {
-          type: this.transportationMap[transportation].code,
+          type: transportationConfig.code,
           ...protoTransportationDetails,
         },
-        arrivalTimePeriod: 0,
+        arrivalTimePeriod: 0 as const,
         travelTime,
         properties: options?.useDistance ? [1] : undefined,
       },
+    };
+
+    const requestUrl = this.buildRequestUrl(uri, country, transportationConfig.urlName)
+
+    return {
+      requestMessage,
+      requestUrl
     };
   }
 
@@ -173,15 +211,19 @@ export class TravelTimeProtoClient {
     uri: string,
     request: TimeFilterFastProtoRequest | TimeFilterFastProtoDistanceRequest,
     options?: ProtoRequestBuildOptions,
-  ) {
-    const messageRequest = this.buildProtoRequest(request, options);
-    const message = this.TimeFilterFastRequest.create(messageRequest);
+  ): Promise<TimeFilterFastProtoResponse> {
+    const {requestMessage, requestUrl} = this.buildProtoRequest(request, uri, options);
+    const message = this.TimeFilterFastRequest.create(requestMessage);
     const buffer = this.TimeFilterFastRequest.encode(message).finish();
-    const rq = () => this.axiosInstance.post(this.buildRequestUrl(uri, request), buffer);
 
-    const promise = this.rateLimiter.isEnabled() ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-      this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
-    }) : rq();
+    const rq = () => this.axiosInstance.post(requestUrl, buffer);
+
+    const promise = this.rateLimiter.isEnabled() 
+      ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
+        this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
+      }) 
+      : rq();
+
     const { data } = await promise;
     const response = this.TimeFilterFastResponse.decode(data);
     return response.toJSON() as TimeFilterFastProtoResponse;

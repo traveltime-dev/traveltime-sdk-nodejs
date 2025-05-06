@@ -25,12 +25,16 @@ export type TransportationDetails =
   | { publicTransport: PublicTransportDetails }
   | { drivingAndPublicTransport: DrivingAndPublicTransportDetails };
 
+export interface DetailedTransportation {
+  mode: TimeFilterFastProtoTransportation;
+  details?: TransportationDetails;
+}
+
 export interface TimeFilterFastProtoRequest {
   country: TimeFilterFastProtoCountry
   departureLocation: Coords,
   destinationCoordinates: Array<Coords>,
-  transportation: TimeFilterFastProtoTransportation,
-  transportationDetails?: TransportationDetails,
+  transportation: TimeFilterFastProtoTransportation | DetailedTransportation,
   travelTime: number,
 }
 
