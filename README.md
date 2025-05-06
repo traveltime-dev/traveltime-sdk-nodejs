@@ -707,8 +707,7 @@ Body attributes:
 * country: Return the results that are within the specified country.
 * departureLocation: Point of departure.
 * destinationCoordinates: Destination points. Cannot be more than 200,000.
-* transportation: Transportation type.
-* transportationDetails: Additional transportation details available for "pt" and "driving+pt" transportation types.
+* transportation: Transportation type (literal) or type with details (object) for "pt" and "driving+pt" types.
 * travelTime: Time limit.
 
 #### Advanced Options
@@ -740,14 +739,18 @@ const requestData: TimeFilterFastProtoRequest = {
     lat: 51.508824,
     lng: -0.167093,
   }],
-  transportation: 'driving+pt',
-  transportationDetails: { // only available for 'driving+pt` and 'pt'
-    drivingAndPublicTransport: { // for 'pt' use 'publicTransport' instead
-      walkingTimeToStation: 1800,
-      drivingTimeToStation: 1800,
-      parkingTime: 900
+  transportation: {
+    mode: 'driving+pt',
+    details: { // only available for 'driving+pt` and 'pt'. Optional
+      drivingAndPublicTransport: { // for 'pt' use 'publicTransport' instead
+        walkingTimeToStation: 1800, // optional
+        drivingTimeToStation: 1800, // optional
+        parkingTime: 900 // optional
+      }
     }
   },
+  // Simpler, if details are not needed
+  // transportation: 'driving+ferry', 
   travelTime: 7200
 };
 
