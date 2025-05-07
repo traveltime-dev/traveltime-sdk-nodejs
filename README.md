@@ -770,6 +770,50 @@ travelTimeProtoClient.timeFilterFast(requestData)
   });
 ```
 
+#### Transportation Details
+
+When picking transportation mode for proto requests take note that some of the transportation modes
+support extra configuration parameters.
+
+##### Public Transport
+
+```typescript
+  transportation: {
+    mode: 'driving+pt',
+    details: {
+      walkingTimeToStation: 1800
+    }
+  },
+```
+
+`pt` transportion mode and allows to set these parameters:
+* `walking_time_to_station` - limits the possible duration of walking paths.
+  This limit is of low precedence and will not override the global travel time limit
+  Optional. Must be <= 1800.
+
+##### Driving and Public Transport
+
+```typescript
+  transportation: {
+    mode: 'driving+pt',
+    details: {
+      walkingTimeToStation: 1800,
+      drivingTimeToStation: 1800,
+      parkingTime: 900
+    }
+  },
+```
+
+`driving+pt` transportion mode and allows to set these parameters:
+* `walking_time_to_station` - limits the possible duration of walking paths.
+  This limit is of low precedence and will not override the global travel time limit.
+  Optional. Must be <= 1800.
+* `driving_time_to_station` - limits the possible duration of driving paths.
+  This limit is of low precedence and will not override the global travel time limit
+  Optional. Must be <= 1800.
+* `parking_time` - constant penalty to apply to simulate the difficulty of finding a parking spot.
+  Optional. Cannot be greater than the global travel time limit.
+
 ### [Routes](https://traveltime.com/docs/api/reference/routes)
 Returns routing information between source and destinations.
 
