@@ -141,15 +141,13 @@ export class TravelTimeProtoClient {
 
     if (transportation.mode === 'pt') {
       return {
-        publicTransport: {
-          walkingTimeToStation: transportation.details.walkingTimeToStation,
-        },
+        publicTransport: transportation.details
       };
     }
 
     if (transportation.mode === 'driving+pt') {
       return {
-drivingAndPublicTransport: transportation.details,
+        drivingAndPublicTransport: transportation.details
       };
     }
 
