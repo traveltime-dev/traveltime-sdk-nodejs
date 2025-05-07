@@ -779,7 +779,7 @@ support extra configuration parameters.
 
 ```typescript
   transportation: {
-    mode: 'driving+pt',
+    mode: 'pt',
     details: {
       walkingTimeToStation: 1800
     }
