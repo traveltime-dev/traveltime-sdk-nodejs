@@ -92,12 +92,12 @@ export class TravelTimeProtoClient {
     this.TimeFilterFastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.TimeFilterFastResponse');
   }
 
-  private isTransportationObject(transport: any): transport is DetailedTransportation {
+  private isDetailedTransportation(transport: any): transport is DetailedTransportation {
     return (
       typeof transport === 'object' && 
         transport !== null && 
-        'mode' in transport
-        // 'details' is nullable, so we don't assert for it
+        'mode' in transport &&
+        (transport.mode === 'pt' || transport.mode === 'driving+pt')
     );
   }
 
@@ -114,7 +114,7 @@ export class TravelTimeProtoClient {
   }
 
   private extractTransportationMode(transportation: TimeFilterFastProtoTransportation | DetailedTransportation): TimeFilterFastProtoTransportation {
-    return this.isTransportationObject(transportation) ? transportation.mode : transportation;
+    return this.isDetailedTransportation(transportation) ? transportation.mode : transportation;
   }
 
   private validateTransportationMode(mode: TimeFilterFastProtoTransportation): void {
@@ -127,32 +127,32 @@ export class TravelTimeProtoClient {
     transportation: TimeFilterFastProtoTransportation | DetailedTransportation,
     transportationMode: TimeFilterFastProtoTransportation
   ): Record<string, any> | undefined {
-    if (!this.isTransportationObject(transportation) || !transportation.details) {
+    // Return undefined if it's a string or has no details
+    if (typeof transportation === 'string' || 
+      !this.isDetailedTransportation(transportation) || 
+      !transportation.details) {
       return undefined;
     }
 
-    const { details } = transportation;
+    // Verify modes match
+    if (transportation.mode !== transportationMode) {
+      throw new Error(`Details can only be used with matching transportation type "${transportation.mode}"`);
+    }
 
-    if ('publicTransport' in details) {
-      if (transportationMode !== 'pt') {
-        throw new Error('publicTransport details can only be used with transportation type "pt"');
-      }
+    if (transportation.mode === 'pt') {
       return {
         publicTransport: {
-          walkingTimeToStation: details.publicTransport.walkingTimeToStation,
+          walkingTimeToStation: transportation.details.walkingTimeToStation,
         },
       };
     }
 
-    if ('drivingAndPublicTransport' in details) {
-      if (transportationMode !== 'driving+pt') {
-        throw new Error('drivingAndPublicTransport details can only be used with transportation type "driving+pt"');
-      }
+    if (transportation.mode === 'driving+pt') {
       return {
         drivingAndPublicTransport: {
-          walkingTimeToStation: details.drivingAndPublicTransport.walkingTimeToStation,
-          drivingTimeToStation: details.drivingAndPublicTransport.drivingTimeToStation,
-          parkingTime: details.drivingAndPublicTransport.parkingTime,
+          walkingTimeToStation: transportation.details.walkingTimeToStation,
+          drivingTimeToStation: transportation.details.drivingTimeToStation,
+          parkingTime: transportation.details.parkingTime,
         },
       };
     }

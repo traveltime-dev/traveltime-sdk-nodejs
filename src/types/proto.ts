@@ -21,14 +21,9 @@ export interface DrivingAndPublicTransportDetails {
   parkingTime?: number; // Optional sint32, default -1 means use service default (300s)
 }
 
-export type TransportationDetails =
-  | { publicTransport: PublicTransportDetails }
-  | { drivingAndPublicTransport: DrivingAndPublicTransportDetails };
-
-export interface DetailedTransportation {
-  mode: TimeFilterFastProtoTransportation;
-  details?: TransportationDetails;
-}
+export type DetailedTransportation = 
+  | { mode: 'pt', details?: PublicTransportDetails }
+  | { mode: 'driving+pt', details?: DrivingAndPublicTransportDetails };
 
 export interface TimeFilterFastProtoRequest {
   country: TimeFilterFastProtoCountry

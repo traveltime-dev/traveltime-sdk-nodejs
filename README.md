@@ -742,11 +742,9 @@ const requestData: TimeFilterFastProtoRequest = {
   transportation: {
     mode: 'driving+pt',
     details: { // only available for 'driving+pt` and 'pt'. Optional
-      drivingAndPublicTransport: { // for 'pt' use 'publicTransport' instead
-        walkingTimeToStation: 1800, // optional
-        drivingTimeToStation: 1800, // optional
-        parkingTime: 900 // optional
-      }
+      walkingTimeToStation: 1800, // optional, available for 'pt' and 'driving+pt'
+      drivingTimeToStation: 1800, // optional, available for 'driving+pt'
+      parkingTime: 900 // optional, available for 'driving+pt'
     }
   },
   // Simpler, if details are not needed
