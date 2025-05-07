@@ -12,13 +12,13 @@ export interface TimeFilterFastProtoProperties {
 }
 
 export interface PublicTransportDetails {
-  walkingTimeToStation?: number; // Optional uint32, default 0 means use service default (1800s)
+  walkingTimeToStation?: number;
 }
 
 export interface DrivingAndPublicTransportDetails {
-  walkingTimeToStation?: number; // Optional uint32, default 0 means use service default (1800s)
-  drivingTimeToStation?: number; // Optional uint32, default 0 means use service default (1800s)
-  parkingTime?: number; // Optional sint32, default -1 means use service default (300s)
+  walkingTimeToStation?: number;
+  drivingTimeToStation?: number;
+  parkingTime?: number;
 }
 
 export type DetailedTransportation = 
