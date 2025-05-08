@@ -707,7 +707,7 @@ Body attributes:
 * country: Return the results that are within the specified country.
 * departureLocation: Point of departure.
 * destinationCoordinates: Destination points. Cannot be more than 200,000.
-* transportation: Transportation type.
+* transportation: Transportation type (literal) or type with details (object) for "pt" and "driving+pt" types.
 * travelTime: Time limit.
 
 #### Advanced Options
@@ -739,14 +739,80 @@ const requestData: TimeFilterFastProtoRequest = {
     lat: 51.508824,
     lng: -0.167093,
   }],
-  transportation: 'driving+ferry',
+  transportation: {
+    mode: 'driving+pt',
+    details: { // only available for 'driving+pt` and 'pt'. Optional
+      walkingTimeToStation: 1800, // optional, available for 'pt' and 'driving+pt'
+      drivingTimeToStation: 1800, // optional, available for 'driving+pt'
+      parkingTime: 900 // optional, available for 'driving+pt'
+    }
+  },
+  // Simpler, if details are not needed
+  // transportation: 'driving+ferry', 
   travelTime: 7200
 };
 
 travelTimeProtoClient.timeFilterFast(requestData)
   .then((data) => console.log(data))
-  .catch((e) => console.error(e));
+  .catch((e) => {
+    if (e.response && e.response.headers) {
+      const errorCode = e.response.headers['x-error-code'];
+      const errorDetails = e.response.headers['x-error-details'];
+      const errorMessage = e.response.headers['x-error-message'];
+
+      console.error(`Travel Time API proto request failed with error code: ${e.response.status}`);
+      console.error(`X-ERROR-CODE: ${errorCode || 'Not provided'}`);
+      console.error(`X-ERROR-DETAILS: ${errorDetails || 'Not provided'}`);
+      console.error(`X-ERROR-MESSAGE: ${errorMessage || 'Not provided'}`);
+    } else {
+      console.error(e);
+    }
+  });
 ```
+
+#### Transportation Details
+
+When picking transportation mode for proto requests take note that some of the transportation modes
+support extra configuration parameters.
+
+##### Public Transport
+
+```typescript
+  transportation: {
+    mode: 'pt',
+    details: {
+      walkingTimeToStation: 1800
+    }
+  },
+```
+
+`pt` transportion mode and allows to set these parameters:
+* `walking_time_to_station` - limits the possible duration of walking paths.
+  This limit is of low precedence and will not override the global travel time limit
+  Optional. Must be <= 1800.
+
+##### Driving and Public Transport
+
+```typescript
+  transportation: {
+    mode: 'driving+pt',
+    details: {
+      walkingTimeToStation: 1800,
+      drivingTimeToStation: 1800,
+      parkingTime: 900
+    }
+  },
+```
+
+`driving+pt` transportion mode and allows to set these parameters:
+* `walking_time_to_station` - limits the possible duration of walking paths.
+  This limit is of low precedence and will not override the global travel time limit.
+  Optional. Must be <= 1800.
+* `driving_time_to_station` - limits the possible duration of driving paths.
+  This limit is of low precedence and will not override the global travel time limit
+  Optional. Must be <= 1800.
+* `parking_time` - constant penalty to apply to simulate the difficulty of finding a parking spot.
+  Optional. Cannot be greater than the global travel time limit.
 
 ### [Routes](https://traveltime.com/docs/api/reference/routes)
 Returns routing information between source and destinations.
