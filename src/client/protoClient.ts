@@ -140,15 +140,41 @@ export class TravelTimeProtoClient {
     }
 
     if (transportation.mode === 'pt') {
-      return {
-        publicTransport: transportation.details
-      };
+      const { walkingTimeToStation } = transportation.details;
+
+      if (walkingTimeToStation !== undefined) {
+        return {
+          publicTransport: {
+            walkingTimeToStation: { value: walkingTimeToStation }
+          }
+        };
+      }
+
+      return { publicTransport: {} };
     }
 
     if (transportation.mode === 'driving+pt') {
-      return {
-        drivingAndPublicTransport: transportation.details
-      };
+      const { 
+        walkingTimeToStation, 
+        drivingTimeToStation, 
+        parkingTime 
+      } = transportation.details;
+
+      const drivingAndPublicTransport: Record<string, any> = {};
+
+      if (walkingTimeToStation !== undefined) {
+        drivingAndPublicTransport.walkingTimeToStation = { value: walkingTimeToStation };
+      }
+
+      if (drivingTimeToStation !== undefined) {
+        drivingAndPublicTransport.drivingTimeToStation = { value: drivingTimeToStation };
+      }
+
+      if (parkingTime !== undefined) {
+        drivingAndPublicTransport.parkingTime = { value: parkingTime };
+      }
+
+      return { drivingAndPublicTransport };
     }
 
     return undefined;
