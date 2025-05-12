@@ -15,14 +15,14 @@ export interface PublicTransportDetails {
  /**
   *Limit on walking path duration. Must be > 0 and <= 1800
    */
-  walkingTimeToStation?: number; 
+  walkingTimeToStation?: number;
 }
 
 export interface DrivingAndPublicTransportDetails {
   /**
    *Limit on walking path duration. Must be > 0 and <= 1800
    */
-  walkingTimeToStation?: number; 
+  walkingTimeToStation?: number;
   /**
    *Limit on driving path duration. Must be > 0 and <= 1800
    */
@@ -32,7 +32,7 @@ export interface DrivingAndPublicTransportDetails {
    */
   parkingTime?: number; }
 
-export type DetailedTransportation = 
+export type DetailedTransportation =
   | { mode: 'pt', details?: PublicTransportDetails }
   | { mode: 'driving+pt', details?: DrivingAndPublicTransportDetails };
 
