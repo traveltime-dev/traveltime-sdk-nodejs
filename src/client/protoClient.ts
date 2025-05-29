@@ -3,7 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import protobuf from 'protobufjs';
 import { Coords, Credentials } from '../types';
 import {
-    DetailedTransportation,
+  DetailedTransportation,
   TimeFilterFastProtoDistanceRequest, TimeFilterFastProtoRequest, TimeFilterFastProtoResponse, TimeFilterFastProtoTransportation,
 } from '../types/proto';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
@@ -94,10 +94,10 @@ export class TravelTimeProtoClient {
 
   private isDetailedTransportation(transport: any): transport is DetailedTransportation {
     return (
-      typeof transport === 'object' && 
-        transport !== null && 
-        'mode' in transport &&
-        (transport.mode === 'pt' || transport.mode === 'driving+pt')
+      typeof transport === 'object'
+        && transport !== null
+        && 'mode' in transport
+        && (transport.mode === 'pt' || transport.mode === 'driving+pt')
     );
   }
 
@@ -105,7 +105,7 @@ export class TravelTimeProtoClient {
     return Math.round((targetPoint - sourcePoint) * 100000);
   }
 
-  private buildRequestUrl(uri: string, country: String, transportModeUrlName: string): string {
+  private buildRequestUrl(uri: string, country: string, transportModeUrlName: string): string {
     return `${uri}/${country}/time-filter/fast/${transportModeUrlName}`;
   }
 
@@ -125,12 +125,12 @@ export class TravelTimeProtoClient {
 
   private extractTransportationDetails(
     transportation: TimeFilterFastProtoTransportation | DetailedTransportation,
-    transportationMode: TimeFilterFastProtoTransportation
+    transportationMode: TimeFilterFastProtoTransportation,
   ): Record<string, any> | undefined {
     // Return undefined if it's a string or has no details
-    if (typeof transportation === 'string' || 
-      !this.isDetailedTransportation(transportation) || 
-      !transportation.details) {
+    if (typeof transportation === 'string'
+      || !this.isDetailedTransportation(transportation)
+      || !transportation.details) {
       return undefined;
     }
 
@@ -140,15 +140,41 @@ export class TravelTimeProtoClient {
     }
 
     if (transportation.mode === 'pt') {
-      return {
-        publicTransport: transportation.details
-      };
+      const { walkingTimeToStation } = transportation.details;
+
+      if (walkingTimeToStation !== undefined) {
+        return {
+          publicTransport: {
+            walkingTimeToStation: { value: walkingTimeToStation },
+          },
+        };
+      }
+
+      return { publicTransport: {} };
     }
 
     if (transportation.mode === 'driving+pt') {
-      return {
-        drivingAndPublicTransport: transportation.details
-      };
+      const {
+        walkingTimeToStation,
+        drivingTimeToStation,
+        parkingTime,
+      } = transportation.details;
+
+      const drivingAndPublicTransport: Record<string, any> = {};
+
+      if (walkingTimeToStation !== undefined) {
+        drivingAndPublicTransport.walkingTimeToStation = { value: walkingTimeToStation };
+      }
+
+      if (drivingTimeToStation !== undefined) {
+        drivingAndPublicTransport.drivingTimeToStation = { value: drivingTimeToStation };
+      }
+
+      if (parkingTime !== undefined) {
+        drivingAndPublicTransport.parkingTime = { value: parkingTime };
+      }
+
+      return { drivingAndPublicTransport };
     }
 
     return undefined;
@@ -182,11 +208,11 @@ export class TravelTimeProtoClient {
       },
     };
 
-    const requestUrl = this.buildRequestUrl(uri, country, transportationConfig.urlName)
+    const requestUrl = this.buildRequestUrl(uri, country, transportationConfig.urlName);
 
     return {
       requestMessage,
-      requestUrl
+      requestUrl,
     };
   }
 
@@ -206,16 +232,16 @@ export class TravelTimeProtoClient {
     request: TimeFilterFastProtoRequest | TimeFilterFastProtoDistanceRequest,
     options?: ProtoRequestBuildOptions,
   ): Promise<TimeFilterFastProtoResponse> {
-    const {requestMessage, requestUrl} = this.buildProtoRequest(request, uri, options);
+    const { requestMessage, requestUrl } = this.buildProtoRequest(request, uri, options);
     const message = this.TimeFilterFastRequest.create(requestMessage);
     const buffer = this.TimeFilterFastRequest.encode(message).finish();
 
     const rq = () => this.axiosInstance.post(requestUrl, buffer);
 
-    const promise = this.rateLimiter.isEnabled() 
+    const promise = this.rateLimiter.isEnabled()
       ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
         this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
-      }) 
+      })
       : rq();
 
     const { data } = await promise;

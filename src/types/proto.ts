@@ -13,26 +13,26 @@ export interface TimeFilterFastProtoProperties {
 
 export interface PublicTransportDetails {
  /**
-  *Limit on walking path duration. Must be <= 1800
+  *Limit on walking path duration. Must be > 0 and <= 1800
    */
-  walkingTimeToStation?: number; 
+  walkingTimeToStation?: number;
 }
 
 export interface DrivingAndPublicTransportDetails {
   /**
-   *Limit on walking path duration. Must be <= 1800
+   *Limit on walking path duration. Must be > 0 and <= 1800
    */
-  walkingTimeToStation?: number; 
+  walkingTimeToStation?: number;
   /**
-   *Limit on driving path duration. Must be <= 1800
+   *Limit on driving path duration. Must be > 0 and <= 1800
    */
   drivingTimeToStation?: number;
   /**
-   * Constant penalty to simulate finding a parking spot. Must be less than travel time limit
+   * Constant penalty to simulate finding a parking spot. Must be non-negative and less than travel time limit
    */
   parkingTime?: number; }
 
-export type DetailedTransportation = 
+export type DetailedTransportation =
   | { mode: 'pt', details?: PublicTransportDetails }
   | { mode: 'driving+pt', details?: DrivingAndPublicTransportDetails };
 
