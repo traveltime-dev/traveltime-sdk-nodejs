@@ -8,6 +8,7 @@ export type TransportationType = 'cycling' | 'driving' | 'driving+train' | 'publ
 export type RouteResponseTransportationMode = 'car' | 'parking' | 'boarding' | 'walk' | 'bike' | 'bike_parking' | 'train' | 'rail_national' | 'rail_overground' | 'rail_underground' | 'rail_dlr' | 'bus' | 'cable_car' | 'plane' | 'ferry' | 'coach';
 export type RoutesResponseRoutePartType = 'basic' | 'start_end' | 'road' | 'public_transport'
 export type RoutesResponseFareTicketType = 'single' | 'week' | 'month' | 'year';
+export type TrafficModel = 'balanced' | 'optimistic' | 'pessimistic'
 
 export type LocationRequest = {
   'id': string;
@@ -29,6 +30,15 @@ export type TransportationRequestCommons = {
   'parking_time'?: number
   'boarding_time'?: number
   'max_changes'?: MaxChangesRequest
+  /**
+   * Specifies how traffic conditions are accounted for in driving modes. The full impact depends on the typical traffic conditions for the specific area and time of day - when congestion is higher (e.g in more urban areas, and at busier times of the day) the parameter will have a bigger impact.
+   * - `balanced` (default) - uses typical traffic conditions for the chosen time of day.
+   * - `optimistic` - uses lighter traffic conditions for the chosen time of day, resulting in shorter travel times.
+   * - `pessimistic` - uses heavier traffic conditions for the chosen time of day, resulting in longer travel times.
+   *
+   * Used in `driving`, `driving+ferry`, `driving+train`, and `driving+public_transport` transportation modes.
+   */
+  'traffic_model'?: TrafficModel
 }
 
 export type TransportationNoPtRequestCommons = {
