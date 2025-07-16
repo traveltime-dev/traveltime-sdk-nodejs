@@ -29,7 +29,7 @@ interface TimeFilterFastProtoMessage {
   }
 }
 
-const DEFAULT_BASE_URL = 'http://proto.api.traveltimeapp.com/api/v2';
+const DEFAULT_BASE_URL = 'http://proto.api.traveltimeapp.com/api/v3';
 
 interface ProtoRequestBuildOptions {
   useDistance?: boolean
