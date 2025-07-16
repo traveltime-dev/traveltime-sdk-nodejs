@@ -20,7 +20,7 @@
   "dependencies": {
     "agentkeepalive": "^4.5.0",
     "axios": "^1.7.5",
-    "protobufjs": "^7.5.2"
+    "protobufjs": "^7.5.3"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.29.0",
