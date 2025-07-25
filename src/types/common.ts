@@ -185,6 +185,8 @@ export type Snapping = {
     penalty?: 'enabled' | 'disabled'
     /** Default - `both_drivable_and_walkable` */
     accept_roads?: 'both_drivable_and_walkable' | 'any_drivable'
+    /** Default - `1000` */
+    threshold?: number
   }
 }
 
