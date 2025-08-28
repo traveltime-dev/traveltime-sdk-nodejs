@@ -15,6 +15,12 @@ export type GeoGridRequestSearchBase<Centroid> = Snapping & {
   transportation: TransportationRequestCommons
   travel_time: number
   properties?: Array<GeoGridRequestSearchProperty>
+  /**
+   * true (default) - returned cells will not cover large nearby water bodies
+   *
+   * false - returned cells may cover nearby water bodies like large lakes, wide rivers and seas
+   */
+  remove_water_bodies?: boolean
   range?: RangeRequestNoMaxResults
 }
 
