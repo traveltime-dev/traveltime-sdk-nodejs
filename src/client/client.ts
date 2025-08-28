@@ -26,28 +26,14 @@ import {
   TimeMapFastRequest,
   Coords,
   Credentials,
-  TimeMapSimple,
-  TimeMapFastSimple,
-  TimeFilterSimple,
-  TimeFilterFastSimple,
-  RoutesSimple,
   BatchResponse,
   GenericFunction,
   DistanceMapRequest,
   DistanceMapResponseType,
   DistanceMapResponse,
-  DistanceMapSimple,
 } from '../types';
 import { TimeMapFastResponseType, TimeMapResponseType } from '../types/timeMapResponse';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
-import {
-  distanceMapSimpleToRequest,
-  routesSimpleToRequest,
-  timeFilterFastSimpleToRequest,
-  timeFilterSimpleToRequest,
-  timeMapFastSimpleToRequest,
-  timeMapSimpleToRequest,
-} from './mapper';
 import { TimeFilterFastManyToManyMatrixRequest, TimeFilterManyToManyMatrixRequest } from '../types/timeFilterMatrix';
 import {
   timeFilterFastManyToManyMatrixResponseMapper, timeFilterFastManyToManyMatrixToRequest, timeFilterManyToManyMatrixResponseMapper, timeFilterManyToManyMatrixToRequest,
@@ -213,19 +199,6 @@ export class TravelTimeClient {
     return this.batch((body: DistanceMapRequest) => this.distanceMap(body, format as T), bodies);
   }
 
-  /**
-   * Simplified version of distanceMap.
-   * Allows you to pass multiple coordinates with same params for shape to be made.
-   * @param {DistanceMapSimple} body Simplified DistanceMapRequest. Default search type is `departure`.
-   * @param {keyof DistanceMapResponseType} [format] Specify in which format response should be returned.
-   */
-  async distanceMapSimple(body: DistanceMapSimple): Promise<TimeMapResponse>
-  async distanceMapSimple<T extends keyof DistanceMapResponseType>(body: DistanceMapSimple, format: T): Promise<DistanceMapResponseType[T]>
-  async distanceMapSimple<T extends keyof DistanceMapResponseType>(body: DistanceMapSimple, format?: T) {
-    const request = distanceMapSimpleToRequest(body);
-    return this.distanceMap(request, format as T);
-  }
-
   async geocoding(query: string, req?: GeocodingSearchRequest) {
     const { acceptLanguage, params } = req || {};
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
@@ -253,13 +226,6 @@ export class TravelTimeClient {
   routes = async (body: RoutesRequest) => this.request<RoutesResponse>('/routes', 'post', { body });
   routesBatch = async (requests: RoutesRequest[]) => this.batch(this.routes, requests);
 
-  /**
-   * Simplified version of routes.
-   * Allows you to pass multiple coordinates with same params for routes to be made.
-   * @param {RoutesSimple} body Simplified RoutesRequest type. Default search type is `departure`.
-   */
-  routesSimple = async (body: RoutesSimple) => this.routes(routesSimpleToRequest(body));
-
   supportedLocations = async (body: SupportedLocationsRequest) => this.request<SupportedLocationsResponse>('/supported-locations', 'post', { body });
 
   timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', { body });
@@ -270,13 +236,6 @@ export class TravelTimeClient {
     return timeFilterManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
   };
 
-  /**
-   * Simplified version of timeFilter.
-   * Allows you to pass multiple coordinates with same params for matrixes to be made.
-   * @param {TimeFilterSimple} body Simplified TimeFilterRequest type. Default search type is `departure`.
-   */
-  timeFilterSimple = async (body: TimeFilterSimple) => this.timeFilter(timeFilterSimpleToRequest(body));
-
   timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
   timeFilterFastBatch = async (requests: TimeFilterFastRequest[]) => this.batch(this.timeFilterFast, requests);
   manyToManyMatrixFast = async (body: TimeFilterFastManyToManyMatrixRequest) => {
@@ -284,13 +243,6 @@ export class TravelTimeClient {
     const responses = await this.timeFilterFastBatch(requests);
     return timeFilterFastManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
   };
-
-  /**
-   * Simplified version of timeFilterFast.
-   * Allows you to pass multiple coordinates with same params for matrixes to be made.
-   * @param {TimeFilterFastSimple} body Simplified TimeFilterFastRequest. Default search type is `one_to_many`. Default properties are `['travel_time']`.
-   */
-  timeFilterFastSimple = async (body: TimeFilterFastSimple) => this.timeFilterFast(timeFilterFastSimpleToRequest(body));
 
   timeFilterPostcodeDistricts = async (body: TimeFilterPostcodeDistrictsRequest) => this
     .request<TimeFilterPostcodeDistrictsResponse>('/time-filter/postcode-districts', 'post', { body });
@@ -323,19 +275,6 @@ export class TravelTimeClient {
     return this.batch((body: TimeMapRequest) => this.timeMap(body, format as T), bodies);
   }
 
-  /**
-   * Simplified version of timeMap.
-   * Allows you to pass multiple coordinates with same params for isochrones to be made.
-   * @param {TimeMapSimple} body Simplified TimeMapRequest. Default search type is `departure`.
-   * @param {keyof TimeMapResponseType} [format] Specify in which format response should be returned. Supported formats can be found - https://docs.traveltime.com/api/reference/isochrones#Response-Body
-   */
-  async timeMapSimple(body: TimeMapSimple): Promise<TimeMapResponse>
-  async timeMapSimple<T extends keyof TimeMapResponseType>(body: TimeMapSimple, format: T): Promise<TimeMapResponseType[T]>
-  async timeMapSimple<T extends keyof TimeMapResponseType>(body: TimeMapSimple, format?: T) {
-    const request = timeMapSimpleToRequest(body);
-    return this.timeMap(request, format as T);
-  }
-
   async timeMapFast(body: TimeMapFastRequest): Promise<TimeMapResponse>
   async timeMapFast<T extends keyof TimeMapFastResponseType>(body: TimeMapFastRequest, format: T): Promise<TimeMapFastResponseType[T]>
   async timeMapFast<T extends keyof TimeMapFastResponseType>(body: TimeMapFastRequest, format?: T) {
@@ -354,18 +293,6 @@ export class TravelTimeClient {
     format?: T,
   ): Promise<BatchResponse<Awaited<TimeMapFastResponseType[T]>>[]> {
     return this.batch((body: TimeMapFastRequest) => this.timeMapFast(body, format as T), bodies);
-  }
-  /**
-   * Simplified version of timeMapFast.
-   * Allows you to pass multiple coordinates with same params for isochrones to be made.
-   * @param {TimeMapFastSimple} body Simplified TimeMapFastRequest. Default search type is `one_to_many`.
-   * @param {keyof TimeMapResponseType} [format] Specify in which format response should be returned. Supported formats are same as in time map.
-   */
-  async timeMapFastSimple(body: TimeMapFastSimple): Promise<TimeMapResponse>
-  async timeMapFastSimple<T extends keyof TimeMapFastResponseType>(body: TimeMapFastSimple, format: T): Promise<TimeMapFastResponseType[T]>
-  async timeMapFastSimple<T extends keyof TimeMapFastResponseType>(body: TimeMapFastSimple, format?: T) {
-    const request = timeMapFastSimpleToRequest(body);
-    return this.timeMapFast(request, format as T);
   }
 
   getBaseURL = () => this.axiosInstance.defaults.baseURL;
