@@ -7,14 +7,18 @@ import {
 } from './common';
 
 export type GeoGridProperties = 'min' | 'max' | 'mean'
-export type GeoGridRequestSearchProperty = 'is_only_walking';
 
 export type GeoGridRequestSearchBase<Centroid> = Snapping & {
   id: string
   coords: Coords | Centroid
   transportation: TransportationRequestCommons
   travel_time: number
-  properties?: Array<GeoGridRequestSearchProperty>
+  /**
+   * true (default) - returned cells will not cover large nearby water bodies
+   *
+   * false - returned cells may cover nearby water bodies like large lakes, wide rivers and seas
+   */
+  remove_water_bodies?: boolean
   range?: RangeRequestNoMaxResults
 }
 
