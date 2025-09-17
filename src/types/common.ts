@@ -11,6 +11,7 @@ export type RoutesResponseRoutePartType = 'basic' | 'start_end' | 'road' | 'publ
 export type RoutesResponseFareTicketType = 'single' | 'week' | 'month' | 'year';
 export type TrafficModel = 'balanced' | 'optimistic' | 'pessimistic'
 export type TrafficModelFast = 'peak' | 'off_peak'
+export type IncludeRoadValues = 'track' | 'restricted'
 
 export type LocationRequest = {
   'id': string;
@@ -24,6 +25,12 @@ export type MaxChangesRequest = {
 
 export type TransportationRequestCommons = {
   'type': TransportationType
+  /**
+   * Additional road types to included when executing search. Only affects `driving` and `driving+ferry` transportation modes. Possible values:
+   * - `track` - unpaved roads that only allow very slow driving speed or even require an off-road capable vehicle.
+   * - `restricted` - roads that are not publicly accessible and may require a special permit. By default all of these roads are excluded from the search.
+   */
+  'include_roads'?: Array<IncludeRoadValues>
   'disable_border_crossing'?: boolean
   'pt_change_delay'?: number
   'walking_time'?: number
@@ -56,6 +63,12 @@ export type TransportationFastRequestCommons = {
 
 export type TransportationNoPtRequestCommons = {
   'type': TransportationTypeNoPt
+  /**
+   * Additional road types to included when executing search. Only affects `driving` and `driving+ferry` transportation modes. Possible values:
+   * - `track` - unpaved roads that only allow very slow driving speed or even require an off-road capable vehicle.
+   * - `restricted` - roads that are not publicly accessible and may require a special permit. By default all of these roads are excluded from the search.
+   */
+  'include_roads'?: Array<IncludeRoadValues>
   'disable_border_crossing'?: boolean
   'boarding_time'?: number
 }
