@@ -1,13 +1,11 @@
 import {
-  Coords, LevelOfDetail, PolygonsFilter, Snapping, TransportationFast,
+  Coords, LevelOfDetail, PolygonsFilter, Snapping, TransportationFastRequestCommons,
 } from './common';
 
 export type TimeMapFastRequestSearch = Snapping & {
   id: string,
   coords: Coords,
-  transportation: {
-    type: TransportationFast
-  },
+  transportation: TransportationFastRequestCommons
   arrival_time_period : 'weekday_morning',
   travel_time: number,
   level_of_detail?: LevelOfDetail
