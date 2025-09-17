@@ -3,12 +3,14 @@ export type Coords = {
   'lng': number;
 }
 
+export type TransportationFast = 'public_transport' | 'driving' | 'driving+public_transport' | 'driving+ferry' | 'cycling' | 'cycling+ferry' | 'walking' | 'walking+ferry'
 export type TransportationTypeNoPt = 'walking' | 'cycling' | 'driving' | 'ferry' | 'cycling+ferry' | 'driving+ferry'
 export type TransportationType = 'cycling' | 'driving' | 'driving+train' | 'public_transport' | 'walking' | 'coach' | 'bus' | 'train' | 'ferry' | 'driving+ferry' | 'cycling+ferry' | 'cycling+public_transport' | 'driving+public_transport';
 export type RouteResponseTransportationMode = 'car' | 'parking' | 'boarding' | 'walk' | 'bike' | 'bike_parking' | 'train' | 'rail_national' | 'rail_overground' | 'rail_underground' | 'rail_dlr' | 'bus' | 'cable_car' | 'plane' | 'ferry' | 'coach';
 export type RoutesResponseRoutePartType = 'basic' | 'start_end' | 'road' | 'public_transport'
 export type RoutesResponseFareTicketType = 'single' | 'week' | 'month' | 'year';
 export type TrafficModel = 'balanced' | 'optimistic' | 'pessimistic'
+export type TrafficModelFast = 'peak' | 'off_peak'
 
 export type LocationRequest = {
   'id': string;
@@ -39,6 +41,17 @@ export type TransportationRequestCommons = {
    * Used in `driving`, `driving+ferry`, `driving+train`, and `driving+public_transport` transportation modes.
    */
   'traffic_model'?: TrafficModel
+}
+
+export type TransportationFastRequestCommons = {
+  type: TransportationFast
+  /**
+   * Determines the level of traffic used in driving journeys. Possible values:
+   * - `peak` (default) - represents the typical traffic conditions for a midweek morning.
+   * - `off_peak` - represents the typical traffic conditions at night time.
+   * Can only be specified with `driving+ferry` and `driving` transportation types.
+   */
+  'traffic_model'?: TrafficModelFast
 }
 
 export type TransportationNoPtRequestCommons = {
@@ -149,7 +162,6 @@ export type SimpleNumericLevelOfDetail = {
 }
 
 export type LevelOfDetail = CoarseGridLevelOfDetail | SimpleLevelOfDetail| SimpleNumericLevelOfDetail
-export type TransportationFast = 'public_transport' | 'driving' | 'driving+public_transport' | 'driving+ferry' | 'cycling' | 'cycling+ferry' | 'walking' | 'walking+ferry'
 
 export type Credentials = { apiKey: string, applicationId: string }
 

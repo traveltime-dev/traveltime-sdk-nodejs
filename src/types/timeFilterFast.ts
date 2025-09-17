@@ -2,15 +2,13 @@ import {
   LocationRequest,
   ResponseFareTicket,
   Snapping,
-  TransportationFast,
+  TransportationFastRequestCommons,
 } from './common';
 
 export type TimeFilterFastRequestArrivalTimePeriod = 'weekday_morning';
 export type TimeFilterFastRequestProperty = 'travel_time' | 'fares' | 'distance';
 
-export type TimeFilterFastRequestTransportation = {
-  'type': TransportationFast;
-}
+export type TimeFilterFastRequestTransportation = TransportationFastRequestCommons
 
 export type TimeFilterFastRequestArrivalSearchBase = Snapping & {
   'id': string;
