@@ -108,7 +108,7 @@ export function timeFilterFastManyToManyMatrixResponseMapper(responses: BatchRes
         resp.locations.forEach((location) => {
           const i = parseSingleIdToNumber(location.id);
           if (timeArray) timeArray[primaryIndex][i] = location.properties.travel_time;
-          if (distanceArray) distanceArray[primaryIndex][i] = location.properties.travel_time;
+          if (distanceArray) distanceArray[primaryIndex][i] = location.properties.distance ?? -1;
         });
       }
     }
@@ -172,7 +172,7 @@ export function timeFilterManyToManyMatrixResponseMapper(responses: BatchRespons
         resp.locations.forEach((location) => {
           const i = parseSingleIdToNumber(location.id);
           if (timeArray) timeArray[primaryIndex][i] = location.properties[0].travel_time;
-          if (distanceArray) distanceArray[primaryIndex][i] = location.properties[0].travel_time;
+          if (distanceArray) distanceArray[primaryIndex][i] = location.properties[0].distance ?? -1;
         });
       }
     }
