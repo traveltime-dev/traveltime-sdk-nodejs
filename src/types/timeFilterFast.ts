@@ -45,6 +45,7 @@ export type TimeFilterFastResponseFares = {
 export type TimeFilterFastResponseProperties = {
   'travel_time': number;
   'fares'?: TimeFilterFastResponseFares;
+  'distance'?: number
 }
 
 export type TimeFilterFastResponseLocation = {
