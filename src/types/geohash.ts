@@ -20,7 +20,7 @@ export type GeohashRequestArrivalSearch = GeohashRequestSearchBase & {
 
 export type GeohashRequest = {
   /**
-   * Values can be in range [1, 6]
+   * Allowed values differ based on `travel_time`
    */
   resolution: number
   properties: Array<GeoGridProperties>
