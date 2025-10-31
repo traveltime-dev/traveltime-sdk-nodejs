@@ -15,7 +15,7 @@ export type GeohashFastRequestArrivalSearch = {
 
 export type GeohashFastRequest = {
   /**
-   * Allowed values differ based on `travel_time`
+   * Values can be in range [1, 6]
    */
   resolution: number
   properties: Array<GeoGridProperties>
