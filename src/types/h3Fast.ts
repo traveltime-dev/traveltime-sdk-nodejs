@@ -15,7 +15,7 @@ export type H3FastRequestArrivalSearch = {
 
 export type H3FastRequest = {
   /**
-   * Values can be in range [1, 9]
+   * Allowed values differ based on `travel_time`
    */
   resolution: number
   properties: Array<GeoGridProperties>
