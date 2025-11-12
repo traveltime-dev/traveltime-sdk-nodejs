@@ -20,7 +20,9 @@ export type H3RequestArrivalSearch = H3RequestSearchBase & {
 
 export type H3Request = {
   /**
-   * Allowed values differ based on `travel_time`
+   * H3 resolution level (higher = more granular cells).
+   * Limitations can be found here:
+   * https://docs.traveltime.com/api/reference/h3#limits-of-resolution-and-traveltime.
    */
   resolution: number
   properties: Array<GeoGridProperties>
