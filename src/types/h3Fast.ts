@@ -15,7 +15,9 @@ export type H3FastRequestArrivalSearch = {
 
 export type H3FastRequest = {
   /**
-   * Values can be in range [1, 9]
+   * H3 resolution level (higher = more granular cells).
+   * Limitations can be found here:
+   * https://docs.traveltime.com/api/reference/h3-fast#limits-of-resolution-and-traveltime.
    */
   resolution: number
   properties: Array<GeoGridProperties>
