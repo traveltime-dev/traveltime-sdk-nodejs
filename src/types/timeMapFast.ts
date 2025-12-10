@@ -15,6 +15,7 @@ export type TimeMapFastRequestSearch = Snapping & {
    * Default: `approximate_time_filter`
    */
   render_mode?: 'approximate_time_filter' | 'road_buffering'
+  buffer_distance?: number
 }
 
 export type TimeMapFastRequestArrivalSearch = {
