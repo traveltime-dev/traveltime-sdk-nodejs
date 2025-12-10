@@ -20,6 +20,7 @@ export type DistanceMapRequestSearchBase = Snapping & {
   single_shape?: boolean
   polygons_filter?: PolygonsFilter
   no_holes?: boolean
+  buffer_distance?: number
 }
 
 export type DistanceMapRequestDepartureSearch = DistanceMapRequestSearchBase & {

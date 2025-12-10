@@ -38,6 +38,7 @@ export type TimeMapRequestSearchBase = Snapping & {
    * @deprecated Use {@link TimeMapRequestSearchBase.snapping} instead.
    */
   snap_penalty?: 'enabled' | 'disabled'
+  buffer_distance?: number
 }
 
 export type TimeMapRequestDepartureSearch = TimeMapRequestSearchBase & {
