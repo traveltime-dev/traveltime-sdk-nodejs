@@ -20,6 +20,10 @@ export type DistanceMapRequestSearchBase = Snapping & {
   single_shape?: boolean
   polygons_filter?: PolygonsFilter
   no_holes?: boolean
+  /**
+   * Default: `approximate_time_filter`
+   */
+  render_mode?: 'approximate_time_filter' | 'road_buffering'
   buffer_distance?: number
 }
 
