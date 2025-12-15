@@ -11,3 +11,6 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 25
     versioning-strategy: increase
+    ignore:
+      - dependency-name: "*eslint*"
+      - dependency-name: "ts-node"
