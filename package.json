@@ -19,8 +19,8 @@
   "license": "MIT",
   "dependencies": {
     "agentkeepalive": "^4.5.0",
-    "axios": "^1.12.2",
-    "protobufjs": "^7.5.4"
+    "axios": "^1.13.2",
+    "protobufjs": "^8.0.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.29.0",
