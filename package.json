@@ -1,6 +1,6 @@
 {
   "name": "traveltime-api",
-  "version": "7.2.1",
+  "version": "7.2.2",
   "description": "TravelTime API SDK for node js with TypeScript",
   "main": "target/index.js",
   "types": "target/index.d.ts",
@@ -18,9 +18,9 @@
   "author": "TravelTime <support@traveltime.com> (https://traveltime.com/)",
   "license": "MIT",
   "dependencies": {
-    "agentkeepalive": "^4.5.0",
-    "axios": "^1.12.2",
-    "protobufjs": "^7.5.4"
+    "agentkeepalive": "^4.6.0",
+    "axios": "^1.13.2",
+    "protobufjs": "^8.0.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.29.0",
