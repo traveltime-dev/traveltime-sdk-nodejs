@@ -8,10 +8,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 1
-      matrix:
-        node-version: [18, 20, 22]
     env:
       APP_ID: ${{ secrets.APP_ID }}
       API_KEY: ${{ secrets.API_KEY }}
@@ -19,9 +15,9 @@ jobs:
       PROTO_API_KEY: ${{ secrets.PROTO_API_KEY }}
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js LTS
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: lts/*
       - run: npm install
       - run: npm test
