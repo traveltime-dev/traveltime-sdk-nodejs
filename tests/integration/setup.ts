@@ -6,8 +6,8 @@ export const client = new TravelTimeClient({
 });
 
 export const protoClient = new TravelTimeProtoClient({
-  apiKey: process.env.PROTO_API_KEY!,
-  applicationId: process.env.PROTO_APP_ID!,
+  apiKey: process.env.API_KEY!,
+  applicationId: process.env.APP_ID!,
 });
 
 export const locations: LocationRequest[] = [
