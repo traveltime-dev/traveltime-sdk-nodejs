@@ -11,8 +11,6 @@ jobs:
     env:
       APP_ID: ${{ secrets.APP_ID }}
       API_KEY: ${{ secrets.API_KEY }}
-      PROTO_APP_ID: ${{ secrets.PROTO_APP_ID }}
-      PROTO_API_KEY: ${{ secrets.PROTO_API_KEY }}
     steps:
       - uses: actions/checkout@v6
       - name: Use Node.js LTS
