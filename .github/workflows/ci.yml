@@ -14,9 +14,9 @@ jobs:
       PROTO_APP_ID: ${{ secrets.PROTO_APP_ID }}
       PROTO_API_KEY: ${{ secrets.PROTO_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Use Node.js LTS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.2.0
         with:
           node-version: lts/*
       - run: npm install
