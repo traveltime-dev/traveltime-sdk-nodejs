@@ -8,6 +8,7 @@
     "build": "tsc && cp -R src/client/proto target/client",
     "clean": "rm -rf node_modules && rm -rf target && rm -f main.ts",
     "dev": "ts-node main.ts",
+    "test": "vitest run",
     "release": "npm run clean && npm i && npm run build && npm publish",
     "release-rc": "npm run clean && npm i && npm run build && npm publish --tag rc"
   },
@@ -29,7 +30,8 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.26.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
   },
   "keywords": [
     "traveltime",
