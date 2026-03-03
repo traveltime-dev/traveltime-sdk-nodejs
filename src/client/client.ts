@@ -66,11 +66,15 @@ function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
       return (body.departure_searches?.length || 0) + (body.arrival_searches?.length || 0);
     }
     case '/time-map/fast':
-    case '/time-filter/fast': {
+    case '/time-filter/fast':
+    case '/h3/fast':
+    case '/geohash/fast': {
       return (body.arrival_searches.one_to_many?.length || 0) + (body.arrival_searches.many_to_one?.length || 0);
     }
     case '/distance-map':
-    case '/time-map': {
+    case '/time-map':
+    case '/h3':
+    case '/geohash': {
       return (body.departure_searches?.length || 0) + (body.arrival_searches?.length || 0) + (body.unions?.length || 0) + (body.intersections?.length || 0);
     }
     default: return 0;
@@ -88,6 +92,10 @@ function endpointChecksHPM(url: string) {
     '/time-filter/fast',
     '/time-map',
     '/distance-map',
+    '/h3',
+    '/h3/fast',
+    '/geohash',
+    '/geohash/fast',
   ].includes(url);
 }
 
