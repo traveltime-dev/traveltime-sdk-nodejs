@@ -22,7 +22,7 @@ describe('h3Fast', () => {
 
   it('should handle many-to-one search', async () => {
     const response = await client.h3Fast({
-      resolution: 6,
+      resolution: 7,
       properties: ['min', 'max', 'mean'],
       arrival_searches: {
         many_to_one: [{

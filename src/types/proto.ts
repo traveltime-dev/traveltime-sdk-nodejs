@@ -72,3 +72,35 @@ export interface TimeFilterFastProtoResponseError {
 }
 
 export type TimeFilterFastProtoResponse = TimeFilterFastProtoResponseProperties | TimeFilterFastProtoDistanceResponseProperties | TimeFilterFastProtoResponseError
+
+export type GeohashFastProtoTransportation = TimeFilterFastProtoTransportation;
+export type GeohashFastProtoCountry = TimeFilterFastProtoCountry;
+
+export type GeohashFastProtoCellProperty = 'min' | 'max' | 'mean';
+
+export interface GeohashFastProtoRequest {
+  country: GeohashFastProtoCountry
+  departureLocation?: Coords,
+  arrivalLocation?: Coords,
+  transportation: GeohashFastProtoTransportation | DetailedTransportation,
+  travelTime: number,
+  resolution: number,
+  properties?: Array<GeohashFastProtoCellProperty>,
+}
+
+export interface GeohashFastProtoResponseProperties {
+  cells: {
+    ids: Array<string>,
+    minTravelTimes?: Array<number>,
+    maxTravelTimes?: Array<number>,
+    meanTravelTimes?: Array<number>,
+  }
+}
+
+export interface GeohashFastProtoResponseError {
+  error: {
+    type: string
+  }
+}
+
+export type GeohashFastProtoResponse = GeohashFastProtoResponseProperties | GeohashFastProtoResponseError
