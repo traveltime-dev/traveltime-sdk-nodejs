@@ -20,7 +20,7 @@
   "license": "MIT",
   "dependencies": {
     "agentkeepalive": "^4.6.0",
-    "axios": "^1.13.6",
+    "axios": "^1.14.0",
     "protobufjs": "^8.0.0"
   },
   "devDependencies": {
