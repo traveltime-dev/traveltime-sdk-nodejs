@@ -1,6 +1,6 @@
 {
   "name": "traveltime-api",
-  "version": "7.3.2",
+  "version": "7.3.3",
   "description": "TravelTime API SDK for node js with TypeScript",
   "main": "target/index.js",
   "types": "target/index.d.ts",
@@ -31,7 +31,7 @@
     "eslint-plugin-import": "^2.26.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.9.3",
-    "vitest": "^3.0.0"
+    "vitest": "^4.1.4"
   },
   "keywords": [
     "traveltime",
