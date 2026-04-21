@@ -718,7 +718,7 @@ You can apply additional optional parameters to client constructor’s second ar
 If you need to change any of these parameters you can call setter methods: `travelTimeClient.setRateLimitSettings`.
 
 ```ts
-import { TravelTimeProtoClient, TimeFilterFastProtoRequest } from 'traveltime-api';
+import { TravelTimeError, TravelTimeProtoClient, TimeFilterFastProtoRequest } from 'traveltime-api';
 
 const travelTimeProtoClient = new TravelTimeProtoClient({
   apiKey: 'YOUR_APP_KEY',
@@ -750,18 +750,10 @@ const requestData: TimeFilterFastProtoRequest = {
 
 travelTimeProtoClient.timeFilterFast(requestData)
   .then((data) => console.log(data))
-  .catch((e) => {
-    const err = TravelTimeError.makeProtoError(e);
-    if (TravelTimeError.isTravelTimeError(err)) {
-      console.error(`Travel Time API proto request failed with error code: ${err.http_status}`);
-      console.error(`X-ERROR-CODE: ${err.error_code || 'Not provided'}`);
-      console.error(`X-ERROR-DETAILS: ${err.details || 'Not provided'}`);
-      console.error(`X-ERROR-MESSAGE: ${err.description || 'Not provided'}`);
-    } else {
-      console.error(err);
-    }
-  });
+  .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
 ```
+
+See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`http_status`, `error_code`, `description`, `details`) from proto endpoints.
 
 #### Transportation Details
 
@@ -841,20 +833,10 @@ const requestData: GeohashFastProtoRequest = {
 
 travelTimeProtoClient.geohashFast(requestData)
   .then((data) => console.log(data))
-  .catch((e) => {
-    const err = TravelTimeError.makeProtoError(e);
-    if (TravelTimeError.isTravelTimeError(err)) {
-      console.error(`Travel Time API proto request failed with error code: ${err.http_status}`);
-      console.error(`X-ERROR-CODE: ${err.error_code || 'Not provided'}`);
-      console.error(`X-ERROR-DETAILS: ${err.details || 'Not provided'}`);
-      console.error(`X-ERROR-MESSAGE: ${err.description || 'Not provided'}`);
-    } else {
-      console.error(err);
-    }
-  });
+  .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
 ```
 
-The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here.
+The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`http_status`, `error_code`, `description`, `details`) from proto endpoints.
 
 ### [Routes](https://traveltime.com/docs/api/reference/routes)
 Returns routing information between source and destinations.
@@ -1100,7 +1082,12 @@ travelTimeProtoClient.timeFilterFast(requestData)
   .catch((e) => {
     const err = TravelTimeError.makeProtoError(e);
     if (TravelTimeError.isTravelTimeError(err)) {
-      // your error handling logic — err.http_status, err.error_code, err.description, err.details
+      console.error(`Travel Time API proto request failed with error code: ${err.http_status}`);
+      console.error(`X-ERROR-CODE: ${err.error_code || 'Not provided'}`);
+      console.error(`X-ERROR-DETAILS: ${err.details || 'Not provided'}`);
+      console.error(`X-ERROR-MESSAGE: ${err.description || 'Not provided'}`);
+    } else {
+      console.error(err);
     }
   });
 ```
