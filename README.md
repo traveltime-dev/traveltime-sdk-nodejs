@@ -807,6 +807,55 @@ support extra configuration parameters.
 * `parking_time` - constant penalty to apply to simulate the difficulty of finding a parking spot.
   Optional. Cannot be greater than the global travel time limit.
 
+### [Geohash Fast (Proto)](https://docs.traveltime.com/api/start/geohash-proto)
+A fast version of geohash communicating using [protocol buffers](https://github.com/protocolbuffers/protobuf).
+
+Body attributes:
+* country: Return the results that are within the specified country.
+* departureLocation: Point of departure. Mutually exclusive with `arrivalLocation`.
+* arrivalLocation: Arrival point. Mutually exclusive with `departureLocation`.
+* transportation: Transportation type (literal) or type with details (object) for "pt" and "driving+pt" types. Matches the Time Filter Fast (Proto) shape above.
+* travelTime: Time limit.
+* resolution: Geohash resolution (cell size).
+* properties: Optional array of cell properties to return — any of `'min'`, `'max'`, `'mean'`.
+
+```ts
+import { TravelTimeError, TravelTimeProtoClient, GeohashFastProtoRequest } from 'traveltime-api';
+
+const travelTimeProtoClient = new TravelTimeProtoClient({
+  apiKey: 'YOUR_APP_KEY',
+  applicationId: 'YOUR_APP_ID',
+});
+
+const requestData: GeohashFastProtoRequest = {
+  country: 'uk',
+  departureLocation: {
+    lat: 51.508930,
+    lng: -0.131387,
+  },
+  transportation: 'driving+ferry',
+  travelTime: 7200,
+  resolution: 6,
+  properties: ['mean'],
+};
+
+travelTimeProtoClient.geohashFast(requestData)
+  .then((data) => console.log(data))
+  .catch((e) => {
+    const err = TravelTimeError.makeProtoError(e);
+    if (TravelTimeError.isTravelTimeError(err)) {
+      console.error(`Travel Time API proto request failed with error code: ${err.http_status}`);
+      console.error(`X-ERROR-CODE: ${err.error_code || 'Not provided'}`);
+      console.error(`X-ERROR-DETAILS: ${err.details || 'Not provided'}`);
+      console.error(`X-ERROR-MESSAGE: ${err.description || 'Not provided'}`);
+    } else {
+      console.error(err);
+    }
+  });
+```
+
+The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here.
+
 ### [Routes](https://traveltime.com/docs/api/reference/routes)
 Returns routing information between source and destinations.
 
