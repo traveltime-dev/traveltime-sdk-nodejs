@@ -718,7 +718,7 @@ You can apply additional optional parameters to client constructor’s second ar
 If you need to change any of these parameters you can call setter methods: `travelTimeClient.setRateLimitSettings`.
 
 ```ts
-import { TravelTimeProtoClient, TimeFilterFastProtoRequest } from 'traveltime-api';
+import { TravelTimeError, TravelTimeProtoClient, TimeFilterFastProtoRequest } from 'traveltime-api';
 
 const travelTimeProtoClient = new TravelTimeProtoClient({
   apiKey: 'YOUR_APP_KEY',
@@ -750,21 +750,10 @@ const requestData: TimeFilterFastProtoRequest = {
 
 travelTimeProtoClient.timeFilterFast(requestData)
   .then((data) => console.log(data))
-  .catch((e) => {
-    if (e.response && e.response.headers) {
-      const errorCode = e.response.headers['x-error-code'];
-      const errorDetails = e.response.headers['x-error-details'];
-      const errorMessage = e.response.headers['x-error-message'];
-
-      console.error(`Travel Time API proto request failed with error code: ${e.response.status}`);
-      console.error(`X-ERROR-CODE: ${errorCode || 'Not provided'}`);
-      console.error(`X-ERROR-DETAILS: ${errorDetails || 'Not provided'}`);
-      console.error(`X-ERROR-MESSAGE: ${errorMessage || 'Not provided'}`);
-    } else {
-      console.error(e);
-    }
-  });
+  .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
 ```
+
+See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`http_status`, `error_code`, `description`, `details`) from proto endpoints.
 
 #### Transportation Details
 
@@ -809,6 +798,45 @@ support extra configuration parameters.
   Optional. Must be <= 1800.
 * `parking_time` - constant penalty to apply to simulate the difficulty of finding a parking spot.
   Optional. Cannot be greater than the global travel time limit.
+
+### [Geohash Fast (Proto)](https://docs.traveltime.com/api/start/geohash-proto)
+A fast version of geohash communicating using [protocol buffers](https://github.com/protocolbuffers/protobuf).
+
+Body attributes:
+* country: Return the results that are within the specified country.
+* departureLocation: Point of departure. Mutually exclusive with `arrivalLocation`.
+* arrivalLocation: Arrival point. Mutually exclusive with `departureLocation`.
+* transportation: Transportation type (literal) or type with details (object) for "pt" and "driving+pt" types. Matches the Time Filter Fast (Proto) shape above.
+* travelTime: Time limit.
+* resolution: Geohash resolution (cell size).
+* properties: Optional array of cell properties to return — any of `'min'`, `'max'`, `'mean'`.
+
+```ts
+import { TravelTimeError, TravelTimeProtoClient, GeohashFastProtoRequest } from 'traveltime-api';
+
+const travelTimeProtoClient = new TravelTimeProtoClient({
+  apiKey: 'YOUR_APP_KEY',
+  applicationId: 'YOUR_APP_ID',
+});
+
+const requestData: GeohashFastProtoRequest = {
+  country: 'uk',
+  departureLocation: {
+    lat: 51.508930,
+    lng: -0.131387,
+  },
+  transportation: 'driving+ferry',
+  travelTime: 7200,
+  resolution: 6,
+  properties: ['mean'],
+};
+
+travelTimeProtoClient.geohashFast(requestData)
+  .then((data) => console.log(data))
+  .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
+```
+
+The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`http_status`, `error_code`, `description`, `details`) from proto endpoints.
 
 ### [Routes](https://traveltime.com/docs/api/reference/routes)
 Returns routing information between source and destinations.
@@ -1040,6 +1068,26 @@ travelTimeClient.mapInfo()
   .catch((e) => {
       if(TravelTimeError.isTravelTimeError(e)) {
       // your error handling logic
+    }
+  });
+```
+
+For proto endpoints, errors are delivered via response headers (`x-error-code`, `x-error-message`, `x-error-details`) rather than a JSON body. Use `TravelTimeError.makeProtoError` to convert an axios error into a `TravelTimeError` with those headers mapped onto the standard fields (`http_status`, `error_code`, `description`, plus the proto-only `details` string).
+
+```ts
+import { TravelTimeError } from 'traveltime-api';
+
+travelTimeProtoClient.timeFilterFast(requestData)
+  .then((data) => console.log(data))
+  .catch((e) => {
+    const err = TravelTimeError.makeProtoError(e);
+    if (TravelTimeError.isTravelTimeError(err)) {
+      console.error(`Travel Time API proto request failed with error code: ${err.http_status}`);
+      console.error(`X-ERROR-CODE: ${err.error_code || 'Not provided'}`);
+      console.error(`X-ERROR-DETAILS: ${err.details || 'Not provided'}`);
+      console.error(`X-ERROR-MESSAGE: ${err.description || 'Not provided'}`);
+    } else {
+      console.error(err);
     }
   });
 ```
