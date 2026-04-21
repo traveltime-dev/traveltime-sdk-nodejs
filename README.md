@@ -751,17 +751,14 @@ const requestData: TimeFilterFastProtoRequest = {
 travelTimeProtoClient.timeFilterFast(requestData)
   .then((data) => console.log(data))
   .catch((e) => {
-    if (e.response && e.response.headers) {
-      const errorCode = e.response.headers['x-error-code'];
-      const errorDetails = e.response.headers['x-error-details'];
-      const errorMessage = e.response.headers['x-error-message'];
-
-      console.error(`Travel Time API proto request failed with error code: ${e.response.status}`);
-      console.error(`X-ERROR-CODE: ${errorCode || 'Not provided'}`);
-      console.error(`X-ERROR-DETAILS: ${errorDetails || 'Not provided'}`);
-      console.error(`X-ERROR-MESSAGE: ${errorMessage || 'Not provided'}`);
+    const err = TravelTimeError.makeProtoError(e);
+    if (TravelTimeError.isTravelTimeError(err)) {
+      console.error(`Travel Time API proto request failed with error code: ${err.http_status}`);
+      console.error(`X-ERROR-CODE: ${err.error_code || 'Not provided'}`);
+      console.error(`X-ERROR-DETAILS: ${err.details || 'Not provided'}`);
+      console.error(`X-ERROR-MESSAGE: ${err.description || 'Not provided'}`);
     } else {
-      console.error(e);
+      console.error(err);
     }
   });
 ```
@@ -1040,6 +1037,21 @@ travelTimeClient.mapInfo()
   .catch((e) => {
       if(TravelTimeError.isTravelTimeError(e)) {
       // your error handling logic
+    }
+  });
+```
+
+For proto endpoints, errors are delivered via response headers (`x-error-code`, `x-error-message`, `x-error-details`) rather than a JSON body. Use `TravelTimeError.makeProtoError` to convert an axios error into a `TravelTimeError` with those headers mapped onto the standard fields (`http_status`, `error_code`, `description`, plus the proto-only `details` string).
+
+```ts
+import { TravelTimeError } from 'traveltime-api';
+
+travelTimeProtoClient.timeFilterFast(requestData)
+  .then((data) => console.log(data))
+  .catch((e) => {
+    const err = TravelTimeError.makeProtoError(e);
+    if (TravelTimeError.isTravelTimeError(err)) {
+      // your error handling logic — err.http_status, err.error_code, err.description, err.details
     }
   });
 ```
