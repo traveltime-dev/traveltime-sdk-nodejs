@@ -1,5 +1,6 @@
 /* eslint-disable class-methods-use-this */
 import axios, { AxiosInstance } from 'axios';
+import HttpAgent, { HttpsAgent } from 'agentkeepalive';
 import protobuf from 'protobufjs';
 import { Coords, Credentials } from '../types';
 import {
@@ -33,6 +34,9 @@ interface TimeFilterFastProtoMessage {
 }
 
 const DEFAULT_BASE_URL = 'http://proto.api.traveltimeapp.com/api/v3';
+
+const defaultHttpsAgent = new HttpsAgent({ keepAlive: true, maxSockets: 100 });
+const defaultHttpAgent = new HttpAgent({ keepAlive: true, maxSockets: 100 });
 
 interface ProtoRequestBuildOptions {
   useDistance?: boolean
@@ -95,6 +99,8 @@ export class TravelTimeProtoClient {
         'User-Agent': 'Travel Time Nodejs SDK',
       },
       responseType: 'arraybuffer',
+      httpAgent: defaultHttpAgent,
+      httpsAgent: defaultHttpsAgent,
     });
 
     const root = this.readProtoFile();
