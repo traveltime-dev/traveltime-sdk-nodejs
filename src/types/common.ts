@@ -12,6 +12,7 @@ export type RoutesResponseFareTicketType = 'single' | 'week' | 'month' | 'year';
 export type TrafficModel = 'balanced' | 'optimistic' | 'pessimistic'
 export type TrafficModelFast = 'peak' | 'off_peak'
 export type IncludeRoadValues = 'track' | 'restricted'
+export type ExcludeRoadValues = 'toll'
 
 export type LocationRequest = {
   'id': string;
@@ -31,6 +32,7 @@ export type TransportationRequestCommons = {
    * - `restricted` - roads that are not publicly accessible and may require a special permit. By default all of these roads are excluded from the search.
    */
   'include_roads'?: Array<IncludeRoadValues>
+  'exclude_roads'?: Array<ExcludeRoadValues>
   'disable_border_crossing'?: boolean
   'pt_change_delay'?: number
   'walking_time'?: number
@@ -69,6 +71,7 @@ export type TransportationNoPtRequestCommons = {
    * - `restricted` - roads that are not publicly accessible and may require a special permit. By default all of these roads are excluded from the search.
    */
   'include_roads'?: Array<IncludeRoadValues>
+  'exclude_roads'?: Array<ExcludeRoadValues>
   'disable_border_crossing'?: boolean
   'boarding_time'?: number
 }
