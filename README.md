@@ -1,9 +1,9 @@
 <p align="center">
     <a href="https://traveltime.com">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://docs.traveltime.com/images/logo/traveltime_dark.png">
-        <source media="(prefers-color-scheme: light)" srcset="https://docs.traveltime.com/images/logo/traveltime_light.png">
-        <img alt="TravelTime Logo" src="https://docs.traveltime.com/images/logo/traveltime_light.png" height="72px">
+        <source media="(prefers-color-scheme: dark)" srcset="https://imagedelivery.net/N78LINTRT9FAPZwqmv-T5Q/9d2c1e09-0f80-4571-b783-2e8ed1f8ab00/public">
+        <source media="(prefers-color-scheme: light)" srcset="https://imagedelivery.net/N78LINTRT9FAPZwqmv-T5Q/40441a04-2fac-47b9-3c46-6f3aaf5bf900/public">
+        <img alt="TravelTime Logo" src="https://imagedelivery.net/N78LINTRT9FAPZwqmv-T5Q/40441a04-2fac-47b9-3c46-6f3aaf5bf900/public" height="72px">
       </picture>
     </a>
     <h1 align="center">Node.js SDK</h1>
