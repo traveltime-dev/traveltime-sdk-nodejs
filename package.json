@@ -2,13 +2,21 @@
   "name": "traveltime-api",
   "version": "8.0.0",
   "description": "TravelTime API SDK for node js with TypeScript",
-  "main": "target/index.js",
-  "types": "target/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "build": "tsc && cp -R src/client/proto target/client",
-    "clean": "rm -rf node_modules && rm -rf target && rm -f main.ts",
+    "build": "tsc && npm run copy-protos",
+    "copy-protos": "mkdir -p dist/client/proto && cp -R src/client/proto/v2 dist/client/proto/",
+    "clean": "rm -rf node_modules dist",
     "dev": "ts-node main.ts",
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "typecheck": "tsc --noEmit",
     "release": "npm run clean && npm i && npm run build && npm publish",
     "release-rc": "npm run clean && npm i && npm run build && npm publish --tag rc"
   },
@@ -24,6 +32,7 @@
     "protobufjs": "^8.7.1"
   },
   "devDependencies": {
+    "@types/node": "^22.20.1",
     "@typescript-eslint/eslint-plugin": "^5.29.0",
     "@typescript-eslint/parser": "^5.29.0",
     "eslint": "^8.18.0",
@@ -39,6 +48,6 @@
     "maps"
   ],
   "files": [
-    "target/**/*"
+    "dist/**/*"
   ]
 }

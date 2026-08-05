@@ -314,7 +314,7 @@ export class TravelTimeClient {
   };
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
-    this.setRateLimitSettings(settings);
+    this.rateLimiter.setRateLimitSettings(settings);
   };
 
   setCredentials = (credentials: Credentials) => {

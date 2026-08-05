@@ -33,7 +33,7 @@ interface TimeFilterFastProtoMessage {
   }
 }
 
-const DEFAULT_BASE_URL = 'http://proto.api.traveltimeapp.com/api/v3';
+const DEFAULT_BASE_URL = 'https://proto.api.traveltimeapp.com/api/v3';
 
 const defaultHttpsAgent = new HttpsAgent({ keepAlive: true, maxSockets: 100 });
 const defaultHttpAgent = new HttpAgent({ keepAlive: true, maxSockets: 100 });
@@ -352,7 +352,7 @@ export class TravelTimeProtoClient {
   geohashFast = async (request: GeohashFastProtoRequest) => this.handleGeohashProtoFile(this.baseURL, request);
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
-    this.setRateLimitSettings(settings);
+    this.rateLimiter.setRateLimitSettings(settings);
   };
 
   getBaseURL = () => this.baseURL;
