@@ -2,7 +2,7 @@ import axios, {
   AxiosInstance, AxiosRequestConfig, CreateAxiosDefaults,
 } from 'axios';
 import HttpAgent, { HttpsAgent } from 'agentkeepalive';
-import { TravelTimeError } from '../error';
+import { TravelTimeError, TravelTimeValidationError } from '../error';
 import {
   MapInfoResponse,
   GeocodingResponse,
@@ -113,7 +113,7 @@ export class TravelTimeClient {
       axiosInstance?: AxiosInstance
     },
   ) {
-    if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
+    if (!(credentials.applicationId && credentials.apiKey)) throw new TravelTimeValidationError('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
     this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
@@ -163,7 +163,7 @@ export class TravelTimeClient {
           }, this.rateLimiter.getTimeBetweenRetries());
         });
       }
-      throw TravelTimeError.makeError(error);
+      throw TravelTimeError.fromJsonError(error);
     }
   }
 
