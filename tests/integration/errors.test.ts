@@ -21,7 +21,7 @@ describe('errors', () => {
       expect.fail('Expected error to be thrown');
     } catch (error) {
       expect(error).toBeInstanceOf(TravelTimeError);
-      expect((error as TravelTimeError).http_status).toBe(422);
+      expect((error as TravelTimeError).status).toBe(422);
     }
   });
 });

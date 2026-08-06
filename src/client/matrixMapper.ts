@@ -13,11 +13,24 @@ import {
 import {
   TimeFilterFastManyToManyMatrixRequest, TimeFilterFastManyToManyMatrixResponse, TimeFilterManyToManyMatrixRequest, TimeFilterManyToManyMatrixResponse,
 } from '../types/timeFilterMatrix';
+import { TravelTimeValidationError } from '../error';
+
+function validateMatrixRequest(body: { coordsFrom?: Coords[], coordsTo?: Coords[] } | undefined) {
+  if (!body || typeof body !== 'object') {
+    throw new TravelTimeValidationError('Request body must be an object');
+  }
+  if (!Array.isArray(body.coordsFrom)) {
+    throw new TravelTimeValidationError('coordsFrom must be an array of coordinates');
+  }
+  if (!Array.isArray(body.coordsTo)) {
+    throw new TravelTimeValidationError('coordsTo must be an array of coordinates');
+  }
+}
 
 function validateMaxSearchLimit(MAX_SEARCHES_LIMIT: number, maxSearchesPerRequest: number | undefined) {
   const maxSearches = maxSearchesPerRequest || MAX_SEARCHES_LIMIT;
   if (maxSearches > MAX_SEARCHES_LIMIT) {
-    throw new Error(`Max number of searches is ${MAX_SEARCHES_LIMIT}`);
+    throw new TravelTimeValidationError(`Max number of searches is ${MAX_SEARCHES_LIMIT}`);
   }
   return maxSearches;
 }
@@ -70,6 +83,7 @@ const generateFromId = (indexFrom: number) => `from-${indexFrom}`;
 const generateToIds = (chunk: Coords[], chunkOffset: number) => chunk.map((_, iTo) => `to-${iTo + chunkOffset}`);
 
 export function timeFilterFastManyToManyMatrixToRequest(body: TimeFilterFastManyToManyMatrixRequest): TimeFilterFastRequest[] {
+  validateMatrixRequest(body);
   return generateRequestsFromChunks<TimeFilterFastRequest>({
     coordsFrom: body.coordsFrom,
     coordsTo: body.coordsTo,
@@ -122,6 +136,7 @@ export function timeFilterFastManyToManyMatrixResponseMapper(responses: BatchRes
 }
 
 export function timeFilterManyToManyMatrixToRequest(body: TimeFilterManyToManyMatrixRequest): TimeFilterRequest[] {
+  validateMatrixRequest(body);
   return generateRequestsFromChunks<TimeFilterRequest>({
     coordsFrom: body.coordsFrom,
     coordsTo: body.coordsTo,

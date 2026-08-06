@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import HttpAgent, { HttpsAgent } from 'agentkeepalive';
 import protobuf from 'protobufjs';
 import { Coords, Credentials } from '../types';
+import { TravelTimeError, TravelTimeValidationError } from '../error';
 import {
   DetailedTransportation,
   GeohashFastProtoCellProperty,
@@ -83,7 +84,7 @@ export class TravelTimeProtoClient {
     credentials: Credentials,
     parameters?: { rateLimitSettings?: Partial<RateLimitSettings>, baseUrl?: string },
   ) {
-    if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
+    if (!(credentials.applicationId && credentials.apiKey)) throw new TravelTimeValidationError('Credentials must be valid');
     this.applicationId = credentials.applicationId;
     this.apiKey = credentials.apiKey;
     this.baseURL = parameters?.baseUrl || DEFAULT_BASE_URL;
@@ -137,7 +138,7 @@ export class TravelTimeProtoClient {
 
   private validateTransportationMode(mode: TimeFilterFastProtoTransportation): void {
     if (!(mode in this.transportationMap)) {
-      throw new Error('Transportation mode is not supported');
+      throw new TravelTimeValidationError('Transportation mode is not supported');
     }
   }
 
@@ -154,7 +155,7 @@ export class TravelTimeProtoClient {
 
     // Verify modes match
     if (transportation.mode !== transportationMode) {
-      throw new Error(`Details can only be used with matching transportation type "${transportation.mode}"`);
+      throw new TravelTimeValidationError(`Details can only be used with matching transportation type "${transportation.mode}"`);
     }
 
     if (transportation.mode === 'pt') {
@@ -244,10 +245,10 @@ export class TravelTimeProtoClient {
     } = request;
 
     if (!departureLocation && !arrivalLocation) {
-      throw new Error('Either departureLocation or arrivalLocation must be provided');
+      throw new TravelTimeValidationError('Either departureLocation or arrivalLocation must be provided');
     }
     if (departureLocation && arrivalLocation) {
-      throw new Error('Only one of departureLocation or arrivalLocation can be provided');
+      throw new TravelTimeValidationError('Only one of departureLocation or arrivalLocation can be provided');
     }
 
     const transportationMode = this.extractTransportationMode(transportation);
@@ -302,47 +303,65 @@ export class TravelTimeProtoClient {
     }
   }
 
+  /**
+   * Decodes a proto response body. Decode failures mean the response was
+   * received but could not be read, so they are not retryable.
+   */
+  private decodeProtoResponse<T>(type: protobuf.Type, data: unknown): T {
+    try {
+      return type.decode(data as Uint8Array).toJSON() as T;
+    } catch {
+      throw new TravelTimeError({ description: 'Could not decode proto response', isRetryable: false });
+    }
+  }
+
   private async handleProtoFile(
     uri: string,
     request: TimeFilterFastProtoRequest | TimeFilterFastProtoDistanceRequest,
     options?: ProtoRequestBuildOptions,
   ): Promise<TimeFilterFastProtoResponse> {
-    const { requestMessage, requestUrl } = this.buildProtoRequest(request, uri, options);
-    const message = this.TimeFilterFastRequest.create(requestMessage);
-    const buffer = this.TimeFilterFastRequest.encode(message).finish();
+    try {
+      const { requestMessage, requestUrl } = this.buildProtoRequest(request, uri, options);
+      const message = this.TimeFilterFastRequest.create(requestMessage);
+      const buffer = this.TimeFilterFastRequest.encode(message).finish();
 
-    const rq = () => this.axiosInstance.post(requestUrl, buffer);
+      const rq = () => this.axiosInstance.post(requestUrl, buffer);
 
-    const promise = this.rateLimiter.isEnabled()
-      ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-        this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
-      })
-      : rq();
+      const promise = this.rateLimiter.isEnabled()
+        ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
+          this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
+        })
+        : rq();
 
-    const { data } = await promise;
-    const response = this.TimeFilterFastResponse.decode(data);
-    return response.toJSON() as TimeFilterFastProtoResponse;
+      const { data } = await promise;
+      return this.decodeProtoResponse<TimeFilterFastProtoResponse>(this.TimeFilterFastResponse, data);
+    } catch (error) {
+      throw TravelTimeError.fromProtoError(error);
+    }
   }
 
   private async handleGeohashProtoFile(
     uri: string,
     request: GeohashFastProtoRequest,
   ): Promise<GeohashFastProtoResponse> {
-    const { requestMessage, requestUrl } = this.buildGeohashProtoRequest(request, uri);
-    const message = this.GeohashFastRequest.create(requestMessage);
-    const buffer = this.GeohashFastRequest.encode(message).finish();
+    try {
+      const { requestMessage, requestUrl } = this.buildGeohashProtoRequest(request, uri);
+      const message = this.GeohashFastRequest.create(requestMessage);
+      const buffer = this.GeohashFastRequest.encode(message).finish();
 
-    const rq = () => this.axiosInstance.post(requestUrl, buffer);
+      const rq = () => this.axiosInstance.post(requestUrl, buffer);
 
-    const promise = this.rateLimiter.isEnabled()
-      ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-        this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
-      })
-      : rq();
+      const promise = this.rateLimiter.isEnabled()
+        ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
+          this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
+        })
+        : rq();
 
-    const { data } = await promise;
-    const response = this.GeohashFastResponse.decode(data);
-    return response.toJSON() as GeohashFastProtoResponse;
+      const { data } = await promise;
+      return this.decodeProtoResponse<GeohashFastProtoResponse>(this.GeohashFastResponse, data);
+    } catch (error) {
+      throw TravelTimeError.fromProtoError(error);
+    }
   }
 
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(this.baseURL, request);
