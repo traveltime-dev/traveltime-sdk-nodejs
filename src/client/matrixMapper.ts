@@ -13,11 +13,12 @@ import {
 import {
   TimeFilterFastManyToManyMatrixRequest, TimeFilterFastManyToManyMatrixResponse, TimeFilterManyToManyMatrixRequest, TimeFilterManyToManyMatrixResponse,
 } from '../types/timeFilterMatrix';
+import { TravelTimeValidationError } from '../error';
 
 function validateMaxSearchLimit(MAX_SEARCHES_LIMIT: number, maxSearchesPerRequest: number | undefined) {
   const maxSearches = maxSearchesPerRequest || MAX_SEARCHES_LIMIT;
   if (maxSearches > MAX_SEARCHES_LIMIT) {
-    throw new Error(`Max number of searches is ${MAX_SEARCHES_LIMIT}`);
+    throw new TravelTimeValidationError(`Max number of searches is ${MAX_SEARCHES_LIMIT}`);
   }
   return maxSearches;
 }

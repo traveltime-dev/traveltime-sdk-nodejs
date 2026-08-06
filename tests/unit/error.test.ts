@@ -260,6 +260,19 @@ describe('error model', () => {
       })).rejects.toBeInstanceOf(TravelTimeValidationError);
     });
 
+    it('should reject a matrix request exceeding the max searches limit', async () => {
+      const client = new TravelTimeClient({ apiKey: 'key', applicationId: 'app' });
+      const body = {
+        coordsFrom: [{ lat: 51.5, lng: -0.1 }],
+        coordsTo: [{ lat: 51.6, lng: -0.2 }],
+        maxSearchesPerRequest: 100_001,
+        transportation: { type: 'driving' as const },
+      };
+
+      await expect(client.manyToManyMatrix(body as any)).rejects.toBeInstanceOf(TravelTimeValidationError);
+      await expect(client.manyToManyMatrixFast(body as any)).rejects.toBeInstanceOf(TravelTimeValidationError);
+    });
+
     it('should map errors thrown while building the request, not just while sending it', async () => {
       const client = new TravelTimeProtoClient({ apiKey: 'key', applicationId: 'app' });
       // departureLocation is required; a plain-JS caller can omit it and the
