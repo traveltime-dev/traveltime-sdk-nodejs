@@ -239,17 +239,25 @@ export class TravelTimeClient {
   timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', { body });
   timeFilterBatch = async (requests: TimeFilterRequest[]) => this.batch(this.timeFilter, requests);
   manyToManyMatrix = async (body: TimeFilterManyToManyMatrixRequest) => {
-    const requests = timeFilterManyToManyMatrixToRequest(body);
-    const responses = await this.timeFilterBatch(requests);
-    return timeFilterManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
+    try {
+      const requests = timeFilterManyToManyMatrixToRequest(body);
+      const responses = await this.timeFilterBatch(requests);
+      return timeFilterManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
+    } catch (error) {
+      throw TravelTimeError.fromJsonError(error);
+    }
   };
 
   timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
   timeFilterFastBatch = async (requests: TimeFilterFastRequest[]) => this.batch(this.timeFilterFast, requests);
   manyToManyMatrixFast = async (body: TimeFilterFastManyToManyMatrixRequest) => {
-    const requests = timeFilterFastManyToManyMatrixToRequest(body);
-    const responses = await this.timeFilterFastBatch(requests);
-    return timeFilterFastManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
+    try {
+      const requests = timeFilterFastManyToManyMatrixToRequest(body);
+      const responses = await this.timeFilterFastBatch(requests);
+      return timeFilterFastManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
+    } catch (error) {
+      throw TravelTimeError.fromJsonError(error);
+    }
   };
 
   timeFilterPostcodeDistricts = async (body: TimeFilterPostcodeDistrictsRequest) => this

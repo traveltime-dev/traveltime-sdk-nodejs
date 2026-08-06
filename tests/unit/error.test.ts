@@ -273,6 +273,30 @@ describe('error model', () => {
       await expect(client.manyToManyMatrixFast(body as any)).rejects.toBeInstanceOf(TravelTimeValidationError);
     });
 
+    it('should reject malformed matrix input with a validation error naming the field', async () => {
+      const client = new TravelTimeClient({ apiKey: 'key', applicationId: 'app' });
+      const coords = [{ lat: 51.6, lng: -0.2 }];
+
+      await expect(client.manyToManyMatrix({ coordsTo: coords } as any))
+        .rejects.toThrow('coordsFrom must be an array of coordinates');
+      await expect(client.manyToManyMatrixFast({ coordsTo: coords } as any))
+        .rejects.toThrow('coordsFrom must be an array of coordinates');
+      await expect(client.manyToManyMatrix({ coordsFrom: coords } as any))
+        .rejects.toThrow('coordsTo must be an array of coordinates');
+      await expect(client.manyToManyMatrix(undefined as any))
+        .rejects.toThrow('Request body must be an object');
+
+      await expect(client.manyToManyMatrix({ coordsTo: coords } as any))
+        .rejects.toBeInstanceOf(TravelTimeValidationError);
+    });
+
+    it('should still accept empty coordinate arrays', async () => {
+      const client = new TravelTimeClient({ apiKey: 'key', applicationId: 'app' });
+      // zero searches means zero requests; this reached the API as an empty
+      // matrix before validation was added and must keep doing so
+      await expect(client.manyToManyMatrix({ coordsFrom: [], coordsTo: [] } as any)).resolves.toBeDefined();
+    });
+
     it('should map errors thrown while building the request, not just while sending it', async () => {
       const client = new TravelTimeProtoClient({ apiKey: 'key', applicationId: 'app' });
       // departureLocation is required; a plain-JS caller can omit it and the
