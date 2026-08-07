@@ -9,37 +9,35 @@ import {
 } from '../../src';
 
 const SENTINEL = 'SENTINEL-API-KEY-b8f2c611';
+const REQUEST_URL = 'https://api.traveltimeapp.com/v4/time-map';
 
-function makeAxiosError(overrides: Record<string, any> = {}) {
-  const config = {
-    url: '/time-map',
-    method: 'post',
-    baseURL: 'https://api.traveltimeapp.com/v4',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Api-Key': SENTINEL,
-      Authorization: `Basic ${SENTINEL}`,
+/**
+ * A native fetch transport failure: a terse TypeError whose useful detail is
+ * on `cause`. The cause carries the sentinel on properties a sloppy mapping
+ * might copy wholesale (undici attaches connect options to some causes).
+ */
+function makeFetchFailure(overrides: { message?: string; code?: string; causeMessage?: string } = {}) {
+  const cause = Object.assign(new Error(overrides.causeMessage ?? 'getaddrinfo ENOTFOUND api.traveltimeapp.com'), {
+    code: overrides.code ?? 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'api.traveltimeapp.com',
+    localAddress: SENTINEL,
+    options: {
+      headers: {
+        'X-Api-Key': SENTINEL,
+        Authorization: `Basic ${SENTINEL}`,
+      },
     },
-    auth: { username: 'app-id', password: SENTINEL },
-  };
-  const request = { _header: `POST /time-map HTTP/1.1\r\nX-Api-Key: ${SENTINEL}\r\n` };
-  const error: any = new Error('Request failed with status code 500');
-  error.name = 'AxiosError';
-  error.isAxiosError = true;
-  error.code = 'ERR_BAD_RESPONSE';
-  error.config = config;
-  error.request = request;
-  error.response = {
-    status: 500,
-    statusText: 'Internal Server Error',
-    headers: {},
-    config,
-    request,
-    data: '<html>Internal Server Error</html>',
-  };
-  Object.assign(error, overrides);
-  return error;
+  });
+  return new TypeError(overrides.message ?? 'fetch failed', { cause });
 }
+
+/** Response headers as a server (or proxy) could echo them, sentinel included. */
+const makeResponseHeaders = (extra: Record<string, string> = {}) => new Headers({
+  'x-echoed-api-key': SENTINEL,
+  via: `proxy auth=${SENTINEL}`,
+  ...extra,
+});
 
 function walkEnumerable(value: unknown, visit: (str: string) => void, seen = new Set<object>()) {
   if (typeof value === 'string') {
@@ -61,58 +59,49 @@ function expectNoSentinel(err: unknown) {
   walkEnumerable(err, (str) => expect(str).not.toContain(SENTINEL));
 }
 
-const apiErrorResponse = (status: number, data: Record<string, unknown>) => ({
-  response: { ...makeAxiosError().response, status, data },
-});
-
-const protoErrorResponse = (headers: Record<string, string>) => ({
-  response: { ...makeAxiosError().response, status: 400, headers },
-});
-
 describe('error model', () => {
   describe('credential leak regression', () => {
-    it('should not leak credentials from a non-TravelTime-shaped HTTP failure (JSON client mapping)', () => {
-      const err = TravelTimeError.fromJsonError(makeAxiosError());
+    it('should not leak credentials from a non-TravelTime-shaped HTTP failure (JSON response mapping)', () => {
+      // fetch resolved with a 500 whose body is not a TravelTime payload
+      const err = TravelTimeError.fromJsonResponse(500, '<html>Internal Server Error</html>', REQUEST_URL);
       expect(err).toBeInstanceOf(TravelTimeNetworkError);
+      expect(err.status).toBe(500);
       expectNoSentinel(err);
     });
 
     it('should not leak credentials from a TravelTime-shaped API error', () => {
-      const err = TravelTimeError.fromJsonError(makeAxiosError(apiErrorResponse(422, {
+      const err = TravelTimeError.fromJsonResponse(422, {
         http_status: 422,
         error_code: 10,
         description: 'Invalid request',
         documentation_link: 'https://docs.traveltime.com',
         additional_info: { travel_time: ['out of range'] },
-      })));
+      }, REQUEST_URL);
       expect(err).toBeInstanceOf(TravelTimeError);
       expectNoSentinel(err);
     });
 
     it('should not leak credentials from a proto error with x-error headers', () => {
-      const err = TravelTimeError.fromProtoError(makeAxiosError(protoErrorResponse({
+      const err = TravelTimeError.fromProtoResponse(400, makeResponseHeaders({
         'x-error-code': '4',
         'x-error-message': 'Invalid country',
         'x-error-details': 'country not supported',
-      })));
+      }), REQUEST_URL);
       expect(err).toBeInstanceOf(TravelTimeError);
       expectNoSentinel(err);
     });
 
     it('should not leak credentials from a proto failure without x-error headers', () => {
-      const err = TravelTimeError.fromProtoError(makeAxiosError());
+      const err = TravelTimeError.fromProtoResponse(500, makeResponseHeaders(), REQUEST_URL);
       expect(err).toBeInstanceOf(TravelTimeNetworkError);
       expect(err.status).toBe(500);
       expectNoSentinel(err);
     });
 
     it('should not leak credentials from a transport failure with no response', () => {
-      const err = TravelTimeError.fromJsonError(makeAxiosError({
-        message: 'timeout of 1000ms exceeded',
-        code: 'ECONNABORTED',
-        response: undefined,
-      }));
+      const err = TravelTimeError.from(makeFetchFailure());
       expect(err).toBeInstanceOf(TravelTimeNetworkError);
+      expect((err as TravelTimeNetworkError).code).toBe('ENOTFOUND');
       expectNoSentinel(err);
     });
 
@@ -126,32 +115,17 @@ describe('error model', () => {
         expectNoSentinel(error);
       }
     });
-
-    it('should strip the query string, fragment and any userinfo from the recorded url', () => {
-      const relative = TravelTimeNetworkError.from(makeAxiosError({
-        config: { url: '/time-map?key=value#frag' },
-        response: undefined,
-      }));
-      expect(relative.url).toBe('/time-map');
-
-      const absolute = TravelTimeNetworkError.from(makeAxiosError({
-        config: { url: `https://app-id:${SENTINEL}@proxy.internal/api/v3/time-filter/fast/uk` },
-        response: undefined,
-      }));
-      expect(absolute.url).toBe('https://proxy.internal/api/v3/time-filter/fast/uk');
-      expectNoSentinel(absolute);
-    });
   });
 
   describe('JSON error mapping', () => {
     it('should map API error body fields to camelCase fields', () => {
-      const err = TravelTimeError.fromJsonError(makeAxiosError(apiErrorResponse(422, {
+      const err = TravelTimeError.fromJsonResponse(422, {
         http_status: 422,
         error_code: 10,
         description: 'Invalid request',
         documentation_link: 'https://docs.traveltime.com',
         additional_info: { travel_time: ['out of range'] },
-      })));
+      });
 
       expect(err.status).toBe(422);
       expect(err.errorCode).toBe(10);
@@ -162,9 +136,9 @@ describe('error model', () => {
     });
 
     it('should map a body with error_code 0 as a TravelTime API error, not a network error', () => {
-      const err = TravelTimeError.fromJsonError(makeAxiosError(apiErrorResponse(500, {
+      const err = TravelTimeError.fromJsonResponse(500, {
         http_status: 500, error_code: 0, description: 'Internal error', documentation_link: '', additional_info: {},
-      })));
+      });
 
       expect(err).not.toBeInstanceOf(TravelTimeNetworkError);
       expect(err.errorCode).toBe(0);
@@ -173,18 +147,17 @@ describe('error model', () => {
 
     it('should return an already-mapped TravelTimeError as-is', () => {
       const original = new TravelTimeValidationError('bad input');
-      expect(TravelTimeError.fromJsonError(original)).toBe(original);
-      expect(TravelTimeError.fromProtoError(original)).toBe(original);
+      expect(TravelTimeError.from(original)).toBe(original);
     });
   });
 
   describe('proto error mapping', () => {
     it('should map x-error headers onto error fields', () => {
-      const err = TravelTimeError.fromProtoError(makeAxiosError(protoErrorResponse({
+      const err = TravelTimeError.fromProtoResponse(400, new Headers({
         'x-error-code': '4',
         'x-error-message': 'Invalid country',
         'x-error-details': 'country not supported',
-      })));
+      }));
 
       expect(err.status).toBe(400);
       expect(err.errorCode).toBe(4);
@@ -193,17 +166,48 @@ describe('error model', () => {
     });
 
     it('should not produce NaN when x-error-code is absent or not numeric', () => {
-      const missingCode = TravelTimeError.fromProtoError(makeAxiosError(protoErrorResponse({
+      const missingCode = TravelTimeError.fromProtoResponse(400, new Headers({
         'x-error-message': 'Invalid country',
-      })));
+      }));
       expect(missingCode.errorCode).toBeUndefined();
       expect(missingCode.description).toBe('Invalid country');
 
-      const badCode = TravelTimeError.fromProtoError(makeAxiosError(protoErrorResponse({
+      const badCode = TravelTimeError.fromProtoResponse(400, new Headers({
         'x-error-code': 'not-a-number',
         'x-error-message': 'Invalid country',
-      })));
+      }));
       expect(badCode.errorCode).toBeUndefined();
+    });
+  });
+
+  describe('thrown failure mapping', () => {
+    it('should surface the useful detail from a fetch failure cause', () => {
+      const err = TravelTimeNetworkError.from(makeFetchFailure());
+      expect(err.code).toBe('ENOTFOUND');
+      expect(err.description).toBe('getaddrinfo ENOTFOUND api.traveltimeapp.com');
+    });
+
+    it('should unwrap an AggregateError cause to find the code', () => {
+      const cause = new AggregateError([
+        Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:443'), { code: 'ECONNREFUSED' }),
+        Object.assign(new Error('connect ECONNREFUSED ::1:443'), { code: 'ECONNREFUSED' }),
+      ], '');
+      const err = TravelTimeNetworkError.from(new TypeError('fetch failed', { cause }));
+      expect(err.code).toBe('ECONNREFUSED');
+      expect(err.isRetryable).toBe(true);
+    });
+
+    it('should map a timeout DOMException as a retryable timeout', () => {
+      const err = TravelTimeNetworkError.from(new DOMException('The operation was aborted due to timeout', 'TimeoutError'));
+      expect(err.code).toBe('ETIMEDOUT');
+      expect(err.isRetryable).toBe(true);
+    });
+
+    it('should map an abort DOMException as a non-retryable abort, distinct from a timeout', () => {
+      const err = TravelTimeNetworkError.from(new DOMException('This operation was aborted', 'AbortError'));
+      expect(err.code).toBe('ABORT_ERR');
+      expect(err.code).not.toBe('ETIMEDOUT');
+      expect(err.isRetryable).toBe(false);
     });
   });
 
@@ -211,24 +215,21 @@ describe('error model', () => {
     expect(TravelTimeError.isTravelTimeError(new TravelTimeValidationError('bad'))).toBe(true);
     expect(TravelTimeError.isTravelTimeError(TravelTimeNetworkError.from(new Error('boom')))).toBe(true);
     expect(TravelTimeError.isTravelTimeError(new Error('boom'))).toBe(false);
-    // the pre-v8 guard matched this payload shape rather than a caught error
+    // a raw API payload is not a caught error, so it must not narrow
     expect(TravelTimeError.isTravelTimeError({ error_code: 10, description: 'payload, not an error' })).toBe(false);
     expect(TravelTimeError.isTravelTimeError(undefined)).toBe(false);
   });
 
   it('should compute isRetryable from the kind of failure', () => {
-    const notFound = makeAxiosError({ response: { ...makeAxiosError().response, status: 404 } });
     const cases: Array<[string, TravelTimeError, boolean]> = [
       ['429', new TravelTimeError({ description: 'too many requests', status: 429 }), true],
-      ['5xx', TravelTimeError.fromJsonError(makeAxiosError()), true],
+      ['5xx', TravelTimeError.fromJsonResponse(500, '<html>Internal Server Error</html>'), true],
       ['other 4xx', new TravelTimeError({ description: 'unprocessable', status: 422 }), false],
-      ['4xx without a TravelTime body', TravelTimeNetworkError.from(notFound), false],
-      ['transport failure with no status', TravelTimeError.fromJsonError(makeAxiosError({
-        code: 'ENOTFOUND', response: undefined,
-      })), true],
+      ['4xx without a TravelTime body', TravelTimeError.fromJsonResponse(404, undefined), false],
+      ['transport failure with no status', TravelTimeError.from(makeFetchFailure()), true],
       ['validation failure', new TravelTimeValidationError('bad input'), false],
       // no transport failure was observed, so retrying cannot help
-      ['non-axios failure', TravelTimeNetworkError.from(new TypeError('boom')), false],
+      ['non-fetch failure', TravelTimeNetworkError.from(new TypeError('boom')), false],
     ];
 
     cases.forEach(([label, error, expected]) => {
@@ -310,9 +311,10 @@ describe('error model', () => {
     });
 
     it('should not mark an undecodable proto response as retryable', async () => {
-      const client = new TravelTimeProtoClient({ apiKey: 'key', applicationId: 'app' });
       // A response arrived, so the failure is permanent — retrying cannot help
-      (client as any).axiosInstance.post = async () => ({ data: Buffer.from([0xff, 0xff, 0xff, 0xff]) });
+      const client = new TravelTimeProtoClient({ apiKey: 'key', applicationId: 'app' }, {
+        fetch: async () => new Response(Buffer.from([0xff, 0xff, 0xff, 0xff]), { status: 200 }),
+      });
 
       try {
         await client.timeFilterFast({

@@ -1,6 +1,3 @@
-/* eslint-disable max-classes-per-file, no-use-before-define */
-import axios from 'axios';
-
 /**
  * Shape of the TravelTime API JSON error response body.
  * https://docs.traveltime.com/api/reference/error-response
@@ -35,8 +32,8 @@ function isApiErrorPayload(payload: any): payload is TravelTimeApiErrorPayload {
 }
 
 /**
- * Reduces a request URL to origin + path. Strips the query string, the
- * fragment, and any userinfo a caller may have embedded in a custom base URL.
+ * Reduces a request URL to origin + path, dropping the query string and
+ * fragment so a recorded URL stays short and stable.
  */
 function sanitizeUrl(url: unknown): string | undefined {
   if (typeof url !== 'string') return undefined;
@@ -53,6 +50,21 @@ function parseNumericHeader(value: unknown): number | undefined {
   if (typeof value !== 'string' || value.trim() === '') return undefined;
   const parsed = Number(value);
   return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+/**
+ * Extracts a low-level error code (`ENOTFOUND`, `ECONNREFUSED`, …) from the
+ * `cause` of a native fetch failure. Connection failures against a host with
+ * several addresses arrive as an `AggregateError`, so those are unwrapped.
+ */
+function extractCauseCode(cause: unknown): string | undefined {
+  if (typeof cause !== 'object' || cause === null) return undefined;
+  const { code } = cause as { code?: unknown };
+  if (typeof code === 'string') return code;
+  if (cause instanceof AggregateError) {
+    return cause.errors.map((inner) => extractCauseCode(inner)).find((c) => c !== undefined);
+  }
+  return undefined;
 }
 
 /**
@@ -109,49 +121,51 @@ export class TravelTimeError extends Error {
   }
 
   /**
-   * Maps a failure from a JSON API request to a `TravelTimeError`.
-   * Errors that are not TravelTime-shaped (timeouts, DNS failures,
-   * proxy errors, non-JSON 5xx pages) become `TravelTimeNetworkError`.
-   * Never returns the original error object.
+   * Maps a non-2xx JSON API response to a `TravelTimeError`. `body` is the
+   * parsed response body; bodies that are not TravelTime-shaped (non-JSON
+   * 5xx pages, proxy errors) become `TravelTimeNetworkError`.
    */
-  static fromJsonError(error: unknown): TravelTimeError {
-    if (error instanceof TravelTimeError) return error;
-    const response = (error as any)?.response;
-    const data = response?.data;
-    if (isApiErrorPayload(data)) {
+  static fromJsonResponse(status: number, body: unknown, url?: string): TravelTimeError {
+    if (isApiErrorPayload(body)) {
       return new TravelTimeError({
-        status: typeof response.status === 'number' ? response.status : data.http_status,
-        errorCode: data.error_code,
-        description: data.description,
-        documentationLink: data.documentation_link,
-        additionalInfo: data.additional_info,
+        status,
+        errorCode: body.error_code,
+        description: body.description,
+        documentationLink: body.documentation_link,
+        additionalInfo: body.additional_info,
       });
     }
-    return TravelTimeNetworkError.from(error);
+    return new TravelTimeNetworkError({ description: `Request failed with status code ${status}`, status, url });
   }
 
   /**
-   * Maps a failure from a proto API request to a `TravelTimeError`,
-   * reading the `x-error-code`, `x-error-message` and `x-error-details`
-   * response headers. Failures without those headers become
-   * `TravelTimeNetworkError`. Never returns the original error object.
+   * Maps a non-2xx proto API response to a `TravelTimeError`, reading the
+   * `x-error-code`, `x-error-message` and `x-error-details` response
+   * headers. Responses without those headers become `TravelTimeNetworkError`.
    */
-  static fromProtoError(error: unknown): TravelTimeError {
-    if (error instanceof TravelTimeError) return error;
-    if (axios.isAxiosError(error) && error.response) {
-      const { headers, status } = error.response;
-      const errorCode = headers?.['x-error-code'];
-      const errorMessage = headers?.['x-error-message'];
-      const errorDetails = headers?.['x-error-details'];
-      if (errorCode !== undefined || errorMessage !== undefined) {
-        return new TravelTimeError({
-          status,
-          errorCode: parseNumericHeader(errorCode),
-          description: typeof errorMessage === 'string' && errorMessage.length > 0 ? errorMessage : `Proto request failed with status code ${status}`,
-          details: typeof errorDetails === 'string' ? errorDetails : undefined,
-        });
-      }
+  static fromProtoResponse(status: number, headers: Headers, url?: string): TravelTimeError {
+    const errorCode = headers.get('x-error-code');
+    const errorMessage = headers.get('x-error-message');
+    const errorDetails = headers.get('x-error-details');
+    if (errorCode !== null || errorMessage !== null) {
+      return new TravelTimeError({
+        status,
+        errorCode: parseNumericHeader(errorCode),
+        description: errorMessage !== null && errorMessage.length > 0 ? errorMessage : `Proto request failed with status code ${status}`,
+        details: errorDetails ?? undefined,
+      });
     }
+    return new TravelTimeNetworkError({ description: `Proto request failed with status code ${status}`, status, url });
+  }
+
+  /**
+   * Last-resort wrapper for a thrown failure: an already-mapped error passes
+   * through, anything else is sanitized into a `TravelTimeNetworkError`. Never
+   * returns the original error object. Non-2xx responses do not throw under
+   * fetch — those are mapped by `fromJsonResponse` / `fromProtoResponse`.
+   */
+  static from(error: unknown): TravelTimeError {
+    if (error instanceof TravelTimeError) return error;
     return TravelTimeNetworkError.from(error);
   }
 }
@@ -180,7 +194,7 @@ export interface TravelTimeNetworkErrorParams {
  * error body. Holds only primitive, credential-free diagnostics.
  */
 export class TravelTimeNetworkError extends TravelTimeError {
-  /** Low-level error code, e.g. `ECONNABORTED` or `ENOTFOUND`. */
+  /** Low-level error code, e.g. `ETIMEDOUT` or `ENOTFOUND`. */
   readonly code?: string;
   /** Request path, without the query string. */
   readonly url?: string;
@@ -193,7 +207,9 @@ export class TravelTimeNetworkError extends TravelTimeError {
     });
     this.name = 'TravelTimeNetworkError';
     this.code = params.code;
-    this.url = params.url;
+    // Every URL recorded on an error goes through sanitizeUrl, so no call
+    // site can log a query string by accident
+    this.url = sanitizeUrl(params.url);
   }
 
   toJSON(): Record<string, any> {
@@ -205,20 +221,40 @@ export class TravelTimeNetworkError extends TravelTimeError {
    * copying only primitive diagnostics so that no headers, auth data, or
    * request/response objects can reach consumers.
    */
-  static from(error: unknown): TravelTimeNetworkError {
-    if (axios.isAxiosError(error)) {
-      return new TravelTimeNetworkError({
-        description: error.message || 'Request failed',
-        code: error.code,
-        status: error.response?.status,
-        url: sanitizeUrl(error.config?.url),
-      });
+  static from(error: unknown, url?: string): TravelTimeNetworkError {
+    if (typeof error === 'object' && error !== null) {
+      // Timeouts and aborts surface from fetch as DOMExceptions
+      const { name } = error as { name?: unknown };
+      if (name === 'TimeoutError') {
+        return new TravelTimeNetworkError({
+          description: 'Request timed out', code: 'ETIMEDOUT', url, isRetryable: true,
+        });
+      }
+      if (name === 'AbortError') {
+        return new TravelTimeNetworkError({
+          description: 'Request was aborted', code: 'ABORT_ERR', url, isRetryable: false,
+        });
+      }
     }
-    // Not an axios error, so no transport failure was observed — most likely a
-    // local encode/decode or programming error, which retrying cannot fix
     if (error instanceof Error) {
-      return new TravelTimeNetworkError({ description: error.message || error.name, isRetryable: false });
+      const { cause } = error as { cause?: unknown };
+      if (error instanceof TypeError && cause !== undefined) {
+        // A native fetch transport failure: the message is a terse
+        // 'fetch failed' and the useful detail lives on the cause. Copy only
+        // its message and code — never the cause object itself.
+        const code = extractCauseCode(cause);
+        const causeMessage = cause instanceof Error && cause.message !== '' ? cause.message : undefined;
+        return new TravelTimeNetworkError({
+          description: causeMessage ?? (code !== undefined ? `${error.message} (${code})` : error.message),
+          code,
+          url,
+          isRetryable: true,
+        });
+      }
+      // No transport failure was observed — most likely a local
+      // encode/decode or programming error, which retrying cannot fix
+      return new TravelTimeNetworkError({ description: error.message || error.name, url, isRetryable: false });
     }
-    return new TravelTimeNetworkError({ description: typeof error === 'string' ? error : 'Unknown request failure', isRetryable: false });
+    return new TravelTimeNetworkError({ description: typeof error === 'string' ? error : 'Unknown request failure', url, isRetryable: false });
   }
 }

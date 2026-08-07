@@ -45,20 +45,21 @@ const travelTimeClient = new TravelTimeClient({
 
 You can apply additional optional parameters to client constructor’s second argument `parameters` object:
  - `baseURL` [string] - you can change base URL of client. Default value is `https://api.traveltimeapp.com/v4`.
- - `axiosInstance` [object] - if needed, you can pass your own axios instance.
+ - `timeout` [number] - request timeout in milliseconds. Default is `120000`.
+ - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses, which backs off exponentially with jitter. Accepts `enabled` (default `true`; the built-in retry is turned off while the rate limiter is enabled, since the rate limiter does its own retrying), `maxRetries` (default `3`), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms).
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. When using rate limiter if the response status is `429` we will retry your request up to 3 times. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
     - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`.
     - `retryCount` [number] - Determines how many times request should be repeated when API returns status `429`. Default is `3`.
     - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `1000`.
 
-If you need to change any of these parameters you can call setter methods: `travelTimeClient.setBaseURL`, `travelTimeClient.setRateLimitSettings`.
+Credentials and all of these parameters are fixed at construction time — create a new client instance to use different ones.
 
 ---
 
 Now you'll be able to call all TravelTime API endpoints from `travelTimeClient` instance.
 
-Every instance function returns Object with type of `Promise<AxiosResponse<EndpointResponseType>>`.
+Every instance function returns Object with type of `Promise<EndpointResponseType>`.
 
 #### Batch Processing
 
@@ -709,13 +710,16 @@ Body attributes:
 #### Advanced Options
 
 You can apply additional optional parameters to client constructor’s second argument `parameters` object:
+ - `baseUrl` [string] - you can change base URL of client. Default value is `https://proto.api.traveltimeapp.com/api/v3`.
+ - `timeout` [number] - request timeout in milliseconds. Default is `120000`.
+ - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses. Accepts `enabled` (default `true`; turned off while the rate limiter is enabled), `maxRetries` (default `3`), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms).
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
     - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`.
     - `retryCount` [number] - Determines how many times request should be repeated when API returns status `429`. Default is `3`.
     - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `1000`.
 
-If you need to change any of these parameters you can call setter methods: `travelTimeClient.setRateLimitSettings`.
+Credentials and all of these parameters are fixed at construction time — create a new client instance to use different ones.
 
 ```ts
 import { TravelTimeProtoClient, TimeFilterFastProtoRequest } from 'traveltime-api';
