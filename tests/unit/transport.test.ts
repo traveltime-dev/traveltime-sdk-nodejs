@@ -81,6 +81,38 @@ describe('transport', () => {
       expect(calls[0].init.headers['X-Application-Id']).toBe('app-id');
       expect(calls[0].init.headers['X-Api-Key']).toBe('test-key');
       expect(calls[0].init.headers['User-Agent']).toMatch(/^Travel Time Nodejs SDK \d+\.\d+\.\d+/);
+      expect(calls[0].init.headers.Accept).toBe('application/json, text/plain, */*');
+    });
+
+    it('should not send Content-Type on a request without a body', async () => {
+      const { calls, fn } = recordingFetch(jsonResponse(200, {}));
+      await makeTransport(fn).request('/geocoding/search', { method: 'GET', query: { query: 'London' } });
+
+      expect(calls[0].init.headers['Content-Type']).toBeUndefined();
+      expect(calls[0].init.headers.Accept).toBe('application/json, text/plain, */*');
+    });
+
+    it('should send a valid default Accept-Language that a caller can override', async () => {
+      const { calls, fn } = recordingFetch(jsonResponse(200, {}), jsonResponse(200, {}));
+      const transport = makeTransport(fn);
+
+      await transport.request('/geocoding/search', { method: 'GET', query: { query: 'Munich' } });
+      expect(calls[0].init.headers['Accept-Language']).toBe('en');
+
+      await transport.request('/geocoding/search', {
+        method: 'GET',
+        query: { query: 'Munich' },
+        headers: { 'Accept-Language': 'de' },
+      });
+      expect(calls[1].init.headers['Accept-Language']).toBe('de');
+    });
+
+    it('should send the configured content type with a body', async () => {
+      const { calls, fn } = recordingFetch(jsonResponse(200, {}));
+      await makeTransport(fn, { contentType: 'application/octet-stream' })
+        .request('/uk/time-filter/fast/driving', { method: 'POST', body: new Uint8Array([1, 2]) });
+
+      expect(calls[0].init.headers['Content-Type']).toBe('application/octet-stream');
     });
 
     it('should send HTTP Basic credentials for the basic auth scheme', async () => {

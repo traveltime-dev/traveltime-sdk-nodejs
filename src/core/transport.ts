@@ -32,6 +32,8 @@ export interface TransportOptions {
   auth: TransportAuth;
   /** Default headers, merged over the transport's standard headers. */
   headers?: Record<string, string>;
+  /** Content type sent with a request body. Default `'application/json'`. */
+  contentType?: string;
   /** How non-2xx responses carry API errors: a JSON body or `x-error-*` headers. Default `'json'`. */
   errorFormat?: 'json' | 'proto';
   /** Per-attempt timeout in milliseconds. Default `120000`. */
@@ -66,7 +68,8 @@ function joinUrl(baseURL: string, path: string): string {
 
 function buildHeaders(options: TransportOptions): Record<string, string> {
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    Accept: 'application/json, text/plain, */*',
+    'Accept-Language': 'en',
     'User-Agent': `Travel Time Nodejs SDK ${sdkVersion}`,
     ...options.headers,
   };
@@ -99,6 +102,7 @@ function tryParseJson(body: Buffer): unknown {
 export class Transport {
   private baseURL: string;
   private headers: Record<string, string>;
+  private contentType: string;
   private errorFormat: 'json' | 'proto';
   private timeout: number;
   private retry: Required<TransportRetryOptions>;
@@ -106,6 +110,7 @@ export class Transport {
   constructor(options: TransportOptions) {
     this.baseURL = options.baseURL;
     this.headers = buildHeaders(options);
+    this.contentType = options.contentType ?? 'application/json';
     this.errorFormat = options.errorFormat ?? 'json';
     this.timeout = options.timeout ?? DEFAULT_TIMEOUT;
     this.retry = {
@@ -148,7 +153,12 @@ export class Transport {
       // Referenced at call time, not captured, so tests can stub the global.
       const response = await fetch(url, {
         method: options.method,
-        headers: { ...this.headers, ...options.headers },
+        // Content-Type describes a body, so it is only sent when there is one
+        headers: {
+          ...this.headers,
+          ...(options.body === undefined ? {} : { 'Content-Type': this.contentType }),
+          ...options.headers,
+        },
         body: options.body,
         signal: timeoutSignal,
       });

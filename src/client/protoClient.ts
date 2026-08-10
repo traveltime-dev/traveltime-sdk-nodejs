@@ -88,10 +88,8 @@ export class TravelTimeProtoClient {
     this.transport = new Transport({
       baseURL: parameters?.baseUrl || DEFAULT_BASE_URL,
       auth: { scheme: 'basic', applicationId: credentials.applicationId, apiKey: credentials.apiKey },
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        Accept: 'application/octet-stream',
-      },
+      headers: { Accept: 'application/octet-stream' },
+      contentType: 'application/octet-stream',
       errorFormat: 'proto',
       timeout: parameters?.timeout,
       retry: { enabled: !this.rateLimiter.isEnabled(), ...parameters?.retry },
