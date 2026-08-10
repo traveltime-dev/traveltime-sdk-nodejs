@@ -1,8 +1,5 @@
-import axios, {
-  AxiosInstance, AxiosRequestConfig, CreateAxiosDefaults,
-} from 'axios';
-import HttpAgent, { HttpsAgent } from 'agentkeepalive';
 import { TravelTimeError, TravelTimeValidationError } from '../error';
+import { Transport, TransportRetryOptions } from '../core/transport';
 import {
   MapInfoResponse,
   GeocodingResponse,
@@ -45,16 +42,30 @@ import { GeohashFastRequest, GeohashFastResponse } from '../types/geohashFast';
 
 type HttpMethod = 'get' | 'post'
 
+type RequestConfig = {
+  params?: Record<string, unknown>
+  headers?: Record<string, string>
+}
+
 type RequestPayload = {
   body?: any
-  config?: AxiosRequestConfig
+  config?: RequestConfig
 }
 
 const DEFAULT_BASE_URL = 'https://api.traveltimeapp.com/v4';
-const sdkVersion = require('../../package.json').version;
 
-const defaultHttpsAgent = new HttpsAgent({ keepAlive: true, maxSockets: 100 });
-const defaultHttpAgent = new HttpAgent({ keepAlive: true, maxSockets: 100 });
+/**
+ * Decodes a response body: JSON when it parses, otherwise the raw text
+ * (e.g. the KML response formats).
+ */
+function parseResponseBody(body: Buffer): unknown {
+  const text = body.toString('utf8');
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
 
 function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
   switch (url) {
@@ -100,9 +111,7 @@ function endpointChecksHPM(url: string) {
 }
 
 export class TravelTimeClient {
-  private apiKey: string;
-  private applicationId: string;
-  private axiosInstance: AxiosInstance;
+  private transport: Transport;
   private rateLimiter: RateLimiter;
 
   constructor(
@@ -110,51 +119,41 @@ export class TravelTimeClient {
     parameters?: {
       baseURL?: string,
       rateLimitSettings?: Partial<RateLimitSettings>,
-      axiosInstance?: AxiosInstance
+      /** Request timeout in milliseconds. Default `120000`. */
+      timeout?: number,
+      /** HTTP 429 retry behaviour. On by default, unless the rate limiter is enabled — its own retry logic applies then. */
+      retry?: TransportRetryOptions,
     },
   ) {
     if (!(credentials.applicationId && credentials.apiKey)) throw new TravelTimeValidationError('Credentials must be valid');
-    this.applicationId = credentials.applicationId;
-    this.apiKey = credentials.apiKey;
     this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
-    const headers: CreateAxiosDefaults['headers'] = {
-      'Content-Type': 'application/json',
-      'X-Application-Id': this.applicationId,
-      'X-Api-Key': this.apiKey,
-      'User-Agent': `Travel Time Nodejs SDK ${sdkVersion}`,
-    };
-    if (parameters?.axiosInstance) {
-      this.axiosInstance = parameters.axiosInstance;
-      if (!this.axiosInstance.defaults.baseURL) this.axiosInstance.defaults.baseURL = parameters?.baseURL ?? DEFAULT_BASE_URL;
-      this.axiosInstance.defaults.headers.common = {
-        ...headers,
-        ...this.axiosInstance.defaults.headers.common,
-      };
-    } else {
-      this.axiosInstance = axios.create({
-        baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
-        maxBodyLength: Infinity,
-        maxContentLength: Infinity,
-        httpAgent: defaultHttpAgent,
-        httpsAgent: defaultHttpsAgent,
-        headers: {
-          common: headers,
-        },
-      });
-    }
+    this.transport = new Transport({
+      baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
+      auth: { scheme: 'api-key', applicationId: credentials.applicationId, apiKey: credentials.apiKey },
+      timeout: parameters?.timeout,
+      retry: { enabled: !this.rateLimiter.isEnabled(), ...parameters?.retry },
+    });
   }
 
   private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload, retryCount = 0): Promise<Response> {
     const { body, config } = payload || {};
-    const rq = () => (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
+    const rq = async (): Promise<Response> => {
+      const response = await this.transport.request(url, {
+        method: method === 'get' ? 'GET' : 'POST',
+        query: config?.params,
+        headers: config?.headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      return parseResponseBody(response.body) as Response;
+    };
     try {
-      const promise = (this.rateLimiter.isEnabled() && endpointChecksHPM(url)) ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
+      const promise = (this.rateLimiter.isEnabled() && endpointChecksHPM(url)) ? new Promise<Response>((resolve) => {
         this.rateLimiter.addAndExecute(() => resolve(rq()), getHitAmountFromRequest(url, body || {}), retryCount > 0);
       }) : rq();
-      const { data } = await promise;
+      const data = await promise;
       return data;
     } catch (error) {
-      if (this.rateLimiter.isEnabled() && retryCount < this.rateLimiter.getRetryCount() && axios.isAxiosError(error) && error.response?.status === 429) {
+      if (this.rateLimiter.isEnabled() && retryCount < this.rateLimiter.getRetryCount() && TravelTimeError.isTravelTimeError(error) && error.status === 429) {
         return new Promise((resolve) => {
           this.rateLimiter.setIsSleeping(true);
           setTimeout(() => {
@@ -163,11 +162,10 @@ export class TravelTimeClient {
           }, this.rateLimiter.getTimeBetweenRetries());
         });
       }
-      throw TravelTimeError.fromJsonError(error);
+      throw TravelTimeError.from(error);
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   private async batch<T extends GenericFunction, R extends Awaited<ReturnType<T>>>(
     requestFn: T,
     bodies: Parameters<T>[0][],
@@ -244,7 +242,7 @@ export class TravelTimeClient {
       const responses = await this.timeFilterBatch(requests);
       return timeFilterManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
     } catch (error) {
-      throw TravelTimeError.fromJsonError(error);
+      throw TravelTimeError.from(error);
     }
   };
 
@@ -256,7 +254,7 @@ export class TravelTimeClient {
       const responses = await this.timeFilterFastBatch(requests);
       return timeFilterFastManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
     } catch (error) {
-      throw TravelTimeError.fromJsonError(error);
+      throw TravelTimeError.from(error);
     }
   };
 
@@ -310,25 +308,6 @@ export class TravelTimeClient {
   ): Promise<BatchResponse<Awaited<TimeMapFastResponseType[T]>>[]> {
     return this.batch((body: TimeMapFastRequest) => this.timeMapFast(body, format as T), bodies);
   }
-
-  getBaseURL = () => this.axiosInstance.defaults.baseURL;
-
-  /**
-   *
-   * @param baseURL Set new base URL. Pass nothing to reset to default
-   */
-  setBaseURL = (baseURL = DEFAULT_BASE_URL) => {
-    this.axiosInstance.defaults.baseURL = baseURL;
-  };
-
-  setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
-    this.rateLimiter.setRateLimitSettings(settings);
-  };
-
-  setCredentials = (credentials: Credentials) => {
-    this.apiKey = credentials.apiKey;
-    this.applicationId = credentials.applicationId;
-  };
 
   h3 = async (body: H3Request) => this
     .request<H3Response>('/h3', 'post', { body });

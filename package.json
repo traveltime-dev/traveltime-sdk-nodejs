@@ -27,8 +27,6 @@
   "author": "TravelTime <support@traveltime.com> (https://traveltime.com/)",
   "license": "MIT",
   "dependencies": {
-    "agentkeepalive": "^4.6.0",
-    "axios": "1.19.0",
     "protobufjs": "^8.7.1"
   },
   "devDependencies": {

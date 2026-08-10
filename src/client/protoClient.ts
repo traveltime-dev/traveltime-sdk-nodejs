@@ -1,9 +1,7 @@
-/* eslint-disable class-methods-use-this */
-import axios, { AxiosInstance } from 'axios';
-import HttpAgent, { HttpsAgent } from 'agentkeepalive';
 import protobuf from 'protobufjs';
 import { Coords, Credentials } from '../types';
 import { TravelTimeError, TravelTimeValidationError } from '../error';
+import { Transport, TransportRetryOptions } from '../core/transport';
 import {
   DetailedTransportation,
   GeohashFastProtoCellProperty,
@@ -36,9 +34,6 @@ interface TimeFilterFastProtoMessage {
 
 const DEFAULT_BASE_URL = 'https://proto.api.traveltimeapp.com/api/v3';
 
-const defaultHttpsAgent = new HttpsAgent({ keepAlive: true, maxSockets: 100 });
-const defaultHttpAgent = new HttpAgent({ keepAlive: true, maxSockets: 100 });
-
 interface ProtoRequestBuildOptions {
   useDistance?: boolean
 }
@@ -54,10 +49,7 @@ interface TimeFilterProtoMessageWithUrl {
 }
 
 export class TravelTimeProtoClient {
-  private apiKey: string;
-  private applicationId: string;
-  private axiosInstance: AxiosInstance;
-  private baseURL: string;
+  private transport: Transport;
   private protoFileDir = `${__dirname}/proto/v2`;
   private transportationMap: Record<TimeFilterFastProtoTransportation, TransportationConfig> = {
     pt: { code: 0, urlName: 'pt' },
@@ -82,26 +74,25 @@ export class TravelTimeProtoClient {
 
   constructor(
     credentials: Credentials,
-    parameters?: { rateLimitSettings?: Partial<RateLimitSettings>, baseUrl?: string },
+    parameters?: {
+      rateLimitSettings?: Partial<RateLimitSettings>,
+      baseUrl?: string,
+      /** Request timeout in milliseconds. Default `120000`. */
+      timeout?: number,
+      /** HTTP 429 retry behaviour. On by default, unless the rate limiter is enabled. */
+      retry?: TransportRetryOptions,
+    },
   ) {
     if (!(credentials.applicationId && credentials.apiKey)) throw new TravelTimeValidationError('Credentials must be valid');
-    this.applicationId = credentials.applicationId;
-    this.apiKey = credentials.apiKey;
-    this.baseURL = parameters?.baseUrl || DEFAULT_BASE_URL;
     this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
-    this.axiosInstance = axios.create({
-      auth: {
-        username: this.applicationId,
-        password: this.apiKey,
-      },
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        Accept: 'application/octet-stream',
-        'User-Agent': 'Travel Time Nodejs SDK',
-      },
-      responseType: 'arraybuffer',
-      httpAgent: defaultHttpAgent,
-      httpsAgent: defaultHttpsAgent,
+    this.transport = new Transport({
+      baseURL: parameters?.baseUrl || DEFAULT_BASE_URL,
+      auth: { scheme: 'basic', applicationId: credentials.applicationId, apiKey: credentials.apiKey },
+      headers: { Accept: 'application/octet-stream' },
+      contentType: 'application/octet-stream',
+      errorFormat: 'proto',
+      timeout: parameters?.timeout,
+      retry: { enabled: !this.rateLimiter.isEnabled(), ...parameters?.retry },
     });
 
     const root = this.readProtoFile();
@@ -124,8 +115,8 @@ export class TravelTimeProtoClient {
     return Math.round((targetPoint - sourcePoint) * 100000);
   }
 
-  private buildRequestUrl(uri: string, country: string, transportModeUrlName: string): string {
-    return `${uri}/${country}/time-filter/fast/${transportModeUrlName}`;
+  private buildRequestUrl(country: string, transportModeUrlName: string): string {
+    return `/${country}/time-filter/fast/${transportModeUrlName}`;
   }
 
   private buildDeltas(departure: Coords, destinations: Array<Coords>) {
@@ -205,7 +196,7 @@ export class TravelTimeProtoClient {
     destinationCoordinates,
     transportation,
     travelTime,
-  }: TimeFilterFastProtoRequest, uri: string, options?: ProtoRequestBuildOptions): TimeFilterProtoMessageWithUrl {
+  }: TimeFilterFastProtoRequest, options?: ProtoRequestBuildOptions): TimeFilterProtoMessageWithUrl {
     const transportationMode = this.extractTransportationMode(transportation);
     this.validateTransportationMode(transportationMode);
 
@@ -227,7 +218,7 @@ export class TravelTimeProtoClient {
       },
     };
 
-    const requestUrl = this.buildRequestUrl(uri, country, transportationConfig.urlName);
+    const requestUrl = this.buildRequestUrl(country, transportationConfig.urlName);
 
     return {
       requestMessage,
@@ -235,11 +226,11 @@ export class TravelTimeProtoClient {
     };
   }
 
-  private buildGeohashRequestUrl(uri: string, country: string, transportModeUrlName: string): string {
-    return `${uri}/${country}/geohash/fast/${transportModeUrlName}`;
+  private buildGeohashRequestUrl(country: string, transportModeUrlName: string): string {
+    return `/${country}/geohash/fast/${transportModeUrlName}`;
   }
 
-  private buildGeohashProtoRequest(request: GeohashFastProtoRequest, uri: string): { requestMessage: Record<string, any>, requestUrl: string } {
+  private buildGeohashProtoRequest(request: GeohashFastProtoRequest): { requestMessage: Record<string, any>, requestUrl: string } {
     const {
       country, departureLocation, arrivalLocation, transportation, travelTime, resolution, properties,
     } = request;
@@ -285,7 +276,7 @@ export class TravelTimeProtoClient {
       };
     }
 
-    const requestUrl = this.buildGeohashRequestUrl(uri, country, transportationConfig.urlName);
+    const requestUrl = this.buildGeohashRequestUrl(country, transportationConfig.urlName);
 
     return { requestMessage, requestUrl };
   }
@@ -307,25 +298,24 @@ export class TravelTimeProtoClient {
    * Decodes a proto response body. Decode failures mean the response was
    * received but could not be read, so they are not retryable.
    */
-  private decodeProtoResponse<T>(type: protobuf.Type, data: unknown): T {
+  private decodeProtoResponse<T>(type: protobuf.Type, data: Uint8Array): T {
     try {
-      return type.decode(data as Uint8Array).toJSON() as T;
+      return type.decode(data).toJSON() as T;
     } catch {
       throw new TravelTimeError({ description: 'Could not decode proto response', isRetryable: false });
     }
   }
 
   private async handleProtoFile(
-    uri: string,
     request: TimeFilterFastProtoRequest | TimeFilterFastProtoDistanceRequest,
     options?: ProtoRequestBuildOptions,
   ): Promise<TimeFilterFastProtoResponse> {
     try {
-      const { requestMessage, requestUrl } = this.buildProtoRequest(request, uri, options);
+      const { requestMessage, requestUrl } = this.buildProtoRequest(request, options);
       const message = this.TimeFilterFastRequest.create(requestMessage);
       const buffer = this.TimeFilterFastRequest.encode(message).finish();
 
-      const rq = () => this.axiosInstance.post(requestUrl, buffer);
+      const rq = () => this.transport.request(requestUrl, { method: 'POST', body: buffer });
 
       const promise = this.rateLimiter.isEnabled()
         ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
@@ -333,23 +323,22 @@ export class TravelTimeProtoClient {
         })
         : rq();
 
-      const { data } = await promise;
-      return this.decodeProtoResponse<TimeFilterFastProtoResponse>(this.TimeFilterFastResponse, data);
+      const { body } = await promise;
+      return this.decodeProtoResponse<TimeFilterFastProtoResponse>(this.TimeFilterFastResponse, body);
     } catch (error) {
-      throw TravelTimeError.fromProtoError(error);
+      throw TravelTimeError.from(error);
     }
   }
 
   private async handleGeohashProtoFile(
-    uri: string,
     request: GeohashFastProtoRequest,
   ): Promise<GeohashFastProtoResponse> {
     try {
-      const { requestMessage, requestUrl } = this.buildGeohashProtoRequest(request, uri);
+      const { requestMessage, requestUrl } = this.buildGeohashProtoRequest(request);
       const message = this.GeohashFastRequest.create(requestMessage);
       const buffer = this.GeohashFastRequest.encode(message).finish();
 
-      const rq = () => this.axiosInstance.post(requestUrl, buffer);
+      const rq = () => this.transport.request(requestUrl, { method: 'POST', body: buffer });
 
       const promise = this.rateLimiter.isEnabled()
         ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
@@ -357,35 +346,16 @@ export class TravelTimeProtoClient {
         })
         : rq();
 
-      const { data } = await promise;
-      return this.decodeProtoResponse<GeohashFastProtoResponse>(this.GeohashFastResponse, data);
+      const { body } = await promise;
+      return this.decodeProtoResponse<GeohashFastProtoResponse>(this.GeohashFastResponse, body);
     } catch (error) {
-      throw TravelTimeError.fromProtoError(error);
+      throw TravelTimeError.from(error);
     }
   }
 
-  timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(this.baseURL, request);
+  timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(request);
 
-  timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.handleProtoFile(this.baseURL, request, { useDistance: true });
+  timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.handleProtoFile(request, { useDistance: true });
 
-  geohashFast = async (request: GeohashFastProtoRequest) => this.handleGeohashProtoFile(this.baseURL, request);
-
-  setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
-    this.rateLimiter.setRateLimitSettings(settings);
-  };
-
-  getBaseURL = () => this.baseURL;
-
-  /**
-   *
-   * @param baseURL Set new base URL. Pass nothing to reset to default
-   */
-  setBaseURL = (baseURL = DEFAULT_BASE_URL) => {
-    this.baseURL = baseURL;
-  };
-
-  setCredentials = (credentials: Credentials) => {
-    this.apiKey = credentials.apiKey;
-    this.applicationId = credentials.applicationId;
-  };
+  geohashFast = async (request: GeohashFastProtoRequest) => this.handleGeohashProtoFile(request);
 }
