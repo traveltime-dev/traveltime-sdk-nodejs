@@ -8,7 +8,6 @@ import {
   TravelTimeProtoClient,
   TravelTimeError,
   TravelTimeNetworkError,
-  TravelTimeValidationError,
 } from '../../src';
 
 const SENTINEL = 'SENTINEL-API-KEY-b8f2c611';

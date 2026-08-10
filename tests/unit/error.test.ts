@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import {
+  describe, it, expect, vi, afterEach,
+} from 'vitest';
 import util from 'node:util';
 import {
   TravelTimeClient,
@@ -60,6 +62,10 @@ function expectNoSentinel(err: unknown) {
 }
 
 describe('error model', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   describe('credential leak regression', () => {
     it('should not leak credentials from a non-TravelTime-shaped HTTP failure (JSON response mapping)', () => {
       // fetch resolved with a 500 whose body is not a TravelTime payload
@@ -312,9 +318,8 @@ describe('error model', () => {
 
     it('should not mark an undecodable proto response as retryable', async () => {
       // A response arrived, so the failure is permanent — retrying cannot help
-      const client = new TravelTimeProtoClient({ apiKey: 'key', applicationId: 'app' }, {
-        fetch: async () => new Response(Buffer.from([0xff, 0xff, 0xff, 0xff]), { status: 200 }),
-      });
+      vi.stubGlobal('fetch', async () => new Response(Buffer.from([0xff, 0xff, 0xff, 0xff]), { status: 200 }));
+      const client = new TravelTimeProtoClient({ apiKey: 'key', applicationId: 'app' });
 
       try {
         await client.timeFilterFast({
