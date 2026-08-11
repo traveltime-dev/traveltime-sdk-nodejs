@@ -92,7 +92,9 @@ export class TravelTimeProtoClient {
       contentType: 'application/octet-stream',
       errorFormat: 'proto',
       timeout: parameters?.timeout,
-      retry: { enabled: !this.rateLimiter.isEnabled(), ...parameters?.retry },
+      // `enabled` comes last so a caller-supplied object cannot switch the
+      // transport retry back on while the rate limiter drives 429 retries
+      retry: { ...parameters?.retry, enabled: !this.rateLimiter.isEnabled() },
     });
 
     const root = this.readProtoFile();
@@ -306,6 +308,27 @@ export class TravelTimeProtoClient {
     }
   }
 
+  /**
+   * Sends a proto request through the rate limiter when it is enabled: each
+   * request costs one hit, and a 429 pauses the whole queue via `backOff`
+   * before retrying, up to `retryCount` times — the transport's own 429
+   * retry is off while the rate limiter drives retries.
+   */
+  private async send(requestUrl: string, buffer: Uint8Array) {
+    const rq = () => this.transport.request(requestUrl, { method: 'POST', body: buffer });
+    if (!this.rateLimiter.isEnabled()) return rq();
+    for (let retriesDone = 0; ; retriesDone += 1) {
+      await this.rateLimiter.acquire(1, retriesDone > 0);
+      try {
+        return await rq();
+      } catch (error) {
+        const mapped = TravelTimeError.from(error);
+        if (mapped.status !== 429 || retriesDone >= this.rateLimiter.getRetryCount()) throw mapped;
+        await this.rateLimiter.backOff();
+      }
+    }
+  }
+
   private async handleProtoFile(
     request: TimeFilterFastProtoRequest | TimeFilterFastProtoDistanceRequest,
     options?: ProtoRequestBuildOptions,
@@ -315,15 +338,7 @@ export class TravelTimeProtoClient {
       const message = this.TimeFilterFastRequest.create(requestMessage);
       const buffer = this.TimeFilterFastRequest.encode(message).finish();
 
-      const rq = () => this.transport.request(requestUrl, { method: 'POST', body: buffer });
-
-      const promise = this.rateLimiter.isEnabled()
-        ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-          this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
-        })
-        : rq();
-
-      const { body } = await promise;
+      const { body } = await this.send(requestUrl, buffer);
       return this.decodeProtoResponse<TimeFilterFastProtoResponse>(this.TimeFilterFastResponse, body);
     } catch (error) {
       throw TravelTimeError.from(error);
@@ -338,15 +353,7 @@ export class TravelTimeProtoClient {
       const message = this.GeohashFastRequest.create(requestMessage);
       const buffer = this.GeohashFastRequest.encode(message).finish();
 
-      const rq = () => this.transport.request(requestUrl, { method: 'POST', body: buffer });
-
-      const promise = this.rateLimiter.isEnabled()
-        ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-          this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
-        })
-        : rq();
-
-      const { body } = await promise;
+      const { body } = await this.send(requestUrl, buffer);
       return this.decodeProtoResponse<GeohashFastProtoResponse>(this.GeohashFastResponse, body);
     } catch (error) {
       throw TravelTimeError.from(error);

@@ -8,15 +8,24 @@ const DEFAULT_RETRY_MAX_RETRIES = 3;
 const DEFAULT_RETRY_BASE_DELAY = 1_000;
 const DEFAULT_RETRY_MAX_DELAY = 60_000;
 
+/** Public 429-retry tuning. To disable retries entirely, set `maxRetries: 0`. */
 export interface TransportRetryOptions {
-  /** Whether requests rejected with HTTP 429 are retried. Default `true`. */
-  enabled?: boolean;
-  /** Maximum number of retries after the initial attempt. Default `3`. */
+  /** Maximum number of retries after the initial attempt. Default `3`. Set `0` to disable retries. */
   maxRetries?: number;
   /** First backoff delay in milliseconds, doubled on every retry. Default `1000`. */
   baseDelay?: number;
   /** Upper bound in milliseconds for any single retry delay. Default `60000`. */
   maxDelay?: number;
+}
+
+/**
+ * Internal: the clients decide whether the transport retries at all — it
+ * must stay off while the rate limiter drives 429 retries, or the two retry
+ * paths multiply. Not exported, so callers cannot set it.
+ */
+interface TransportRetryConfig extends TransportRetryOptions {
+  /** Whether requests rejected with HTTP 429 are retried. Default `true`. */
+  enabled?: boolean;
 }
 
 export type TransportAuth = {
@@ -38,7 +47,7 @@ export interface TransportOptions {
   errorFormat?: 'json' | 'proto';
   /** Per-attempt timeout in milliseconds. Default `120000`. */
   timeout?: number;
-  retry?: TransportRetryOptions;
+  retry?: TransportRetryConfig;
 }
 
 export interface TransportRequestOptions {
@@ -105,7 +114,7 @@ export class Transport {
   private contentType: string;
   private errorFormat: 'json' | 'proto';
   private timeout: number;
-  private retry: Required<TransportRetryOptions>;
+  private retry: Required<TransportRetryConfig>;
 
   constructor(options: TransportOptions) {
     this.baseURL = options.baseURL;
@@ -122,17 +131,26 @@ export class Transport {
     if (!Number.isFinite(this.timeout) || this.timeout <= 0) {
       throw new TravelTimeValidationError('timeout must be a positive number of milliseconds');
     }
+    if (!Number.isInteger(this.retry.maxRetries) || this.retry.maxRetries < 0) {
+      throw new TravelTimeValidationError('retry.maxRetries must be a non-negative integer');
+    }
+    if (!Number.isFinite(this.retry.baseDelay) || this.retry.baseDelay <= 0) {
+      throw new TravelTimeValidationError('retry.baseDelay must be a positive number of milliseconds');
+    }
+    if (!Number.isFinite(this.retry.maxDelay) || this.retry.maxDelay <= 0) {
+      throw new TravelTimeValidationError('retry.maxDelay must be a positive number of milliseconds');
+    }
   }
 
   async request(path: string, options: TransportRequestOptions): Promise<TransportResponse> {
     const url = this.buildUrl(path, options.query);
     const maxRetries = this.retry.enabled ? this.retry.maxRetries : 0;
-    for (let attempt = 0; ; attempt += 1) {
+    for (let retriesDone = 0; ; retriesDone += 1) {
       const outcome = await this.attempt(url, options);
       if (outcome.ok) return outcome.response;
-      const shouldRetry = outcome.error.status === 429 && attempt < maxRetries;
+      const shouldRetry = outcome.error.status === 429 && retriesDone < maxRetries;
       if (!shouldRetry) throw outcome.error;
-      await this.waitBeforeRetry(this.retryDelay(attempt));
+      await this.waitBeforeRetry(this.retryDelay(retriesDone));
     }
   }
 
@@ -195,9 +213,10 @@ export class Transport {
     return TravelTimeNetworkError.from(error, url);
   }
 
-  private retryDelay(attempt: number): number {
+  /** Backoff before the next retry, given how many retries are already done. */
+  private retryDelay(retriesDone: number): number {
     const { baseDelay, maxDelay } = this.retry;
-    const backoff = Math.min(baseDelay * 2 ** attempt, maxDelay);
+    const backoff = Math.min(baseDelay * 2 ** retriesDone, maxDelay);
     // Equal jitter: uniform over [backoff/2, backoff), so concurrent retries spread out
     return backoff / 2 + Math.random() * (backoff / 2);
   }

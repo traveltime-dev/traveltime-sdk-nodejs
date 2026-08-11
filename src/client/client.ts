@@ -131,11 +131,13 @@ export class TravelTimeClient {
       baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
       auth: { scheme: 'api-key', applicationId: credentials.applicationId, apiKey: credentials.apiKey },
       timeout: parameters?.timeout,
-      retry: { enabled: !this.rateLimiter.isEnabled(), ...parameters?.retry },
+      // `enabled` comes last so a caller-supplied object cannot switch the
+      // transport retry back on while the rate limiter drives 429 retries
+      retry: { ...parameters?.retry, enabled: !this.rateLimiter.isEnabled() },
     });
   }
 
-  private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload, retryCount = 0): Promise<Response> {
+  private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload): Promise<Response> {
     const { body, config } = payload || {};
     const rq = async (): Promise<Response> => {
       const response = await this.transport.request(url, {
@@ -146,23 +148,26 @@ export class TravelTimeClient {
       });
       return parseResponseBody(response.body) as Response;
     };
-    try {
-      const promise = (this.rateLimiter.isEnabled() && endpointChecksHPM(url)) ? new Promise<Response>((resolve) => {
-        this.rateLimiter.addAndExecute(() => resolve(rq()), getHitAmountFromRequest(url, body || {}), retryCount > 0);
-      }) : rq();
-      const data = await promise;
-      return data;
-    } catch (error) {
-      if (this.rateLimiter.isEnabled() && retryCount < this.rateLimiter.getRetryCount() && TravelTimeError.isTravelTimeError(error) && error.status === 429) {
-        return new Promise((resolve) => {
-          this.rateLimiter.setIsSleeping(true);
-          setTimeout(() => {
-            this.rateLimiter.setIsSleeping(false);
-            resolve(this.request(url, method, payload, retryCount + 1));
-          }, this.rateLimiter.getTimeBetweenRetries());
-        });
+    if (!this.rateLimiter.isEnabled()) {
+      try {
+        return await rq();
+      } catch (error) {
+        throw TravelTimeError.from(error);
       }
-      throw TravelTimeError.from(error);
+    }
+    // With the rate limiter enabled, the transport's own 429 retry is off and
+    // retries are driven here instead, so a 429 can pause the whole queue.
+    const isQuotaLimited = endpointChecksHPM(url);
+    const hits = isQuotaLimited ? getHitAmountFromRequest(url, body || {}) : 0;
+    for (let retriesDone = 0; ; retriesDone += 1) {
+      if (isQuotaLimited) await this.rateLimiter.acquire(hits, retriesDone > 0);
+      try {
+        return await rq();
+      } catch (error) {
+        const mapped = TravelTimeError.from(error);
+        if (mapped.status !== 429 || retriesDone >= this.rateLimiter.getRetryCount()) throw mapped;
+        await this.rateLimiter.backOff();
+      }
     }
   }
 
