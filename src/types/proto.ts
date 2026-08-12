@@ -67,7 +67,11 @@ export interface TimeFilterFastProtoDistanceResponseProperties {
 
 export interface TimeFilterFastProtoResponseError {
   error: {
-    type: string
+    /**
+     * Error type name, e.g. `"TOO_MANY_REQUESTS"`. Absent when the API sends
+     * the enum's zero value (`UNKNOWN`), which proto3 does not put on the wire.
+     */
+    type?: string
   }
 }
 
@@ -97,10 +101,4 @@ export interface GeohashFastProtoResponseProperties {
   }
 }
 
-export interface GeohashFastProtoResponseError {
-  error: {
-    type: string
-  }
-}
-
-export type GeohashFastProtoResponse = GeohashFastProtoResponseProperties | GeohashFastProtoResponseError
+export type GeohashFastProtoResponse = GeohashFastProtoResponseProperties

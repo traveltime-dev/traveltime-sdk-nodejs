@@ -10,6 +10,7 @@ import {
   TimeFilterFastProtoDistanceRequest, TimeFilterFastProtoRequest, TimeFilterFastProtoResponse, TimeFilterFastProtoTransportation,
 } from '../types/proto';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
+import { protoCountries } from './proto/countries';
 
 interface TimeFilterFastProtoMessage {
   oneToManyRequest: {
@@ -135,6 +136,12 @@ export class TravelTimeProtoClient {
     }
   }
 
+  private validateCountry(country: string): void {
+    if (!(protoCountries as ReadonlyArray<string>).includes(country)) {
+      throw new TravelTimeValidationError(`Country "${country}" is not supported. Supported countries: ${protoCountries.join(', ')}`);
+    }
+  }
+
   private extractTransportationDetails(
     transportation: TimeFilterFastProtoTransportation | DetailedTransportation,
     transportationMode: TimeFilterFastProtoTransportation,
@@ -199,6 +206,7 @@ export class TravelTimeProtoClient {
     transportation,
     travelTime,
   }: TimeFilterFastProtoRequest, options?: ProtoRequestBuildOptions): TimeFilterProtoMessageWithUrl {
+    this.validateCountry(country);
     const transportationMode = this.extractTransportationMode(transportation);
     this.validateTransportationMode(transportationMode);
 
@@ -237,6 +245,7 @@ export class TravelTimeProtoClient {
       country, departureLocation, arrivalLocation, transportation, travelTime, resolution, properties,
     } = request;
 
+    this.validateCountry(country);
     if (!departureLocation && !arrivalLocation) {
       throw new TravelTimeValidationError('Either departureLocation or arrivalLocation must be provided');
     }
