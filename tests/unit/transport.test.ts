@@ -8,6 +8,7 @@ import {
   TravelTimeProtoClient,
   TravelTimeError,
   TravelTimeNetworkError,
+  TravelTimeValidationError,
 } from '../../src';
 
 const SENTINEL = 'SENTINEL-API-KEY-b8f2c611';
@@ -308,6 +309,17 @@ describe('transport', () => {
       await makeTransport(fn).request('/time-map', { method: 'POST', body: '{}' }).catch(() => undefined);
       expect(calls).toHaveLength(1);
     });
+
+    // maxRetries: Infinity would never give up, and 0.5 silently meant one retry
+    it.each([Infinity, 0.5, -1, NaN])('should reject maxRetries %p as invalid', (maxRetries) => {
+      const { fn } = recordingFetch(jsonResponse(200, {}));
+      expect(() => makeTransport(fn, { retry: { maxRetries } })).toThrow(TravelTimeValidationError);
+    });
+
+    it.each(['baseDelay', 'maxDelay'] as const)('should reject a non-positive %s', (key) => {
+      const { fn } = recordingFetch(jsonResponse(200, {}));
+      expect(() => makeTransport(fn, { retry: { [key]: 0 } })).toThrow(TravelTimeValidationError);
+    });
   });
 
   describe('clients over the transport', () => {
@@ -319,6 +331,16 @@ describe('transport', () => {
       await expect(client.mapInfo()).resolves.toEqual({ map_info: [] });
       expect(calls[0].url).toBe('https://api.traveltimeapp.com/v4/map-info');
       expect(calls[0].init.method).toBe('GET');
+    });
+
+    it('should turn retries off via maxRetries: 0, the supported way with the limiter disabled', async () => {
+      const { calls, fn } = recordingFetch(jsonResponse(429, { error_code: 5, description: 'Too many requests' }));
+      stubFetch(fn);
+      const client = new TravelTimeClient({ apiKey: 'test-key', applicationId: 'app-id' }, { retry: { maxRetries: 0 } });
+
+      const err = await client.mapInfo().catch((e) => e);
+      expect(calls).toHaveLength(1);
+      expect(err.status).toBe(429);
     });
 
     it('should keep the rate limiter 429 retry path working from the error status', async () => {
