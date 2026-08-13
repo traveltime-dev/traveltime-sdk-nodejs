@@ -186,6 +186,8 @@ export interface TravelTimeNetworkErrorParams {
   status?: number;
   url?: string;
   isRetryable?: boolean;
+  /** Adopt this stack rather than capturing one at construction. */
+  stack?: string;
 }
 
 /**
@@ -210,6 +212,7 @@ export class TravelTimeNetworkError extends TravelTimeError {
     // Every URL recorded on an error goes through sanitizeUrl, so no call
     // site can log a query string by accident
     this.url = sanitizeUrl(params.url);
+    if (params.stack !== undefined) this.stack = params.stack;
   }
 
   toJSON(): Record<string, any> {
@@ -252,8 +255,11 @@ export class TravelTimeNetworkError extends TravelTimeError {
         });
       }
       // No transport failure was observed — most likely a local
-      // encode/decode or programming error, which retrying cannot fix
-      return new TravelTimeNetworkError({ description: error.message || error.name, url, isRetryable: false });
+      // encode/decode or programming error, which retrying cannot fix. Its own
+      // stack points at the code that failed, so keep it.
+      return new TravelTimeNetworkError({
+        description: error.message || error.name, url, isRetryable: false, stack: error.stack,
+      });
     }
     return new TravelTimeNetworkError({ description: typeof error === 'string' ? error : 'Unknown request failure', url, isRetryable: false });
   }

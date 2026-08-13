@@ -16,7 +16,7 @@
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "release": "npm run clean && npm i && npm run build && npm publish",
     "release-rc": "npm run clean && npm i && npm run build && npm publish --tag rc"
   },

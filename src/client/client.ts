@@ -67,7 +67,7 @@ function parseResponseBody(body: Buffer): unknown {
   }
 }
 
-function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
+function getHitAmountFromRequest(url: string, body: RequestPayload['body']): number | null {
   switch (url) {
     case '/time-filter':
     case '/routes':
@@ -80,7 +80,7 @@ function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
     case '/time-filter/fast':
     case '/h3/fast':
     case '/geohash/fast': {
-      return (body.arrival_searches.one_to_many?.length || 0) + (body.arrival_searches.many_to_one?.length || 0);
+      return (body.arrival_searches?.one_to_many?.length || 0) + (body.arrival_searches?.many_to_one?.length || 0);
     }
     case '/distance-map':
     case '/time-map':
@@ -88,26 +88,8 @@ function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
     case '/geohash': {
       return (body.departure_searches?.length || 0) + (body.arrival_searches?.length || 0) + (body.unions?.length || 0) + (body.intersections?.length || 0);
     }
-    default: return 0;
+    default: return null;
   }
-}
-
-function endpointChecksHPM(url: string) {
-  return [
-    '/time-filter',
-    '/routes',
-    '/time-filter/postcode-districts',
-    '/time-filter/postcode-sectors',
-    '/time-filter/postcodes',
-    '/time-map/fast',
-    '/time-filter/fast',
-    '/time-map',
-    '/distance-map',
-    '/h3',
-    '/h3/fast',
-    '/geohash',
-    '/geohash/fast',
-  ].includes(url);
 }
 
 export class TravelTimeClient {
@@ -138,6 +120,14 @@ export class TravelTimeClient {
   }
 
   private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload): Promise<Response> {
+    try {
+      return await this.dispatch<Response>(url, method, payload);
+    } catch (error) {
+      throw TravelTimeError.from(error);
+    }
+  }
+
+  private async dispatch<Response>(url: string, method: HttpMethod, payload?: RequestPayload): Promise<Response> {
     const { body, config } = payload || {};
     const rq = async (): Promise<Response> => {
       const response = await this.transport.request(url, {
@@ -148,19 +138,12 @@ export class TravelTimeClient {
       });
       return parseResponseBody(response.body) as Response;
     };
-    if (!this.rateLimiter.isEnabled()) {
-      try {
-        return await rq();
-      } catch (error) {
-        throw TravelTimeError.from(error);
-      }
-    }
+    if (!this.rateLimiter.isEnabled()) return rq();
     // With the rate limiter enabled, the transport's own 429 retry is off and
     // retries are driven here instead, so a 429 can pause the whole queue.
-    const isQuotaLimited = endpointChecksHPM(url);
-    const hits = isQuotaLimited ? getHitAmountFromRequest(url, body || {}) : 0;
+    const hits = getHitAmountFromRequest(url, body || {});
     for (let retriesDone = 0; ; retriesDone += 1) {
-      if (isQuotaLimited) await this.rateLimiter.acquire(hits, retriesDone > 0);
+      if (hits !== null) await this.rateLimiter.acquire(hits, retriesDone > 0);
       try {
         return await rq();
       } catch (error) {
@@ -175,18 +158,10 @@ export class TravelTimeClient {
     requestFn: T,
     bodies: Parameters<T>[0][],
   ): Promise<BatchResponse<R>[]> {
-    const results: BatchResponse<R>[] = [];
-
-    const chunkResults = await Promise.allSettled(bodies.map((request) => requestFn(request)));
-    chunkResults.forEach((chunkResult) => {
-      if (chunkResult.status === 'rejected') {
-        results.push({ type: 'error', error: chunkResult.reason });
-      } else {
-        results.push({ type: 'success', body: chunkResult.value });
-      }
-    });
-
-    return results;
+    const settled = await Promise.allSettled(bodies.map((requestBody) => requestFn(requestBody)));
+    return settled.map((result): BatchResponse<R> => (result.status === 'rejected'
+      ? { type: 'error', error: TravelTimeError.from(result.reason) }
+      : { type: 'success', body: result.value }));
   }
 
   async distanceMap(body: DistanceMapRequest): Promise<DistanceMapResponse>

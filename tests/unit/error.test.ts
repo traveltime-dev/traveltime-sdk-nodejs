@@ -226,6 +226,13 @@ describe('error model', () => {
     expect(TravelTimeError.isTravelTimeError(undefined)).toBe(false);
   });
 
+  it('should keep the original stack when sanitizing a local failure', () => {
+    const original = new Error('boom');
+    const mapped = TravelTimeNetworkError.from(original);
+    // a fresh stack would start inside error.ts rather than at the failing code
+    expect(mapped.stack).toBe(original.stack);
+  });
+
   it('should compute isRetryable from the kind of failure', () => {
     const cases: Array<[string, TravelTimeError, boolean]> = [
       ['429', new TravelTimeError({ description: 'too many requests', status: 429 }), true],
