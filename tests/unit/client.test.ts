@@ -41,16 +41,29 @@ describe('TravelTimeClient batch', () => {
 describe('TravelTimeClient error mapping boundary', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('maps a failure raised while counting hits, instead of letting it escape raw', async () => {
+  it('maps a failure thrown before the request leaves, instead of letting it escape raw', async () => {
     stubFetch(200);
-    // /time-map/fast counts hits from arrival_searches; omitting it made hit
-    // counting throw a TypeError that escaped request() unmapped
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+
+    await expect(client().timeFilter(circular as never)).rejects.toSatisfy(
+      (error: unknown) => TravelTimeError.isTravelTimeError(error),
+    );
+  });
+
+  it('classifies a malformed body the same way whether the rate limiter is on or off', async () => {
+    stubFetch(400);
     const limited = new TravelTimeClient({ apiKey: 'test-key', applicationId: 'app-id' }, {
       rateLimitSettings: { enabled: true, hitsPerMinute: 600 },
     });
 
-    await expect(limited.timeMapFast({} as TimeMapFastRequest)).rejects.toSatisfy(
-      (error: unknown) => TravelTimeError.isTravelTimeError(error),
-    );
+    const [onLimiter, offLimiter] = await Promise.all([
+      limited.timeMapFast({} as TimeMapFastRequest).catch((error) => error),
+      client().timeMapFast({} as TimeMapFastRequest).catch((error) => error),
+    ]);
+
+    expect(onLimiter.name).toBe(offLimiter.name);
+    expect(onLimiter.status).toBe(400);
+    expect(offLimiter.status).toBe(400);
   });
 });

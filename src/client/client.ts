@@ -80,7 +80,7 @@ function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
     case '/time-filter/fast':
     case '/h3/fast':
     case '/geohash/fast': {
-      return (body.arrival_searches.one_to_many?.length || 0) + (body.arrival_searches.many_to_one?.length || 0);
+      return (body.arrival_searches?.one_to_many?.length || 0) + (body.arrival_searches?.many_to_one?.length || 0);
     }
     case '/distance-map':
     case '/time-map':
