@@ -3,12 +3,14 @@ import {
 } from 'vitest';
 import { TravelTimeClient, TravelTimeError, TimeMapFastRequest } from '../../src';
 
-/** The transport reads the global `fetch` at call time, so tests stub it. */
-function stubFetch(...statuses: number[]) {
-  let call = 0;
-  vi.stubGlobal('fetch', async () => {
-    const status = statuses[Math.min(call, statuses.length - 1)];
-    call += 1;
+/**
+ * The transport reads the global `fetch` at call time, so tests stub it. The
+ * status is chosen from the request body rather than the call order, so
+ * assertions hold however the requests interleave.
+ */
+function stubFetch(statusFor: (body: string) => number) {
+  vi.stubGlobal('fetch', async (_url: string, init: RequestInit) => {
+    const status = statusFor(String(init.body ?? ''));
     return status === 200
       ? new Response(JSON.stringify({ results: [] }), { status })
       : new Response(JSON.stringify({ error_code: 5, description: 'nope' }), { status });
@@ -21,7 +23,7 @@ describe('TravelTimeClient batch', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('reports a failed body as a TravelTimeError alongside the successes', async () => {
-    stubFetch(200, 400);
+    stubFetch((body) => (body.includes('"b"') ? 400 : 200));
     const results = await client().timeFilterBatch([
       { departure_searches: [{ id: 'a' }] },
       { departure_searches: [{ id: 'b' }] },
@@ -42,7 +44,7 @@ describe('TravelTimeClient error mapping boundary', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('maps a failure thrown before the request leaves, instead of letting it escape raw', async () => {
-    stubFetch(200);
+    stubFetch(() => 200);
     const circular: Record<string, unknown> = {};
     circular.self = circular;
 
@@ -52,7 +54,7 @@ describe('TravelTimeClient error mapping boundary', () => {
   });
 
   it('classifies a malformed body the same way whether the rate limiter is on or off', async () => {
-    stubFetch(400);
+    stubFetch(() => 400);
     const limited = new TravelTimeClient({ apiKey: 'test-key', applicationId: 'app-id' }, {
       rateLimitSettings: { enabled: true, hitsPerMinute: 600 },
     });
