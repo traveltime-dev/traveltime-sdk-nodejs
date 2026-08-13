@@ -67,7 +67,7 @@ function parseResponseBody(body: Buffer): unknown {
   }
 }
 
-function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
+function getHitAmountFromRequest(url: string, body: RequestPayload['body']): number | null {
   switch (url) {
     case '/time-filter':
     case '/routes':
@@ -88,28 +88,8 @@ function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
     case '/geohash': {
       return (body.departure_searches?.length || 0) + (body.arrival_searches?.length || 0) + (body.unions?.length || 0) + (body.intersections?.length || 0);
     }
-    default: return 0;
+    default: return null;
   }
-}
-
-const HPM_CHECKED_ENDPOINTS = new Set([
-  '/time-filter',
-  '/routes',
-  '/time-filter/postcode-districts',
-  '/time-filter/postcode-sectors',
-  '/time-filter/postcodes',
-  '/time-map/fast',
-  '/time-filter/fast',
-  '/time-map',
-  '/distance-map',
-  '/h3',
-  '/h3/fast',
-  '/geohash',
-  '/geohash/fast',
-]);
-
-function endpointChecksHPM(url: string) {
-  return HPM_CHECKED_ENDPOINTS.has(url);
 }
 
 export class TravelTimeClient {
@@ -161,10 +141,9 @@ export class TravelTimeClient {
     if (!this.rateLimiter.isEnabled()) return rq();
     // With the rate limiter enabled, the transport's own 429 retry is off and
     // retries are driven here instead, so a 429 can pause the whole queue.
-    const isQuotaLimited = endpointChecksHPM(url);
-    const hits = isQuotaLimited ? getHitAmountFromRequest(url, body || {}) : 0;
+    const hits = getHitAmountFromRequest(url, body || {});
     for (let retriesDone = 0; ; retriesDone += 1) {
-      if (isQuotaLimited) await this.rateLimiter.acquire(hits, retriesDone > 0);
+      if (hits !== null) await this.rateLimiter.acquire(hits, retriesDone > 0);
       try {
         return await rq();
       } catch (error) {
