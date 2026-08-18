@@ -1,5 +1,5 @@
 import {
-  Coords, LevelOfDetail, PolygonsFilter, Snapping, TransportationFastRequestCommons,
+  Coords, LevelOfDetail, PolygonsFilter, Snapping, TransportationFastRequestCommons, UnionOrIntersection,
 } from './common';
 
 export type TimeMapFastRequestSearch = Snapping & {
@@ -25,4 +25,6 @@ export type TimeMapFastRequestArrivalSearch = {
 
 export type TimeMapFastRequest = {
   arrival_searches: TimeMapFastRequestArrivalSearch
+  unions?: Array<UnionOrIntersection>
+  intersections?: Array<UnionOrIntersection>
 }

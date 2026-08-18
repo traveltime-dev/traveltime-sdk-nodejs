@@ -158,11 +158,17 @@ travelTimeClient.timeMap({
 
 ### [Isochrones (Time Map) Fast](https://docs.traveltime.com/api/reference/isochrones-fast)
 A very fast version of Isochrone API. However, the request parameters are much more limited.
+Find unions/intersections between different searches.
+
+Body attributes:
+* arrival_searches: Searches based on arrival times, split into `one_to_many` and `many_to_one`.
+* unions: Define unions of shapes that are results of previously defined searches.
+* intersections: Define intersections of shapes that are results of previously defined searches.
 
 ```typescript
-import { TimeMapFastRequestSearch } from 'traveltime-api';
+import { TimeMapFastRequestSearch, UnionOrIntersection } from 'traveltime-api';
 
-const arrival_search: TimeMapFastRequestSearch = {
+const publicTransportSearch: TimeMapFastRequestSearch = {
   id: 'public transport to Trafalgar Square',
   arrival_time_period: 'weekday_morning',
   travel_time: 900,
@@ -170,10 +176,30 @@ const arrival_search: TimeMapFastRequestSearch = {
   transportation: { type: 'public_transport' },
 };
 
+const drivingSearch: TimeMapFastRequestSearch = {
+  id: 'driving to Trafalgar Square',
+  arrival_time_period: 'weekday_morning',
+  travel_time: 900,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'driving' },
+};
+
+const union: UnionOrIntersection = {
+  id: 'union of driving and public transport',
+  search_ids: [drivingSearch.id, publicTransportSearch.id],
+};
+
+const intersection: UnionOrIntersection = {
+  id: 'intersection of driving and public transport',
+  search_ids: [drivingSearch.id, publicTransportSearch.id],
+};
+
 travelTimeClient.timeMapFast({
   arrival_searches: {
-    one_to_many: [arrival_search],
+    one_to_many: [publicTransportSearch, drivingSearch],
   },
+  unions: [union],
+  intersections: [intersection],
 }).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
