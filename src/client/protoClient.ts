@@ -124,7 +124,7 @@ export class TravelTimeProtoClient {
   }
 
   private buildRequestUrl(uri: string, country: string, transportModeUrlName: string): string {
-    return `${uri}/${country}/time-filter/fast/${transportModeUrlName}`;
+    return `${uri}/${country.toLowerCase()}/time-filter/fast/${transportModeUrlName}`;
   }
 
   private buildDeltas(departure: Coords, destinations: Array<Coords>) {
@@ -235,7 +235,7 @@ export class TravelTimeProtoClient {
   }
 
   private buildGeohashRequestUrl(uri: string, country: string, transportModeUrlName: string): string {
-    return `${uri}/${country}/geohash/fast/${transportModeUrlName}`;
+    return `${uri}/${country.toLowerCase()}/geohash/fast/${transportModeUrlName}`;
   }
 
   private buildGeohashProtoRequest(request: GeohashFastProtoRequest, uri: string): { requestMessage: Record<string, any>, requestUrl: string } {
