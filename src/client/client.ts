@@ -318,8 +318,11 @@ export class TravelTimeClient {
   };
 
   setCredentials = (credentials: Credentials) => {
+    if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.apiKey = credentials.apiKey;
     this.applicationId = credentials.applicationId;
+    this.axiosInstance.defaults.headers.common['X-Application-Id'] = credentials.applicationId;
+    this.axiosInstance.defaults.headers.common['X-Api-Key'] = credentials.apiKey;
   };
 
   h3 = async (body: H3Request) => this
