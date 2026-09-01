@@ -61,6 +61,21 @@ export type TransportationFastRequestCommons = {
    * Can only be specified with `driving+ferry` and `driving` transportation types.
    */
   'traffic_model'?: TrafficModelFast
+  /**
+   * Maximum time spent walking, in seconds.
+   * Can only be specified with `public_transport` and `driving+public_transport` transportation types.
+   */
+  'walking_time'?: number
+  /**
+   * Maximum time spent driving to the station, in seconds.
+   * Can only be specified with the `driving+public_transport` transportation type.
+   */
+  'driving_time_to_station'?: number
+  /**
+   * Time spent parking, in seconds.
+   * Can only be specified with the `driving+public_transport` transportation type.
+   */
+  'parking_time'?: number
 }
 
 export type TransportationNoPtRequestCommons = {
