@@ -28,6 +28,20 @@ describe('TravelTimeProtoClient request path', () => {
     expect(post.mock.calls[0][0]).toBe('http://proxy.example/API/v3/us/time-filter/fast/driving');
   });
 
+  it('sends cycling requests to the cycling path', async () => {
+    const { client, post } = stubbedClient();
+
+    await client.timeFilterFast({
+      country: 'us' as TimeFilterFastProtoCountry,
+      departureLocation,
+      destinationCoordinates: [{ lat: 51.51, lng: -0.14 }],
+      transportation: 'cycling',
+      travelTime: 900,
+    });
+
+    expect(post.mock.calls[0][0]).toBe('http://proto.api.traveltimeapp.com/api/v3/us/time-filter/fast/cycling');
+  });
+
   it('lowercases the country in geohash paths', async () => {
     const { client, post } = stubbedClient();
 

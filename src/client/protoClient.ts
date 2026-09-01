@@ -63,7 +63,7 @@ export class TravelTimeProtoClient {
     'driving+pt': { code: 2, urlName: 'pt' },
     driving: { code: 1, urlName: 'driving' },
     walking: { code: 4, urlName: 'walking' },
-    cycling: { code: 5, urlName: 'driving' },
+    cycling: { code: 5, urlName: 'cycling' },
     'driving+ferry': { code: 3, urlName: 'driving+ferry' },
     'cycling+ferry': { code: 6, urlName: 'cycling+ferry' },
     'walking+ferry': { code: 7, urlName: 'walking+ferry' },
