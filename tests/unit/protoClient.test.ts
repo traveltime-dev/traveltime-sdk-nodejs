@@ -56,3 +56,21 @@ describe('TravelTimeProtoClient request path', () => {
     expect(post.mock.calls[0][0]).toBe('https://proto.api.traveltimeapp.com/api/v3/us/geohash/fast/driving');
   });
 });
+
+describe('TravelTimeProtoClient geohash request message', () => {
+  it('includes removeWaterBodies only when set', () => {
+    const { client } = stubbedClient();
+    const build = (extra?: object) => (client as any).buildGeohashProtoRequest({
+      country: 'uk',
+      departureLocation,
+      transportation: 'driving+ferry',
+      travelTime: 900,
+      resolution: 6,
+      ...extra,
+    }, 'http://x').requestMessage.oneToManyRequest;
+
+    expect(build()).not.toHaveProperty('removeWaterBodies');
+    expect(build({ removeWaterBodies: false }).removeWaterBodies).toBe(false);
+    expect(build({ removeWaterBodies: true }).removeWaterBodies).toBe(true);
+  });
+});

@@ -240,7 +240,7 @@ export class TravelTimeProtoClient {
 
   private buildGeohashProtoRequest(request: GeohashFastProtoRequest, uri: string): { requestMessage: Record<string, any>, requestUrl: string } {
     const {
-      country, departureLocation, arrivalLocation, transportation, travelTime, resolution, properties,
+      country, departureLocation, arrivalLocation, transportation, travelTime, resolution, properties, removeWaterBodies,
     } = request;
 
     if (!departureLocation && !arrivalLocation) {
@@ -272,6 +272,7 @@ export class TravelTimeProtoClient {
         travelTime,
         resolution,
         properties: protoProperties,
+        ...(removeWaterBodies !== undefined && { removeWaterBodies }),
       };
     } else {
       requestMessage.manyToOneRequest = {
@@ -281,6 +282,7 @@ export class TravelTimeProtoClient {
         travelTime,
         resolution,
         properties: protoProperties,
+        ...(removeWaterBodies !== undefined && { removeWaterBodies }),
       };
     }
 
