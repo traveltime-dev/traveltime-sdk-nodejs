@@ -112,3 +112,39 @@ export interface GeohashFastProtoResponseError {
 }
 
 export type GeohashFastProtoResponse = GeohashFastProtoResponseProperties | GeohashFastProtoResponseError
+
+export type H3FastProtoTransportation = TimeFilterFastProtoTransportation;
+export type H3FastProtoCountry = TimeFilterFastProtoCountry;
+
+export type H3FastProtoCellProperty = 'min' | 'max' | 'mean';
+
+export interface H3FastProtoRequest {
+  country: H3FastProtoCountry
+  departureLocation?: Coords,
+  arrivalLocation?: Coords,
+  transportation: H3FastProtoTransportation | DetailedTransportation,
+  travelTime: number,
+  resolution: number,
+  properties?: Array<H3FastProtoCellProperty>,
+  removeWaterBodies?: boolean,
+}
+
+export interface H3FastProtoResponseProperties {
+  cells: {
+    /**
+     * H3 cell indices in their 15-character hexadecimal form.
+     */
+    ids: Array<string>,
+    minTravelTimes?: Array<number>,
+    maxTravelTimes?: Array<number>,
+    meanTravelTimes?: Array<number>,
+  }
+}
+
+export interface H3FastProtoResponseError {
+  error: {
+    type: string
+  }
+}
+
+export type H3FastProtoResponse = H3FastProtoResponseProperties | H3FastProtoResponseError

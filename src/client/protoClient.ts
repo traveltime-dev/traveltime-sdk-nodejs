@@ -8,6 +8,8 @@ import {
   GeohashFastProtoCellProperty,
   GeohashFastProtoRequest,
   GeohashFastProtoResponse,
+  H3FastProtoRequest,
+  H3FastProtoResponse,
   TimeFilterFastProtoDistanceRequest, TimeFilterFastProtoRequest, TimeFilterFastProtoResponse, TimeFilterFastProtoTransportation,
 } from '../types/proto';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
@@ -79,6 +81,8 @@ export class TravelTimeProtoClient {
   private TimeFilterFastResponse: protobuf.Type;
   private GeohashFastRequest: protobuf.Type;
   private GeohashFastResponse: protobuf.Type;
+  private H3FastRequest: protobuf.Type;
+  private H3FastResponse: protobuf.Type;
 
   constructor(
     credentials: Credentials,
@@ -109,6 +113,8 @@ export class TravelTimeProtoClient {
     this.TimeFilterFastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.TimeFilterFastResponse');
     this.GeohashFastRequest = root.lookupType('com.igeolise.traveltime.rabbitmq.requests.GeohashFastRequest');
     this.GeohashFastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.GeohashFastResponse');
+    this.H3FastRequest = root.lookupType('com.igeolise.traveltime.rabbitmq.requests.H3FastRequest');
+    this.H3FastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.H3FastResponse');
   }
 
   private isDetailedTransportation(transport: any): transport is DetailedTransportation {
@@ -239,11 +245,11 @@ export class TravelTimeProtoClient {
     };
   }
 
-  private buildGeohashRequestUrl(uri: string, country: string, transportModeUrlName: string): string {
-    return `${uri}/${country.toLowerCase()}/geohash/fast/${transportModeUrlName}`;
+  private buildCellRequestUrl(uri: string, country: string, transportModeUrlName: string, endpoint: 'geohash' | 'h3'): string {
+    return `${uri}/${country.toLowerCase()}/${endpoint}/fast/${transportModeUrlName}`;
   }
 
-  private buildGeohashProtoRequest(request: GeohashFastProtoRequest, uri: string): { requestMessage: Record<string, any>, requestUrl: string } {
+  private buildCellProtoRequest(request: GeohashFastProtoRequest | H3FastProtoRequest, uri: string, endpoint: 'geohash' | 'h3'): { requestMessage: Record<string, any>, requestUrl: string } {
     const {
       country, departureLocation, arrivalLocation, transportation, travelTime, resolution, properties, removeWaterBodies,
     } = request;
@@ -287,7 +293,7 @@ export class TravelTimeProtoClient {
       requestMessage.manyToOneRequest = { arrivalLocation, ...searchMessage };
     }
 
-    const requestUrl = this.buildGeohashRequestUrl(uri, country, transportationConfig.urlName);
+    const requestUrl = this.buildCellRequestUrl(uri, country, transportationConfig.urlName, endpoint);
 
     return { requestMessage, requestUrl };
   }
@@ -299,6 +305,8 @@ export class TravelTimeProtoClient {
         `${this.protoFileDir}/TimeFilterFastResponse.proto`,
         `${this.protoFileDir}/GeohashFastRequest.proto`,
         `${this.protoFileDir}/GeohashFastResponse.proto`,
+        `${this.protoFileDir}/H3FastRequest.proto`,
+        `${this.protoFileDir}/H3FastResponse.proto`,
       ]);
     } catch {
       throw new Error(`Could not load proto file at: ${this.protoFileDir}`);
@@ -331,7 +339,7 @@ export class TravelTimeProtoClient {
     uri: string,
     request: GeohashFastProtoRequest,
   ): Promise<GeohashFastProtoResponse> {
-    const { requestMessage, requestUrl } = this.buildGeohashProtoRequest(request, uri);
+    const { requestMessage, requestUrl } = this.buildCellProtoRequest(request, uri, 'geohash');
     const message = this.GeohashFastRequest.create(requestMessage);
     const buffer = this.GeohashFastRequest.encode(message).finish();
 
@@ -348,6 +356,31 @@ export class TravelTimeProtoClient {
     return response.toJSON() as GeohashFastProtoResponse;
   }
 
+  private async handleH3ProtoFile(
+    uri: string,
+    request: H3FastProtoRequest,
+  ): Promise<H3FastProtoResponse> {
+    const { requestMessage, requestUrl } = this.buildCellProtoRequest(request, uri, 'h3');
+    const message = this.H3FastRequest.create(requestMessage);
+    const buffer = this.H3FastRequest.encode(message).finish();
+
+    const rq = () => this.axiosInstance.post(requestUrl, buffer);
+
+    const promise = this.rateLimiter.isEnabled()
+      ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
+        this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
+      })
+      : rq();
+
+    const { data } = await promise;
+    const response = this.H3FastResponse.decode(data);
+    const json = response.toJSON() as any;
+    if (json.cells?.ids) {
+      json.cells.ids = json.cells.ids.map((id: string) => BigInt(id).toString(16));
+    }
+    return json as H3FastProtoResponse;
+  }
+
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(this.baseURL, request);
 
   timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.handleProtoFile(this.baseURL, request, { useDistance: true });
@@ -355,6 +388,8 @@ export class TravelTimeProtoClient {
   timeFilterFastFares = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(this.baseURL, request, { useFares: true });
 
   geohashFast = async (request: GeohashFastProtoRequest) => this.handleGeohashProtoFile(this.baseURL, request);
+
+  h3Fast = async (request: H3FastProtoRequest) => this.handleH3ProtoFile(this.baseURL, request);
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
     this.rateLimiter.setRateLimitSettings(settings);
