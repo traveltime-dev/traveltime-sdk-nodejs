@@ -86,6 +86,7 @@ export interface GeohashFastProtoRequest {
   travelTime: number,
   resolution: number,
   properties?: Array<GeohashFastProtoCellProperty>,
+  removeWaterBodies?: boolean,
 }
 
 export interface GeohashFastProtoResponseProperties {

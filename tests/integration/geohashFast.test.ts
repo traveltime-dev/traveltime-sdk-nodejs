@@ -20,6 +20,27 @@ describe('geohashFast', () => {
     expect(response.results[0].cells.length).toBeGreaterThan(0);
   });
 
+  it('should handle remove_water_bodies', async () => {
+    const cells = async (removeWaterBodies: boolean) => {
+      const response = await client.geohashFast({
+        resolution: 6,
+        properties: ['min'],
+        arrival_searches: {
+          one_to_many: [{
+            id: 'geohash fast water bodies',
+            coords: { lat: 51.508, lng: -0.087 },
+            arrival_time_period: 'weekday_morning',
+            travel_time: 1800,
+            transportation: { type: 'driving+ferry' },
+            remove_water_bodies: removeWaterBodies,
+          }],
+        },
+      });
+      return response.results[0].cells.length;
+    };
+    expect(await cells(false)).toBeGreaterThan(await cells(true));
+  });
+
   it('should handle many-to-one search', async () => {
     const response = await client.geohashFast({
       resolution: 5,
