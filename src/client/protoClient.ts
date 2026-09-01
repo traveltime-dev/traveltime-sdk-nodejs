@@ -264,22 +264,26 @@ export class TravelTimeProtoClient {
 
     const requestMessage: Record<string, any> = {};
 
-    const searchMessage: Record<string, any> = {
-      transportation: transportationMessage,
-      arrivalTimePeriod: 0,
-      travelTime,
-      resolution,
-      properties: protoProperties,
-    };
-
-    if (removeWaterBodies !== undefined) {
-      searchMessage.removeWaterBodies = removeWaterBodies;
-    }
-
     if (departureLocation) {
-      requestMessage.oneToManyRequest = { departureLocation, ...searchMessage };
+      requestMessage.oneToManyRequest = {
+        departureLocation,
+        transportation: transportationMessage,
+        arrivalTimePeriod: 0,
+        travelTime,
+        resolution,
+        properties: protoProperties,
+        ...(removeWaterBodies !== undefined && { removeWaterBodies }),
+      };
     } else {
-      requestMessage.manyToOneRequest = { arrivalLocation, ...searchMessage };
+      requestMessage.manyToOneRequest = {
+        arrivalLocation,
+        transportation: transportationMessage,
+        arrivalTimePeriod: 0,
+        travelTime,
+        resolution,
+        properties: protoProperties,
+        ...(removeWaterBodies !== undefined && { removeWaterBodies }),
+      };
     }
 
     const requestUrl = this.buildGeohashRequestUrl(uri, country, transportationConfig.urlName);
