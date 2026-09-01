@@ -366,7 +366,12 @@ export class TravelTimeProtoClient {
   };
 
   setCredentials = (credentials: Credentials) => {
+    if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
     this.apiKey = credentials.apiKey;
     this.applicationId = credentials.applicationId;
+    this.axiosInstance.defaults.auth = {
+      username: credentials.applicationId,
+      password: credentials.apiKey,
+    };
   };
 }
