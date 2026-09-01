@@ -352,7 +352,7 @@ export class TravelTimeProtoClient {
   geohashFast = async (request: GeohashFastProtoRequest) => this.handleGeohashProtoFile(this.baseURL, request);
 
   setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
-    this.setRateLimitSettings(settings);
+    this.rateLimiter.setRateLimitSettings(settings);
   };
 
   getBaseURL = () => this.baseURL;
