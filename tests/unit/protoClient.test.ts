@@ -39,7 +39,7 @@ describe('TravelTimeProtoClient request path', () => {
       travelTime: 900,
     });
 
-    expect(post.mock.calls[0][0]).toBe('http://proto.api.traveltimeapp.com/api/v3/us/time-filter/fast/cycling');
+    expect(post.mock.calls[0][0]).toBe('https://proto.api.traveltimeapp.com/api/v3/us/time-filter/fast/cycling');
   });
 
   it('lowercases the country in geohash paths', async () => {
@@ -53,6 +53,6 @@ describe('TravelTimeProtoClient request path', () => {
       resolution: 6,
     });
 
-    expect(post.mock.calls[0][0]).toBe('http://proto.api.traveltimeapp.com/api/v3/us/geohash/fast/driving');
+    expect(post.mock.calls[0][0]).toBe('https://proto.api.traveltimeapp.com/api/v3/us/geohash/fast/driving');
   });
 });
