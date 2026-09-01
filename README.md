@@ -779,6 +779,12 @@ travelTimeProtoClient.timeFilterFast(requestData)
   .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
 ```
 
+#### Distance and fares variants
+
+Two sibling methods take the same request shape and return extra properties alongside `travelTimes`:
+* `timeFilterFastDistance` also returns `distances`. Transportation is limited to non-public-transport modes.
+* `timeFilterFastFares` also returns `monthlyFares`.
+
 See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`http_status`, `error_code`, `description`, `details`) from proto endpoints.
 
 #### Transportation Details
