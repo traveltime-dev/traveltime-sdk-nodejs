@@ -842,6 +842,7 @@ Body attributes:
 * travelTime: Time limit.
 * resolution: Geohash resolution (cell size).
 * properties: Optional array of cell properties to return — any of `'min'`, `'max'`, `'mean'`.
+* removeWaterBodies: Optional boolean. When true (the service default), returned cells will not cover large nearby water bodies.
 
 ```ts
 import { TravelTimeError, TravelTimeProtoClient, GeohashFastProtoRequest } from 'traveltime-api';
@@ -864,6 +865,48 @@ const requestData: GeohashFastProtoRequest = {
 };
 
 travelTimeProtoClient.geohashFast(requestData)
+  .then((data) => console.log(data))
+  .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
+```
+
+The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`http_status`, `error_code`, `description`, `details`) from proto endpoints.
+
+### [H3 Fast (Proto)](https://docs.traveltime.com/api/start/h3-proto)
+A fast version of H3 communicating using [protocol buffers](https://github.com/protocolbuffers/protobuf).
+
+Body attributes:
+* country: Return the results that are within the specified country.
+* departureLocation: Point of departure. Mutually exclusive with `arrivalLocation`.
+* arrivalLocation: Arrival point. Mutually exclusive with `departureLocation`.
+* transportation: Transportation type (literal) or type with details (object) for "pt" and "driving+pt" types. Matches the Time Filter Fast (Proto) shape above.
+* travelTime: Time limit.
+* resolution: H3 resolution (cell size).
+* properties: Optional array of cell properties to return — any of `'min'`, `'max'`, `'mean'`.
+* removeWaterBodies: Optional boolean. When true (the service default), returned cells will not cover large nearby water bodies.
+
+Cell ids are returned in their 15-character hexadecimal H3 form.
+
+```ts
+import { TravelTimeError, TravelTimeProtoClient, H3FastProtoRequest } from 'traveltime-api';
+
+const travelTimeProtoClient = new TravelTimeProtoClient({
+  apiKey: 'YOUR_APP_KEY',
+  applicationId: 'YOUR_APP_ID',
+});
+
+const requestData: H3FastProtoRequest = {
+  country: 'uk',
+  departureLocation: {
+    lat: 51.508930,
+    lng: -0.131387,
+  },
+  transportation: 'driving+ferry',
+  travelTime: 7200,
+  resolution: 7,
+  properties: ['mean'],
+};
+
+travelTimeProtoClient.h3Fast(requestData)
   .then((data) => console.log(data))
   .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
 ```

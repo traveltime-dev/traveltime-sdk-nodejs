@@ -60,14 +60,14 @@ describe('TravelTimeProtoClient request path', () => {
 describe('TravelTimeProtoClient geohash request message', () => {
   it('includes removeWaterBodies only when set', () => {
     const { client } = stubbedClient();
-    const build = (extra?: object) => (client as any).buildGeohashProtoRequest({
+    const build = (extra?: object) => (client as any).buildCellProtoRequest({
       country: 'uk',
       departureLocation,
       transportation: 'driving+ferry',
       travelTime: 900,
       resolution: 6,
       ...extra,
-    }, 'http://x').requestMessage.oneToManyRequest;
+    }, 'http://x', 'geohash').requestMessage.oneToManyRequest;
 
     expect(build()).not.toHaveProperty('removeWaterBodies');
     expect(build({ removeWaterBodies: false }).removeWaterBodies).toBe(false);
@@ -89,5 +89,21 @@ describe('TravelTimeProtoClient time filter properties', () => {
     expect(build()).toBeUndefined();
     expect(build({ useFares: true })).toEqual([0]);
     expect(build({ useDistance: true })).toEqual([1]);
+  });
+});
+
+describe('TravelTimeProtoClient h3 request path', () => {
+  it('builds h3 paths', async () => {
+    const { client, post } = stubbedClient();
+
+    await client.h3Fast({
+      country: 'UK' as any,
+      departureLocation,
+      transportation: 'driving+ferry',
+      travelTime: 900,
+      resolution: 7,
+    });
+
+    expect(post.mock.calls[0][0]).toBe('https://proto.api.traveltimeapp.com/api/v3/uk/h3/fast/driving+ferry');
   });
 });
