@@ -74,3 +74,20 @@ describe('TravelTimeProtoClient geohash request message', () => {
     expect(build({ removeWaterBodies: true }).removeWaterBodies).toBe(true);
   });
 });
+
+describe('TravelTimeProtoClient time filter properties', () => {
+  it('sets the fares property only for the fares request', () => {
+    const { client } = stubbedClient();
+    const build = (options?: object) => (client as any).buildProtoRequest({
+      country: 'uk',
+      departureLocation,
+      destinationCoordinates: [{ lat: 51.51, lng: -0.14 }],
+      transportation: 'pt',
+      travelTime: 900,
+    }, 'http://x', options).requestMessage.oneToManyRequest.properties;
+
+    expect(build()).toBeUndefined();
+    expect(build({ useFares: true })).toEqual([0]);
+    expect(build({ useDistance: true })).toEqual([1]);
+  });
+});

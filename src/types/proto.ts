@@ -65,13 +65,20 @@ export interface TimeFilterFastProtoDistanceResponseProperties {
   }
 }
 
+export interface TimeFilterFastProtoFaresResponseProperties {
+  properties: {
+    travelTimes: Array<number>,
+    monthlyFares: Array<number>
+  }
+}
+
 export interface TimeFilterFastProtoResponseError {
   error: {
     type: string
   }
 }
 
-export type TimeFilterFastProtoResponse = TimeFilterFastProtoResponseProperties | TimeFilterFastProtoDistanceResponseProperties | TimeFilterFastProtoResponseError
+export type TimeFilterFastProtoResponse = TimeFilterFastProtoResponseProperties | TimeFilterFastProtoDistanceResponseProperties | TimeFilterFastProtoFaresResponseProperties | TimeFilterFastProtoResponseError
 
 export type GeohashFastProtoTransportation = TimeFilterFastProtoTransportation;
 export type GeohashFastProtoCountry = TimeFilterFastProtoCountry;

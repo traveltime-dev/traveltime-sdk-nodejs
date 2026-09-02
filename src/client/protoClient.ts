@@ -40,6 +40,7 @@ const defaultHttpAgent = new HttpAgent({ keepAlive: true, maxSockets: 100 });
 
 interface ProtoRequestBuildOptions {
   useDistance?: boolean
+  useFares?: boolean
 }
 
 interface TransportationConfig {
@@ -212,6 +213,10 @@ export class TravelTimeProtoClient {
 
     const protoTransportationDetails = this.extractTransportationDetails(transportation, transportationMode);
 
+    const protoProperties: Array<number> = [];
+    if (options?.useFares) protoProperties.push(0);
+    if (options?.useDistance) protoProperties.push(1);
+
     const requestMessage = {
       oneToManyRequest: {
         departureLocation,
@@ -222,7 +227,7 @@ export class TravelTimeProtoClient {
         },
         arrivalTimePeriod: 0 as const,
         travelTime,
-        properties: options?.useDistance ? [1] : undefined,
+        properties: protoProperties.length > 0 ? protoProperties : undefined,
       },
     };
 
@@ -346,6 +351,8 @@ export class TravelTimeProtoClient {
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(this.baseURL, request);
 
   timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.handleProtoFile(this.baseURL, request, { useDistance: true });
+
+  timeFilterFastFares = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(this.baseURL, request, { useFares: true });
 
   geohashFast = async (request: GeohashFastProtoRequest) => this.handleGeohashProtoFile(this.baseURL, request);
 
