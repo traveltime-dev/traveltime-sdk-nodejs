@@ -727,8 +727,9 @@ A fast version of time filter communicating using [protocol buffers](https://git
 
 Body attributes:
 * country: Return the results that are within the specified country.
-* departureLocation: Point of departure.
-* destinationCoordinates: Destination points. Cannot be more than 200,000.
+* departureLocation: Point of departure for a one-to-many search. Mutually exclusive with `arrivalLocation`.
+* arrivalLocation: Arrival point for a many-to-one search, where `destinationCoordinates` are the departure points. Mutually exclusive with `departureLocation`.
+* destinationCoordinates: The many points of the search. Cannot be more than 200,000.
 * transportation: Transportation type (literal) or type with details (object) for "pt" and "driving+pt" types.
 * travelTime: Time limit.
 

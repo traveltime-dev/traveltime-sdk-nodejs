@@ -38,7 +38,15 @@ export type DetailedTransportation =
 
 export interface TimeFilterFastProtoRequest {
   country: TimeFilterFastProtoCountry
-  departureLocation: Coords,
+  /**
+   * Origin of a one-to-many search. Mutually exclusive with `arrivalLocation`.
+   */
+  departureLocation?: Coords,
+  /**
+   * Destination of a many-to-one search, where `destinationCoordinates` are the departure points.
+   * Mutually exclusive with `departureLocation`.
+   */
+  arrivalLocation?: Coords,
   destinationCoordinates: Array<Coords>,
   transportation: TimeFilterFastProtoTransportation | DetailedTransportation,
   travelTime: number,
@@ -46,7 +54,15 @@ export interface TimeFilterFastProtoRequest {
 
 export interface TimeFilterFastProtoDistanceRequest {
   country: TimeFilterFastProtoDistanceCountry
-  departureLocation: Coords,
+  /**
+   * Origin of a one-to-many search. Mutually exclusive with `arrivalLocation`.
+   */
+  departureLocation?: Coords,
+  /**
+   * Destination of a many-to-one search, where `destinationCoordinates` are the departure points.
+   * Mutually exclusive with `departureLocation`.
+   */
+  arrivalLocation?: Coords,
   destinationCoordinates: Array<Coords>,
   transportation: TimeFilterFastProtoDistanceTransportation,
   travelTime: number,

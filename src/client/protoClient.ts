@@ -14,25 +14,29 @@ import {
 } from '../types/proto';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
 
-interface TimeFilterFastProtoMessage {
-  oneToManyRequest: {
-    departureLocation: Coords
-    locationDeltas: Array<number>,
-    transportation: {
-      type: number,
-      publicTransport?: {
-        walkingTimeToStation?: number
-      },
-      drivingAndPublicTransport?: {
-        walkingTimeToStation?: number,
-        drivingTimeToStation?: number,
-        parkingTime?: number
-      }
+interface TimeFilterFastProtoSearch {
+  departureLocation?: Coords
+  arrivalLocation?: Coords
+  locationDeltas: Array<number>,
+  transportation: {
+    type: number,
+    publicTransport?: {
+      walkingTimeToStation?: number
     },
-    arrivalTimePeriod: 0,
-    travelTime: number,
-    properties?: Array<number | undefined>,
-  }
+    drivingAndPublicTransport?: {
+      walkingTimeToStation?: number,
+      drivingTimeToStation?: number,
+      parkingTime?: number
+    }
+  },
+  arrivalTimePeriod: 0,
+  travelTime: number,
+  properties?: Array<number | undefined>,
+}
+
+interface TimeFilterFastProtoMessage {
+  oneToManyRequest?: TimeFilterFastProtoSearch
+  manyToOneRequest?: TimeFilterFastProtoSearch
 }
 
 const DEFAULT_BASE_URL = 'https://proto.api.traveltimeapp.com/api/v3';
@@ -208,10 +212,18 @@ export class TravelTimeProtoClient {
   private buildProtoRequest({
     country,
     departureLocation,
+    arrivalLocation,
     destinationCoordinates,
     transportation,
     travelTime,
   }: TimeFilterFastProtoRequest, uri: string, options?: ProtoRequestBuildOptions): TimeFilterProtoMessageWithUrl {
+    if (!departureLocation && !arrivalLocation) {
+      throw new Error('Either departureLocation or arrivalLocation must be provided');
+    }
+    if (departureLocation && arrivalLocation) {
+      throw new Error('Only one of departureLocation or arrivalLocation can be provided');
+    }
+
     const transportationMode = this.extractTransportationMode(transportation);
     this.validateTransportationMode(transportationMode);
 
@@ -223,19 +235,22 @@ export class TravelTimeProtoClient {
     if (options?.useFares) protoProperties.push(0);
     if (options?.useDistance) protoProperties.push(1);
 
-    const requestMessage = {
-      oneToManyRequest: {
-        departureLocation,
-        locationDeltas: this.buildDeltas(departureLocation, destinationCoordinates),
-        transportation: {
-          type: transportationConfig.code,
-          ...protoTransportationDetails,
-        },
-        arrivalTimePeriod: 0 as const,
-        travelTime,
-        properties: protoProperties.length > 0 ? protoProperties : undefined,
+    const origin = departureLocation ?? arrivalLocation as Coords;
+
+    const searchMessage: TimeFilterFastProtoSearch = {
+      locationDeltas: this.buildDeltas(origin, destinationCoordinates),
+      transportation: {
+        type: transportationConfig.code,
+        ...protoTransportationDetails,
       },
+      arrivalTimePeriod: 0 as const,
+      travelTime,
+      properties: protoProperties.length > 0 ? protoProperties : undefined,
     };
+
+    const requestMessage: TimeFilterFastProtoMessage = departureLocation
+      ? { oneToManyRequest: { departureLocation, ...searchMessage } }
+      : { manyToOneRequest: { arrivalLocation, ...searchMessage } };
 
     const requestUrl = this.buildRequestUrl(uri, country, transportationConfig.urlName);
 
