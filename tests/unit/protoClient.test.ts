@@ -107,3 +107,27 @@ describe('TravelTimeProtoClient h3 request path', () => {
     expect(post.mock.calls[0][0]).toBe('https://proto.api.traveltimeapp.com/api/v3/uk/h3/fast/driving+ferry');
   });
 });
+
+describe('TravelTimeProtoClient time filter direction', () => {
+  const base = {
+    country: 'uk',
+    destinationCoordinates: [{ lat: 51.51, lng: -0.14 }],
+    transportation: 'pt',
+    travelTime: 900,
+  };
+
+  it('builds a manyToOneRequest for arrivalLocation', () => {
+    const { client } = stubbedClient();
+    const message = (client as any).buildProtoRequest({ ...base, arrivalLocation: departureLocation }, 'http://x').requestMessage;
+
+    expect(message.oneToManyRequest).toBeUndefined();
+    expect(message.manyToOneRequest.arrivalLocation).toEqual(departureLocation);
+    expect(message.manyToOneRequest.locationDeltas.length).toBe(2);
+  });
+
+  it('rejects zero or two locations', () => {
+    const { client } = stubbedClient();
+    expect(() => (client as any).buildProtoRequest(base, 'http://x')).toThrow('Either departureLocation or arrivalLocation must be provided');
+    expect(() => (client as any).buildProtoRequest({ ...base, departureLocation, arrivalLocation: departureLocation }, 'http://x')).toThrow('Only one of departureLocation or arrivalLocation can be provided');
+  });
+});
