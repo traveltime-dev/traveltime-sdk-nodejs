@@ -264,6 +264,7 @@ describe('error model', () => {
 
     it('should reject geohash proto requests with both departure and arrival locations', async () => {
       const client = new TravelTimeProtoClient({ apiKey: 'key', applicationId: 'app' });
+      // The type forbids sending both; the runtime guard still has to hold for JS callers.
       await expect(client.geohashFast({
         country: 'uk',
         departureLocation: { lat: 51.5, lng: -0.1 },
@@ -271,7 +272,7 @@ describe('error model', () => {
         transportation: 'driving',
         travelTime: 3600,
         resolution: 6,
-      })).rejects.toBeInstanceOf(TravelTimeValidationError);
+      } as any)).rejects.toBeInstanceOf(TravelTimeValidationError);
     });
 
     it('should reject a matrix request exceeding the max searches limit', async () => {

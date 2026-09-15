@@ -46,6 +46,12 @@ export type GeoGridFastRequestSearchBase<Centroid> = Snapping & {
   transportation: TransportationFastRequestCommons
   arrival_time_period : 'weekday_morning',
   travel_time: number,
+  /**
+   * true (default) - returned cells will not cover large nearby water bodies
+   *
+   * false - returned cells may cover nearby water bodies like large lakes, wide rivers and seas
+   */
+  remove_water_bodies?: boolean
 }
 
 export type GeohashCentroid = {

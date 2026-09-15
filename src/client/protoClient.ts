@@ -7,37 +7,46 @@ import {
   GeohashFastProtoCellProperty,
   GeohashFastProtoRequest,
   GeohashFastProtoResponse,
+  H3FastProtoRequest,
+  H3FastProtoResponse,
   TimeFilterFastProtoDistanceRequest, TimeFilterFastProtoRequest, TimeFilterFastProtoResponse, TimeFilterFastProtoTransportation,
 } from '../types/proto';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
 import { protoCountries } from './proto/countries';
 
-interface TimeFilterFastProtoMessage {
-  oneToManyRequest: {
-    departureLocation: Coords
-    locationDeltas: Array<number>,
-    transportation: {
-      type: number,
-      publicTransport?: {
-        walkingTimeToStation?: number
-      },
-      drivingAndPublicTransport?: {
-        walkingTimeToStation?: number,
-        drivingTimeToStation?: number,
-        parkingTime?: number
-      }
+interface TimeFilterFastProtoSearch {
+  departureLocation?: Coords
+  arrivalLocation?: Coords
+  locationDeltas: Array<number>,
+  transportation: {
+    type: number,
+    publicTransport?: {
+      walkingTimeToStation?: number
     },
-    arrivalTimePeriod: 0,
-    travelTime: number,
-    properties?: Array<number | undefined>,
-  }
+    drivingAndPublicTransport?: {
+      walkingTimeToStation?: number,
+      drivingTimeToStation?: number,
+      parkingTime?: number
+    }
+  },
+  arrivalTimePeriod: 0,
+  travelTime: number,
+  properties?: Array<number | undefined>,
+}
+
+interface TimeFilterFastProtoMessage {
+  oneToManyRequest?: TimeFilterFastProtoSearch
+  manyToOneRequest?: TimeFilterFastProtoSearch
 }
 
 const DEFAULT_BASE_URL = 'https://proto.api.traveltimeapp.com/api/v3';
 
 interface ProtoRequestBuildOptions {
   useDistance?: boolean
+  useFares?: boolean
 }
+
+type CellEndpoint = 'geohash' | 'h3';
 
 interface TransportationConfig {
   code: number;
@@ -57,7 +66,7 @@ export class TravelTimeProtoClient {
     'driving+pt': { code: 2, urlName: 'pt' },
     driving: { code: 1, urlName: 'driving' },
     walking: { code: 4, urlName: 'walking' },
-    cycling: { code: 5, urlName: 'driving' },
+    cycling: { code: 5, urlName: 'cycling' },
     'driving+ferry': { code: 3, urlName: 'driving+ferry' },
     'cycling+ferry': { code: 6, urlName: 'cycling+ferry' },
     'walking+ferry': { code: 7, urlName: 'walking+ferry' },
@@ -72,6 +81,8 @@ export class TravelTimeProtoClient {
   private TimeFilterFastResponse: protobuf.Type;
   private GeohashFastRequest: protobuf.Type;
   private GeohashFastResponse: protobuf.Type;
+  private H3FastRequest: protobuf.Type;
+  private H3FastResponse: protobuf.Type;
 
   constructor(
     credentials: Credentials,
@@ -103,6 +114,8 @@ export class TravelTimeProtoClient {
     this.TimeFilterFastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.TimeFilterFastResponse');
     this.GeohashFastRequest = root.lookupType('com.igeolise.traveltime.rabbitmq.requests.GeohashFastRequest');
     this.GeohashFastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.GeohashFastResponse');
+    this.H3FastRequest = root.lookupType('com.igeolise.traveltime.rabbitmq.requests.H3FastRequest');
+    this.H3FastResponse = root.lookupType('com.igeolise.traveltime.rabbitmq.responses.H3FastResponse');
   }
 
   private isDetailedTransportation(transport: any): transport is DetailedTransportation {
@@ -136,9 +149,21 @@ export class TravelTimeProtoClient {
     }
   }
 
-  private validateCountry(country: string): void {
-    if (!(protoCountries as ReadonlyArray<string>).includes(country)) {
+  /** Returns the lowercased country to use in the request path. */
+  private validateCountry(country: string): string {
+    const normalized = country.toLowerCase();
+    if (!(protoCountries as ReadonlyArray<string>).includes(normalized)) {
       throw new TravelTimeValidationError(`Country "${country}" is not supported. Supported countries: ${protoCountries.join(', ')}`);
+    }
+    return normalized;
+  }
+
+  private validateSearchLocation(departureLocation?: Coords, arrivalLocation?: Coords): void {
+    if (!departureLocation && !arrivalLocation) {
+      throw new TravelTimeValidationError('Either departureLocation or arrivalLocation must be provided');
+    }
+    if (departureLocation && arrivalLocation) {
+      throw new TravelTimeValidationError('Only one of departureLocation or arrivalLocation can be provided');
     }
   }
 
@@ -202,11 +227,13 @@ export class TravelTimeProtoClient {
   private buildProtoRequest({
     country,
     departureLocation,
+    arrivalLocation,
     destinationCoordinates,
     transportation,
     travelTime,
   }: TimeFilterFastProtoRequest, options?: ProtoRequestBuildOptions): TimeFilterProtoMessageWithUrl {
-    this.validateCountry(country);
+    const normalizedCountry = this.validateCountry(country);
+    this.validateSearchLocation(departureLocation, arrivalLocation);
     const transportationMode = this.extractTransportationMode(transportation);
     this.validateTransportationMode(transportationMode);
 
@@ -214,21 +241,29 @@ export class TravelTimeProtoClient {
 
     const protoTransportationDetails = this.extractTransportationDetails(transportation, transportationMode);
 
-    const requestMessage = {
-      oneToManyRequest: {
-        departureLocation,
-        locationDeltas: this.buildDeltas(departureLocation, destinationCoordinates),
-        transportation: {
-          type: transportationConfig.code,
-          ...protoTransportationDetails,
-        },
-        arrivalTimePeriod: 0 as const,
-        travelTime,
-        properties: options?.useDistance ? [1] : undefined,
+    const protoProperties: Array<number> = [];
+    if (options?.useFares) protoProperties.push(0);
+    if (options?.useDistance) protoProperties.push(1);
+
+    // Deltas are encoded relative to whichever single location the search has.
+    const origin = (departureLocation ?? arrivalLocation) as Coords;
+
+    const searchMessage: TimeFilterFastProtoSearch = {
+      locationDeltas: this.buildDeltas(origin, destinationCoordinates),
+      transportation: {
+        type: transportationConfig.code,
+        ...protoTransportationDetails,
       },
+      arrivalTimePeriod: 0 as const,
+      travelTime,
+      properties: protoProperties.length > 0 ? protoProperties : undefined,
     };
 
-    const requestUrl = this.buildRequestUrl(country, transportationConfig.urlName);
+    const requestMessage: TimeFilterFastProtoMessage = departureLocation
+      ? { oneToManyRequest: { departureLocation, ...searchMessage } }
+      : { manyToOneRequest: { arrivalLocation, ...searchMessage } };
+
+    const requestUrl = this.buildRequestUrl(normalizedCountry, transportationConfig.urlName);
 
     return {
       requestMessage,
@@ -236,22 +271,20 @@ export class TravelTimeProtoClient {
     };
   }
 
-  private buildGeohashRequestUrl(country: string, transportModeUrlName: string): string {
-    return `/${country}/geohash/fast/${transportModeUrlName}`;
+  private buildCellRequestUrl(country: string, transportModeUrlName: string, endpoint: CellEndpoint): string {
+    return `/${country}/${endpoint}/fast/${transportModeUrlName}`;
   }
 
-  private buildGeohashProtoRequest(request: GeohashFastProtoRequest): { requestMessage: Record<string, any>, requestUrl: string } {
+  private buildCellProtoRequest(
+    request: GeohashFastProtoRequest | H3FastProtoRequest,
+    endpoint: CellEndpoint,
+  ): { requestMessage: Record<string, any>, requestUrl: string } {
     const {
-      country, departureLocation, arrivalLocation, transportation, travelTime, resolution, properties,
+      country, departureLocation, arrivalLocation, transportation, travelTime, resolution, properties, removeWaterBodies,
     } = request;
 
-    this.validateCountry(country);
-    if (!departureLocation && !arrivalLocation) {
-      throw new TravelTimeValidationError('Either departureLocation or arrivalLocation must be provided');
-    }
-    if (departureLocation && arrivalLocation) {
-      throw new TravelTimeValidationError('Only one of departureLocation or arrivalLocation can be provided');
-    }
+    const normalizedCountry = this.validateCountry(country);
+    this.validateSearchLocation(departureLocation, arrivalLocation);
 
     const transportationMode = this.extractTransportationMode(transportation);
     this.validateTransportationMode(transportationMode);
@@ -265,29 +298,24 @@ export class TravelTimeProtoClient {
       ...protoTransportationDetails,
     };
 
-    const requestMessage: Record<string, any> = {};
+    const searchMessage: Record<string, any> = {
+      transportation: transportationMessage,
+      arrivalTimePeriod: 0,
+      travelTime,
+      resolution,
+      properties: protoProperties,
+    };
 
-    if (departureLocation) {
-      requestMessage.oneToManyRequest = {
-        departureLocation,
-        transportation: transportationMessage,
-        arrivalTimePeriod: 0,
-        travelTime,
-        resolution,
-        properties: protoProperties,
-      };
-    } else {
-      requestMessage.manyToOneRequest = {
-        arrivalLocation,
-        transportation: transportationMessage,
-        arrivalTimePeriod: 0,
-        travelTime,
-        resolution,
-        properties: protoProperties,
-      };
+    // Left absent the API defaults this to `true`, so only send it when set.
+    if (removeWaterBodies !== undefined) {
+      searchMessage.removeWaterBodies = removeWaterBodies;
     }
 
-    const requestUrl = this.buildGeohashRequestUrl(country, transportationConfig.urlName);
+    const requestMessage: Record<string, any> = departureLocation
+      ? { oneToManyRequest: { departureLocation, ...searchMessage } }
+      : { manyToOneRequest: { arrivalLocation, ...searchMessage } };
+
+    const requestUrl = this.buildCellRequestUrl(normalizedCountry, transportationConfig.urlName, endpoint);
 
     return { requestMessage, requestUrl };
   }
@@ -299,6 +327,8 @@ export class TravelTimeProtoClient {
         `${this.protoFileDir}/TimeFilterFastResponse.proto`,
         `${this.protoFileDir}/GeohashFastRequest.proto`,
         `${this.protoFileDir}/GeohashFastResponse.proto`,
+        `${this.protoFileDir}/H3FastRequest.proto`,
+        `${this.protoFileDir}/H3FastResponse.proto`,
       ]);
     } catch {
       throw new Error(`Could not load proto file at: ${this.protoFileDir}`);
@@ -358,7 +388,7 @@ export class TravelTimeProtoClient {
     request: GeohashFastProtoRequest,
   ): Promise<GeohashFastProtoResponse> {
     try {
-      const { requestMessage, requestUrl } = this.buildGeohashProtoRequest(request);
+      const { requestMessage, requestUrl } = this.buildCellProtoRequest(request, 'geohash');
       const message = this.GeohashFastRequest.create(requestMessage);
       const buffer = this.GeohashFastRequest.encode(message).finish();
 
@@ -369,9 +399,33 @@ export class TravelTimeProtoClient {
     }
   }
 
+  private async handleH3ProtoFile(
+    request: H3FastProtoRequest,
+  ): Promise<H3FastProtoResponse> {
+    try {
+      const { requestMessage, requestUrl } = this.buildCellProtoRequest(request, 'h3');
+      const message = this.H3FastRequest.create(requestMessage);
+      const buffer = this.H3FastRequest.encode(message).finish();
+
+      const { body } = await this.send(requestUrl, buffer);
+      const decoded = this.decodeProtoResponse<H3FastProtoResponse>(this.H3FastResponse, body);
+      // The wire carries fixed64 cell indices; expose the 15-character hex form.
+      if (decoded.cells?.ids) {
+        decoded.cells.ids = decoded.cells.ids.map((id) => BigInt(id).toString(16));
+      }
+      return decoded;
+    } catch (error) {
+      throw TravelTimeError.from(error);
+    }
+  }
+
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(request);
 
   timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.handleProtoFile(request, { useDistance: true });
 
+  timeFilterFastFares = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(request, { useFares: true });
+
   geohashFast = async (request: GeohashFastProtoRequest) => this.handleGeohashProtoFile(request);
+
+  h3Fast = async (request: H3FastProtoRequest) => this.handleH3ProtoFile(request);
 }

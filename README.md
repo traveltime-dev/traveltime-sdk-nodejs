@@ -159,11 +159,17 @@ travelTimeClient.timeMap({
 
 ### [Isochrones (Time Map) Fast](https://docs.traveltime.com/api/reference/isochrones-fast)
 A very fast version of Isochrone API. However, the request parameters are much more limited.
+Find unions/intersections between different searches.
+
+Body attributes:
+* arrival_searches: Searches based on arrival times, split into `one_to_many` and `many_to_one`.
+* unions: Define unions of shapes that are results of previously defined searches.
+* intersections: Define intersections of shapes that are results of previously defined searches.
 
 ```typescript
-import { TimeMapFastRequestSearch } from 'traveltime-api';
+import { TimeMapFastRequestSearch, UnionOrIntersection } from 'traveltime-api';
 
-const arrival_search: TimeMapFastRequestSearch = {
+const publicTransportSearch: TimeMapFastRequestSearch = {
   id: 'public transport to Trafalgar Square',
   arrival_time_period: 'weekday_morning',
   travel_time: 900,
@@ -171,10 +177,30 @@ const arrival_search: TimeMapFastRequestSearch = {
   transportation: { type: 'public_transport' },
 };
 
+const drivingSearch: TimeMapFastRequestSearch = {
+  id: 'driving to Trafalgar Square',
+  arrival_time_period: 'weekday_morning',
+  travel_time: 900,
+  coords: { lat: 51.507609, lng: -0.128315 },
+  transportation: { type: 'driving' },
+};
+
+const union: UnionOrIntersection = {
+  id: 'union of driving and public transport',
+  search_ids: [drivingSearch.id, publicTransportSearch.id],
+};
+
+const intersection: UnionOrIntersection = {
+  id: 'intersection of driving and public transport',
+  search_ids: [drivingSearch.id, publicTransportSearch.id],
+};
+
 travelTimeClient.timeMapFast({
   arrival_searches: {
-    one_to_many: [arrival_search],
+    one_to_many: [publicTransportSearch, drivingSearch],
   },
+  unions: [union],
+  intersections: [intersection],
 }).then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
@@ -702,8 +728,9 @@ A fast version of time filter communicating using [protocol buffers](https://git
 
 Body attributes:
 * country: Return the results that are within the specified country.
-* departureLocation: Point of departure.
-* destinationCoordinates: Destination points. Cannot be more than 200,000.
+* departureLocation: Point of departure for a one-to-many search. Mutually exclusive with `arrivalLocation`.
+* arrivalLocation: Arrival point for a many-to-one search, where `destinationCoordinates` are the departure points. Mutually exclusive with `departureLocation`.
+* destinationCoordinates: The many points of the search. Cannot be more than 200,000.
 * transportation: Transportation type (literal) or type with details (object) for "pt" and "driving+pt" types.
 * travelTime: Time limit.
 
@@ -756,6 +783,12 @@ travelTimeProtoClient.timeFilterFast(requestData)
   .then((data) => console.log(data))
   .catch((e) => console.error(e));
 ```
+
+#### Distance and fares variants
+
+Two sibling methods take the same request shape and return extra properties alongside `travelTimes`:
+* `timeFilterFastDistance` also returns `distances`. Transportation is limited to non-public-transport modes.
+* `timeFilterFastFares` also returns `monthlyFares`.
 
 Proto endpoint failures are thrown as `TravelTimeError` instances with the proto error headers already mapped onto its fields. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`status`, `errorCode`, `description`, `details`) from proto endpoints.
 
@@ -814,6 +847,7 @@ Body attributes:
 * travelTime: Time limit.
 * resolution: Geohash resolution (cell size).
 * properties: Optional array of cell properties to return — any of `'min'`, `'max'`, `'mean'`.
+* removeWaterBodies: Optional boolean. When true (the service default), returned cells will not cover large nearby water bodies.
 
 ```ts
 import { TravelTimeProtoClient, GeohashFastProtoRequest } from 'traveltime-api';
@@ -838,6 +872,48 @@ const requestData: GeohashFastProtoRequest = {
 travelTimeProtoClient.geohashFast(requestData)
   .then((data) => console.log(data))
   .catch((e) => console.error(e));
+```
+
+The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`status`, `errorCode`, `description`, `details`) from proto endpoints.
+
+### [H3 Fast (Proto)](https://docs.traveltime.com/api/start/h3-proto)
+A fast version of H3 communicating using [protocol buffers](https://github.com/protocolbuffers/protobuf).
+
+Body attributes:
+* country: Return the results that are within the specified country.
+* departureLocation: Point of departure. Mutually exclusive with `arrivalLocation`.
+* arrivalLocation: Arrival point. Mutually exclusive with `departureLocation`.
+* transportation: Transportation type (literal) or type with details (object) for "pt" and "driving+pt" types. Matches the Time Filter Fast (Proto) shape above.
+* travelTime: Time limit.
+* resolution: H3 resolution (cell size).
+* properties: Optional array of cell properties to return — any of `'min'`, `'max'`, `'mean'`.
+* removeWaterBodies: Optional boolean. When true (the service default), returned cells will not cover large nearby water bodies.
+
+Cell ids are returned in their 15-character hexadecimal H3 form.
+
+```ts
+import { TravelTimeError, TravelTimeProtoClient, H3FastProtoRequest } from 'traveltime-api';
+
+const travelTimeProtoClient = new TravelTimeProtoClient({
+  apiKey: 'YOUR_APP_KEY',
+  applicationId: 'YOUR_APP_ID',
+});
+
+const requestData: H3FastProtoRequest = {
+  country: 'uk',
+  departureLocation: {
+    lat: 51.508930,
+    lng: -0.131387,
+  },
+  transportation: 'driving+ferry',
+  travelTime: 7200,
+  resolution: 7,
+  properties: ['mean'],
+};
+
+travelTimeProtoClient.h3Fast(requestData)
+  .then((data) => console.log(data))
+  .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
 ```
 
 The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`status`, `errorCode`, `description`, `details`) from proto endpoints.

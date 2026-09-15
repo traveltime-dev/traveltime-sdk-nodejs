@@ -25,6 +25,12 @@ export type DistanceMapRequestSearchBase = Snapping & {
    */
   render_mode?: 'approximate_time_filter' | 'road_buffering'
   buffer_distance?: number
+  /**
+   * true (default) - returned shapes will not cover large nearby water bodies
+   *
+   * false - returned shapes may cover nearby water bodies like large lakes, wide rivers and seas
+   */
+  remove_water_bodies?: boolean
 }
 
 export type DistanceMapRequestDepartureSearch = DistanceMapRequestSearchBase & {

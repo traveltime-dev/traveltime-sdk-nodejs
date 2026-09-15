@@ -36,17 +36,31 @@ export type DetailedTransportation =
   | { mode: 'pt', details?: PublicTransportDetails }
   | { mode: 'driving+pt', details?: DrivingAndPublicTransportDetails };
 
-export interface TimeFilterFastProtoRequest {
+/**
+ * Exactly one of `departureLocation` (one-to-many search) or `arrivalLocation`
+ * (many-to-one search) must be provided.
+ */
+export type ProtoLocation =
+  | { departureLocation: Coords, arrivalLocation?: never }
+  | { arrivalLocation: Coords, departureLocation?: never };
+
+export type TimeFilterFastProtoRequest = ProtoLocation & {
   country: TimeFilterFastProtoCountry
-  departureLocation: Coords,
+  /**
+   * The many points of the search. With `arrivalLocation` these are the departure points.
+   * Cannot be more than 200,000.
+   */
   destinationCoordinates: Array<Coords>,
   transportation: TimeFilterFastProtoTransportation | DetailedTransportation,
   travelTime: number,
 }
 
-export interface TimeFilterFastProtoDistanceRequest {
+export type TimeFilterFastProtoDistanceRequest = ProtoLocation & {
   country: TimeFilterFastProtoDistanceCountry
-  departureLocation: Coords,
+  /**
+   * The many points of the search. With `arrivalLocation` these are the departure points.
+   * Cannot be more than 200,000.
+   */
   destinationCoordinates: Array<Coords>,
   transportation: TimeFilterFastProtoDistanceTransportation,
   travelTime: number,
@@ -65,6 +79,13 @@ export interface TimeFilterFastProtoDistanceResponseProperties {
   }
 }
 
+export interface TimeFilterFastProtoFaresResponseProperties {
+  properties: {
+    travelTimes: Array<number>,
+    monthlyFares: Array<number>
+  }
+}
+
 export interface TimeFilterFastProtoResponseError {
   error: {
     /**
@@ -75,21 +96,20 @@ export interface TimeFilterFastProtoResponseError {
   }
 }
 
-export type TimeFilterFastProtoResponse = TimeFilterFastProtoResponseProperties | TimeFilterFastProtoDistanceResponseProperties | TimeFilterFastProtoResponseError
+export type TimeFilterFastProtoResponse = TimeFilterFastProtoResponseProperties | TimeFilterFastProtoDistanceResponseProperties | TimeFilterFastProtoFaresResponseProperties | TimeFilterFastProtoResponseError
 
 export type GeohashFastProtoTransportation = TimeFilterFastProtoTransportation;
 export type GeohashFastProtoCountry = TimeFilterFastProtoCountry;
 
 export type GeohashFastProtoCellProperty = 'min' | 'max' | 'mean';
 
-export interface GeohashFastProtoRequest {
+export type GeohashFastProtoRequest = ProtoLocation & {
   country: GeohashFastProtoCountry
-  departureLocation?: Coords,
-  arrivalLocation?: Coords,
   transportation: GeohashFastProtoTransportation | DetailedTransportation,
   travelTime: number,
   resolution: number,
   properties?: Array<GeohashFastProtoCellProperty>,
+  removeWaterBodies?: boolean,
 }
 
 export interface GeohashFastProtoResponseProperties {
@@ -102,3 +122,31 @@ export interface GeohashFastProtoResponseProperties {
 }
 
 export type GeohashFastProtoResponse = GeohashFastProtoResponseProperties
+
+export type H3FastProtoTransportation = TimeFilterFastProtoTransportation;
+export type H3FastProtoCountry = TimeFilterFastProtoCountry;
+
+export type H3FastProtoCellProperty = 'min' | 'max' | 'mean';
+
+export type H3FastProtoRequest = ProtoLocation & {
+  country: H3FastProtoCountry
+  transportation: H3FastProtoTransportation | DetailedTransportation,
+  travelTime: number,
+  resolution: number,
+  properties?: Array<H3FastProtoCellProperty>,
+  removeWaterBodies?: boolean,
+}
+
+export interface H3FastProtoResponseProperties {
+  cells: {
+    /**
+     * H3 cell indices in their 15-character hexadecimal form.
+     */
+    ids: Array<string>,
+    minTravelTimes?: Array<number>,
+    maxTravelTimes?: Array<number>,
+    meanTravelTimes?: Array<number>,
+  }
+}
+
+export type H3FastProtoResponse = H3FastProtoResponseProperties

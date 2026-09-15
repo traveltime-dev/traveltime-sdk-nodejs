@@ -17,6 +17,20 @@ describe('timeFilterProto', () => {
     { lat: 51.536067, lng: -0.153596 },
   ];
 
+  it('should handle many-to-one', async () => {
+    const response = await protoClient.timeFilterFast({
+      country: 'uk',
+      arrivalLocation: departure,
+      destinationCoordinates: destinations,
+      transportation: 'pt',
+      travelTime: 7200,
+    });
+    expect(hasProperties(response)).toBe(true);
+    if (hasProperties(response)) {
+      expect(response.properties.travelTimes.length).toBe(destinations.length);
+    }
+  });
+
   it('should handle public transport', async () => {
     const response = await protoClient.timeFilterFast({
       country: 'uk',
