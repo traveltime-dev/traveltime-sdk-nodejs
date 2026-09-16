@@ -20,10 +20,6 @@ export type TimeMapRequestSearchBase = Snapping & {
   properties?: Array<TimeMapRequestProperty>
   range?: RangeRequestNoMaxResults
   level_of_detail?: LevelOfDetail
-  /**
-   * @deprecated Use {@link TimeMapRequestSearchBase.polygons_filter} instead.
-   */
-  single_shape?: boolean
   polygons_filter?: PolygonsFilter
   no_holes?: boolean
   /**
@@ -34,10 +30,6 @@ export type TimeMapRequestSearchBase = Snapping & {
    * Default: true
    */
   remove_water_bodies?: boolean
-  /**
-   * @deprecated Use {@link TimeMapRequestSearchBase.snapping} instead.
-   */
-  snap_penalty?: 'enabled' | 'disabled'
   buffer_distance?: number
 }
 

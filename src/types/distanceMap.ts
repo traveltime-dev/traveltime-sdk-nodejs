@@ -14,10 +14,6 @@ export type DistanceMapRequestSearchBase = Snapping & {
   transportation: TransportationNoPtRequestCommons
   travel_distance: number
   level_of_detail?: LevelOfDetail
-  /**
-   * @deprecated Use {@link DistanceMapRequestSearchBase.polygons_filter} instead.
-   */
-  single_shape?: boolean
   polygons_filter?: PolygonsFilter
   no_holes?: boolean
   /**
