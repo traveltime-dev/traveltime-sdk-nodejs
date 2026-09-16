@@ -24,11 +24,10 @@ function isRetryableStatus(status: number | undefined): boolean {
   return status !== undefined && (status === 429 || status >= 500);
 }
 
-function isApiErrorPayload(payload: any): payload is TravelTimeApiErrorPayload {
-  return typeof payload === 'object'
-    && payload !== null
-    && typeof payload.error_code === 'number'
-    && typeof payload.description === 'string';
+function isApiErrorPayload(payload: unknown): payload is TravelTimeApiErrorPayload {
+  if (typeof payload !== 'object' || payload === null) return false;
+  const { error_code: errorCode, description } = payload as Record<string, unknown>;
+  return typeof errorCode === 'number' && typeof description === 'string';
 }
 
 /**
@@ -101,7 +100,7 @@ export class TravelTimeError extends Error {
     Error.captureStackTrace?.(this, new.target);
   }
 
-  toJSON(): Record<string, any> {
+  toJSON(): Record<string, unknown> {
     return {
       name: this.name,
       message: this.message,
@@ -215,7 +214,7 @@ export class TravelTimeNetworkError extends TravelTimeError {
     if (params.stack !== undefined) this.stack = params.stack;
   }
 
-  toJSON(): Record<string, any> {
+  toJSON(): Record<string, unknown> {
     return { ...super.toJSON(), code: this.code, url: this.url };
   }
 

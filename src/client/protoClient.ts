@@ -48,6 +48,16 @@ interface ProtoRequestBuildOptions {
 
 type CellEndpoint = 'geohash' | 'h3';
 
+/**
+ * protobufjs omits empty repeated fields, so an area with no reachable cells
+ * decodes to `{}`. Fill in `cells.ids` so the response always matches its
+ * declared type and callers can map over `ids` without narrowing first.
+ */
+function normalizeCells<T extends { cells: { ids: Array<string> } }>(decoded: Partial<T>): T {
+  const cells = (decoded.cells ?? {}) as T['cells'];
+  return { ...decoded, cells: { ...cells, ids: cells.ids ?? [] } } as T;
+}
+
 interface TransportationConfig {
   code: number;
   urlName: string;
@@ -151,6 +161,9 @@ export class TravelTimeProtoClient {
 
   /** Returns the lowercased country to use in the request path. */
   private validateCountry(country: string): string {
+    if (typeof country !== 'string') {
+      throw new TravelTimeValidationError('Country must be a string');
+    }
     const normalized = country.toLowerCase();
     if (!(protoCountries as ReadonlyArray<string>).includes(normalized)) {
       throw new TravelTimeValidationError(`Country "${country}" is not supported. Supported countries: ${protoCountries.join(', ')}`);
@@ -393,7 +406,8 @@ export class TravelTimeProtoClient {
       const buffer = this.GeohashFastRequest.encode(message).finish();
 
       const { body } = await this.send(requestUrl, buffer);
-      return this.decodeProtoResponse<GeohashFastProtoResponse>(this.GeohashFastResponse, body);
+      const decoded = this.decodeProtoResponse<Partial<GeohashFastProtoResponse>>(this.GeohashFastResponse, body);
+      return normalizeCells(decoded);
     } catch (error) {
       throw TravelTimeError.from(error);
     }
@@ -408,11 +422,9 @@ export class TravelTimeProtoClient {
       const buffer = this.H3FastRequest.encode(message).finish();
 
       const { body } = await this.send(requestUrl, buffer);
-      const decoded = this.decodeProtoResponse<H3FastProtoResponse>(this.H3FastResponse, body);
+      const decoded = normalizeCells(this.decodeProtoResponse<Partial<H3FastProtoResponse>>(this.H3FastResponse, body));
       // The wire carries fixed64 cell indices; expose the 15-character hex form.
-      if (decoded.cells?.ids) {
-        decoded.cells.ids = decoded.cells.ids.map((id) => BigInt(id).toString(16));
-      }
+      decoded.cells.ids = decoded.cells.ids.map((id) => BigInt(id).toString(16));
       return decoded;
     } catch (error) {
       throw TravelTimeError.from(error);

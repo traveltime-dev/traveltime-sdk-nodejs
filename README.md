@@ -739,7 +739,7 @@ Body attributes:
 You can apply additional optional parameters to client constructor’s second argument `parameters` object:
  - `baseUrl` [string] - you can change base URL of client. Default value is `https://proto.api.traveltimeapp.com/api/v3`.
  - `timeout` [number] - request timeout in milliseconds. Default is `120000`.
- - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses. Accepts `enabled` (default `true`; turned off while the rate limiter is enabled), `maxRetries` (default `3`), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms).
+ - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses, which backs off exponentially with jitter. Accepts `maxRetries` (default `3`, pass `0` to disable retrying), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms). This retrying is turned off while the rate limiter is enabled, since the rate limiter does its own.
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
     - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`.
@@ -892,7 +892,7 @@ Body attributes:
 Cell ids are returned in their 15-character hexadecimal H3 form.
 
 ```ts
-import { TravelTimeError, TravelTimeProtoClient, H3FastProtoRequest } from 'traveltime-api';
+import { TravelTimeProtoClient, H3FastProtoRequest } from 'traveltime-api';
 
 const travelTimeProtoClient = new TravelTimeProtoClient({
   apiKey: 'YOUR_APP_KEY',
@@ -913,7 +913,7 @@ const requestData: H3FastProtoRequest = {
 
 travelTimeProtoClient.h3Fast(requestData)
   .then((data) => console.log(data))
-  .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
+  .catch((e) => console.error(e));
 ```
 
 The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`status`, `errorCode`, `description`, `details`) from proto endpoints.

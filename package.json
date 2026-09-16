@@ -46,6 +46,7 @@
     "maps"
   ],
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "src/**/*.ts"
   ]
 }

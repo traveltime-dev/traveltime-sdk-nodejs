@@ -1,7 +1,7 @@
 import {
   describe, it, expect, vi, afterEach,
 } from 'vitest';
-import { TravelTimeProtoClient, TravelTimeValidationError } from '../../src';
+import { TravelTimeProtoClient, TravelTimeValidationError, protoCountries } from '../../src';
 import { TimeFilterFastProtoCountry } from '../../src/types/proto';
 
 /** The transport reads the global `fetch` at call time, so tests stub it. */
@@ -102,10 +102,10 @@ describe('TravelTimeProtoClient response shape', () => {
     expect(response).toEqual({ cells: { ids: ['gbsuv', 'gbsuw'], meanTravelTimes: [300, 42] } });
   });
 
-  it('decodes an empty geohash response to an empty object', async () => {
+  it('gives an empty geohash area an empty ids array, not a bare object', async () => {
     const { client } = makeClient(protoResponse(GH_RES_EMPTY));
     const response = await client.geohashFast(geohashRequest);
-    expect(response).toEqual({});
+    expect(response).toEqual({ cells: { ids: [] } });
   });
 });
 
@@ -162,9 +162,9 @@ describe('TravelTimeProtoClient h3', () => {
     });
   });
 
-  it('decodes an empty h3 response to an empty object', async () => {
+  it('gives an empty h3 area an empty ids array, not a bare object', async () => {
     const { client } = makeClient(protoResponse(''));
-    expect(await client.h3Fast(h3Request)).toEqual({});
+    expect(await client.h3Fast(h3Request)).toEqual({ cells: { ids: [] } });
   });
 });
 
@@ -213,7 +213,7 @@ describe('TravelTimeProtoClient search direction', () => {
 
   it('rejects zero or two locations on the cell endpoints', async () => {
     const { client, calls } = makeClient(protoResponse(GH_RES_POPULATED));
-    const { departureLocation, ...noLocation } = geohashRequest;
+    const noLocation = { ...geohashRequest, departureLocation: undefined };
     await expect(client.geohashFast(noLocation as any)).rejects
       .toThrow('Either departureLocation or arrivalLocation must be provided');
     expect(calls).toHaveLength(0);
@@ -244,6 +244,21 @@ describe('TravelTimeProtoClient request properties', () => {
 
 describe('TravelTimeProtoClient country validation', () => {
   const badCountry = 'zz' as TimeFilterFastProtoCountry;
+
+  it('holds every country path code the proto API accepts', () => {
+    expect(protoCountries).toHaveLength(38);
+    expect(protoCountries).toEqual(expect.arrayContaining(['cz', 'sk', 'li']));
+    expect(new Set(protoCountries).size).toBe(protoCountries.length);
+    protoCountries.forEach((c) => expect(c).toMatch(/^[a-z]{2}$/));
+  });
+
+  it('rejects a non-string country as a validation failure, not a network one', async () => {
+    const { client, calls } = makeClient(protoResponse(TF_RES_POPULATED));
+    const call = client.timeFilterFast({ ...tfRequest, country: undefined as any });
+    await expect(call).rejects.toBeInstanceOf(TravelTimeValidationError);
+    await expect(call).rejects.toThrow('Country must be a string');
+    expect(calls).toHaveLength(0);
+  });
 
   it('rejects an unsupported country before sending, naming the value and the supported list', async () => {
     const { client, calls } = makeClient(protoResponse(TF_RES_POPULATED));

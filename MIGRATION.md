@@ -132,7 +132,8 @@ and `setIsSleeping` are removed. `isEnabled`, `getRetryCount` and
   in the schema, so the variant was unreachable.
 - `TimeFilterFastProtoResponseError.type` is optional: proto3 omits the
   enum's zero value (`UNKNOWN`) from the wire.
-- The default base URL is `https://` (was `http://`).
+- An area with no reachable cells returns `{ cells: { ids: [] } }` rather
+  than a bare `{}`, so `cells.ids` is always safe to map over.
 
 ## Removed deprecated request params
 
@@ -151,3 +152,5 @@ Not breaking, carried up from 7.5.0:
 - `h3Fast` proto endpoint, returning H3 cell indices in 15-character hex.
 - `removeWaterBodies` on the fast cell endpoints.
 - Bare `cycling` proto requests go to the cycling endpoint.
+- `protoCountries` is exported from the package root, so you can reuse the
+  supported-country list rather than hard-coding it.
