@@ -49,7 +49,7 @@ You can apply additional optional parameters to client constructor’s second ar
  - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses, which backs off exponentially with jitter. Accepts `maxRetries` (default `3`, pass `0` to disable retrying), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms). This retrying is turned off while the rate limiter is enabled, since the rate limiter does its own.
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. Requests are paced out across the minute — roughly one every `60000 / hitsPerMinute` milliseconds — rather than sent in bursts, and a `429` pauses the whole queue before retrying. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
-    - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`. A single request costing more hits than this is rejected with a `TravelTimeValidationError`, since it could never fit within the limit.
+    - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on a Production plan and not sure of your limits, feel free to contact us. Default value is `60`. A single request costing more hits than this is rejected with a `TravelTimeValidationError`, since it could never fit within the limit.
     - `retryCount` [number] - Determines how many times request should be repeated when API returns status `429`. Default is `3`.
     - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `1000`. This acts as a floor, since a retry also waits for its turn in the queue: at `60` hits per minute the shortest effective delay is `1000` ms.
 
@@ -730,7 +730,7 @@ Body attributes:
 * country: Return the results that are within the specified country.
 * departureLocation: Point of departure for a one-to-many search. Mutually exclusive with `arrivalLocation`.
 * arrivalLocation: Arrival point for a many-to-one search, where `destinationCoordinates` are the departure points. Mutually exclusive with `departureLocation`.
-* destinationCoordinates: The many points of the search. Cannot be more than 200,000.
+* destinationCoordinates: The many points of the search. There is no fixed limit on the number of destinations; a request can be up to 10MB (around 2 million locations).
 * transportation: Transportation type (literal) or type with details (object) for "pt" and "driving+pt" types.
 * travelTime: Time limit.
 
@@ -742,7 +742,7 @@ You can apply additional optional parameters to client constructor’s second ar
  - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses, which backs off exponentially with jitter. Accepts `maxRetries` (default `3`, pass `0` to disable retrying), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms). This retrying is turned off while the rate limiter is enabled, since the rate limiter does its own.
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
-    - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`.
+    - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on a Production plan and not sure of your limits, feel free to contact us. Default value is `60`.
     - `retryCount` [number] - Determines how many times request should be repeated when API returns status `429`. Default is `3`.
     - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `1000`.
 
