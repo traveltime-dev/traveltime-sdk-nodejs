@@ -45,7 +45,7 @@ const travelTimeClient = new TravelTimeClient({
 
 You can apply additional optional parameters to client constructor’s second argument `parameters` object:
  - `baseURL` [string] - you can change base URL of client. Default value is `https://api.traveltimeapp.com/v4`.
- - `timeout` [number] - request timeout in milliseconds. Default is `120000`.
+ - `timeout` [number] - per-attempt request timeout in milliseconds. Default is `120000`. Retries each get their own timeout, so the worst-case total for a call is roughly `(maxRetries + 1) × timeout` plus backoff.
  - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses, which backs off exponentially with jitter. Accepts `maxRetries` (default `3`, pass `0` to disable retrying), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms). This retrying is turned off while the rate limiter is enabled, since the rate limiter does its own.
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. Requests are paced out across the minute — roughly one every `60000 / hitsPerMinute` milliseconds — rather than sent in bursts, and a `429` pauses the whole queue before retrying. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
@@ -738,7 +738,7 @@ Body attributes:
 
 You can apply additional optional parameters to client constructor’s second argument `parameters` object:
  - `baseUrl` [string] - you can change base URL of client. Default value is `https://proto.api.traveltimeapp.com/api/v3`.
- - `timeout` [number] - request timeout in milliseconds. Default is `120000`.
+ - `timeout` [number] - per-attempt request timeout in milliseconds. Default is `120000`. Retries each get their own timeout, so the worst-case total for a call is roughly `(maxRetries + 1) × timeout` plus backoff.
  - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses, which backs off exponentially with jitter. Accepts `maxRetries` (default `3`, pass `0` to disable retrying), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms). This retrying is turned off while the rate limiter is enabled, since the rate limiter does its own.
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
