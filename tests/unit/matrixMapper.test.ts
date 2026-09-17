@@ -5,7 +5,9 @@ import {
   timeFilterManyToManyMatrixResponseMapper,
   timeFilterFastManyToManyMatrixResponseMapper,
 } from '../../src/client/matrixMapper';
-import { BatchResponse, TimeFilterResponse, TimeFilterFastResponse } from '../../src';
+import {
+  BatchResponse, TimeFilterResponse, TimeFilterFastResponse, TravelTimeError,
+} from '../../src';
 
 describe('matrixMapper', () => {
   const coordsFrom = [
@@ -161,7 +163,7 @@ describe('matrixMapper', () => {
       const responses: BatchResponse<TimeFilterResponse>[] = [
         {
           type: 'error',
-          error: new Error('API error'),
+          error: new TravelTimeError({ description: 'API error' }),
         },
       ];
 

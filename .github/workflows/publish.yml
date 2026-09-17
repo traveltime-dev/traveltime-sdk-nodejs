@@ -28,7 +28,9 @@ jobs:
           fi
       - run: npm ci
       - run: npm run build
-      - name: Sanity-check build output
-        run: node -e "require('./target/index.js'); require('fs').accessSync('./target/client/proto')"
+      - name: Check build output loads from CJS and ESM
+        run: |
+          node -e "const {TravelTimeProtoClient}=require('./dist/index.js'); new TravelTimeProtoClient({apiKey:'x',applicationId:'y'})"
+          node --input-type=module -e "import {TravelTimeProtoClient} from './dist/index.js'; new TravelTimeProtoClient({apiKey:'x',applicationId:'y'})"
       - name: Publish to npm
         run: npm publish --provenance ${{ github.event.release.prerelease && '--tag rc' || '' }}

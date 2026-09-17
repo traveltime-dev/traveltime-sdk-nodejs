@@ -1,4 +1,6 @@
 /node_modules/
 /.vscode/
-/target
+/dist
 main.ts
+*.tgz
+.env*

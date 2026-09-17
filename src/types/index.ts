@@ -9,6 +9,7 @@ export * from './timeFilterFast';
 export * from './timeFilterPostcodeDistricts';
 export * from './timeFilterPostcodeSectors';
 export * from './timeFilterPostcodes';
+export * from './timeFilterMatrix';
 export * from './timeMap';
 export * from './proto';
 export * from './timeMapFast';

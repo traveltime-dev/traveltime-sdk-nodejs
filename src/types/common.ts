@@ -1,3 +1,5 @@
+import { TravelTimeError } from '../error';
+
 export type Coords = {
   'lat': number;
   'lng': number;
@@ -197,7 +199,7 @@ export type LevelOfDetail = CoarseGridLevelOfDetail | SimpleLevelOfDetail| Simpl
 export type Credentials = { apiKey: string, applicationId: string }
 
 export interface BatchErrorResponse {
-  error: Error;
+  error: TravelTimeError;
   type: 'error';
 }
 

@@ -1,8 +1,7 @@
-/* eslint-disable class-methods-use-this */
-import axios, { AxiosInstance } from 'axios';
-import HttpAgent, { HttpsAgent } from 'agentkeepalive';
 import protobuf from 'protobufjs';
 import { Coords, Credentials } from '../types';
+import { TravelTimeError, TravelTimeValidationError } from '../error';
+import { Transport, TransportRetryOptions } from '../core/transport';
 import {
   DetailedTransportation,
   GeohashFastProtoCellProperty,
@@ -13,6 +12,7 @@ import {
   TimeFilterFastProtoDistanceRequest, TimeFilterFastProtoRequest, TimeFilterFastProtoResponse, TimeFilterFastProtoTransportation,
 } from '../types/proto';
 import { RateLimiter, RateLimitSettings } from './rateLimiter';
+import { protoCountries } from './proto/countries';
 
 interface TimeFilterFastProtoSearch {
   departureLocation?: Coords
@@ -41,12 +41,21 @@ interface TimeFilterFastProtoMessage {
 
 const DEFAULT_BASE_URL = 'https://proto.api.traveltimeapp.com/api/v3';
 
-const defaultHttpsAgent = new HttpsAgent({ keepAlive: true, maxSockets: 100 });
-const defaultHttpAgent = new HttpAgent({ keepAlive: true, maxSockets: 100 });
-
 interface ProtoRequestBuildOptions {
   useDistance?: boolean
   useFares?: boolean
+}
+
+type CellEndpoint = 'geohash' | 'h3';
+
+/**
+ * protobufjs omits empty repeated fields, so an area with no reachable cells
+ * decodes to `{}`. Fill in `cells.ids` so the response always matches its
+ * declared type and callers can map over `ids` without narrowing first.
+ */
+function normalizeCells<T extends { cells: { ids: Array<string> } }>(decoded: Partial<T>): T {
+  const cells = (decoded.cells ?? {}) as T['cells'];
+  return { ...decoded, cells: { ...cells, ids: cells.ids ?? [] } } as T;
 }
 
 interface TransportationConfig {
@@ -60,10 +69,7 @@ interface TimeFilterProtoMessageWithUrl {
 }
 
 export class TravelTimeProtoClient {
-  private apiKey: string;
-  private applicationId: string;
-  private axiosInstance: AxiosInstance;
-  private baseURL: string;
+  private transport: Transport;
   private protoFileDir = `${__dirname}/proto/v2`;
   private transportationMap: Record<TimeFilterFastProtoTransportation, TransportationConfig> = {
     pt: { code: 0, urlName: 'pt' },
@@ -90,26 +96,27 @@ export class TravelTimeProtoClient {
 
   constructor(
     credentials: Credentials,
-    parameters?: { rateLimitSettings?: Partial<RateLimitSettings>, baseUrl?: string },
+    parameters?: {
+      rateLimitSettings?: Partial<RateLimitSettings>,
+      baseUrl?: string,
+      /** Request timeout in milliseconds. Default `120000`. */
+      timeout?: number,
+      /** HTTP 429 retry behaviour. On by default, unless the rate limiter is enabled. */
+      retry?: TransportRetryOptions,
+    },
   ) {
-    if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
-    this.applicationId = credentials.applicationId;
-    this.apiKey = credentials.apiKey;
-    this.baseURL = parameters?.baseUrl || DEFAULT_BASE_URL;
+    if (!(credentials.applicationId && credentials.apiKey)) throw new TravelTimeValidationError('Credentials must be valid');
     this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
-    this.axiosInstance = axios.create({
-      auth: {
-        username: this.applicationId,
-        password: this.apiKey,
-      },
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        Accept: 'application/octet-stream',
-        'User-Agent': 'Travel Time Nodejs SDK',
-      },
-      responseType: 'arraybuffer',
-      httpAgent: defaultHttpAgent,
-      httpsAgent: defaultHttpsAgent,
+    this.transport = new Transport({
+      baseURL: parameters?.baseUrl || DEFAULT_BASE_URL,
+      auth: { scheme: 'basic', applicationId: credentials.applicationId, apiKey: credentials.apiKey },
+      headers: { Accept: 'application/octet-stream' },
+      contentType: 'application/octet-stream',
+      errorFormat: 'proto',
+      timeout: parameters?.timeout,
+      // `enabled` comes last so a caller-supplied object cannot switch the
+      // transport retry back on while the rate limiter drives 429 retries
+      retry: { ...parameters?.retry, enabled: !this.rateLimiter.isEnabled() },
     });
 
     const root = this.readProtoFile();
@@ -134,8 +141,8 @@ export class TravelTimeProtoClient {
     return Math.round((targetPoint - sourcePoint) * 100000);
   }
 
-  private buildRequestUrl(uri: string, country: string, transportModeUrlName: string): string {
-    return `${uri}/${country.toLowerCase()}/time-filter/fast/${transportModeUrlName}`;
+  private buildRequestUrl(country: string, transportModeUrlName: string): string {
+    return `/${country}/time-filter/fast/${transportModeUrlName}`;
   }
 
   private buildDeltas(departure: Coords, destinations: Array<Coords>) {
@@ -148,7 +155,28 @@ export class TravelTimeProtoClient {
 
   private validateTransportationMode(mode: TimeFilterFastProtoTransportation): void {
     if (!(mode in this.transportationMap)) {
-      throw new Error('Transportation mode is not supported');
+      throw new TravelTimeValidationError('Transportation mode is not supported');
+    }
+  }
+
+  /** Returns the lowercased country to use in the request path. */
+  private validateCountry(country: string): string {
+    if (typeof country !== 'string') {
+      throw new TravelTimeValidationError('Country must be a string');
+    }
+    const normalized = country.toLowerCase();
+    if (!(protoCountries as ReadonlyArray<string>).includes(normalized)) {
+      throw new TravelTimeValidationError(`Country "${country}" is not supported. Supported countries: ${protoCountries.join(', ')}`);
+    }
+    return normalized;
+  }
+
+  private validateSearchLocation(departureLocation?: Coords, arrivalLocation?: Coords): void {
+    if (!departureLocation && !arrivalLocation) {
+      throw new TravelTimeValidationError('Either departureLocation or arrivalLocation must be provided');
+    }
+    if (departureLocation && arrivalLocation) {
+      throw new TravelTimeValidationError('Only one of departureLocation or arrivalLocation can be provided');
     }
   }
 
@@ -165,7 +193,7 @@ export class TravelTimeProtoClient {
 
     // Verify modes match
     if (transportation.mode !== transportationMode) {
-      throw new Error(`Details can only be used with matching transportation type "${transportation.mode}"`);
+      throw new TravelTimeValidationError(`Details can only be used with matching transportation type "${transportation.mode}"`);
     }
 
     if (transportation.mode === 'pt') {
@@ -216,14 +244,9 @@ export class TravelTimeProtoClient {
     destinationCoordinates,
     transportation,
     travelTime,
-  }: TimeFilterFastProtoRequest, uri: string, options?: ProtoRequestBuildOptions): TimeFilterProtoMessageWithUrl {
-    if (!departureLocation && !arrivalLocation) {
-      throw new Error('Either departureLocation or arrivalLocation must be provided');
-    }
-    if (departureLocation && arrivalLocation) {
-      throw new Error('Only one of departureLocation or arrivalLocation can be provided');
-    }
-
+  }: TimeFilterFastProtoRequest, options?: ProtoRequestBuildOptions): TimeFilterProtoMessageWithUrl {
+    const normalizedCountry = this.validateCountry(country);
+    this.validateSearchLocation(departureLocation, arrivalLocation);
     const transportationMode = this.extractTransportationMode(transportation);
     this.validateTransportationMode(transportationMode);
 
@@ -235,7 +258,8 @@ export class TravelTimeProtoClient {
     if (options?.useFares) protoProperties.push(0);
     if (options?.useDistance) protoProperties.push(1);
 
-    const origin = departureLocation ?? arrivalLocation as Coords;
+    // Deltas are encoded relative to whichever single location the search has.
+    const origin = (departureLocation ?? arrivalLocation) as Coords;
 
     const searchMessage: TimeFilterFastProtoSearch = {
       locationDeltas: this.buildDeltas(origin, destinationCoordinates),
@@ -252,7 +276,7 @@ export class TravelTimeProtoClient {
       ? { oneToManyRequest: { departureLocation, ...searchMessage } }
       : { manyToOneRequest: { arrivalLocation, ...searchMessage } };
 
-    const requestUrl = this.buildRequestUrl(uri, country, transportationConfig.urlName);
+    const requestUrl = this.buildRequestUrl(normalizedCountry, transportationConfig.urlName);
 
     return {
       requestMessage,
@@ -260,21 +284,20 @@ export class TravelTimeProtoClient {
     };
   }
 
-  private buildCellRequestUrl(uri: string, country: string, transportModeUrlName: string, endpoint: 'geohash' | 'h3'): string {
-    return `${uri}/${country.toLowerCase()}/${endpoint}/fast/${transportModeUrlName}`;
+  private buildCellRequestUrl(country: string, transportModeUrlName: string, endpoint: CellEndpoint): string {
+    return `/${country}/${endpoint}/fast/${transportModeUrlName}`;
   }
 
-  private buildCellProtoRequest(request: GeohashFastProtoRequest | H3FastProtoRequest, uri: string, endpoint: 'geohash' | 'h3'): { requestMessage: Record<string, any>, requestUrl: string } {
+  private buildCellProtoRequest(
+    request: GeohashFastProtoRequest | H3FastProtoRequest,
+    endpoint: CellEndpoint,
+  ): { requestMessage: Record<string, any>, requestUrl: string } {
     const {
       country, departureLocation, arrivalLocation, transportation, travelTime, resolution, properties, removeWaterBodies,
     } = request;
 
-    if (!departureLocation && !arrivalLocation) {
-      throw new Error('Either departureLocation or arrivalLocation must be provided');
-    }
-    if (departureLocation && arrivalLocation) {
-      throw new Error('Only one of departureLocation or arrivalLocation can be provided');
-    }
+    const normalizedCountry = this.validateCountry(country);
+    this.validateSearchLocation(departureLocation, arrivalLocation);
 
     const transportationMode = this.extractTransportationMode(transportation);
     this.validateTransportationMode(transportationMode);
@@ -288,8 +311,6 @@ export class TravelTimeProtoClient {
       ...protoTransportationDetails,
     };
 
-    const requestMessage: Record<string, any> = {};
-
     const searchMessage: Record<string, any> = {
       transportation: transportationMessage,
       arrivalTimePeriod: 0,
@@ -298,17 +319,16 @@ export class TravelTimeProtoClient {
       properties: protoProperties,
     };
 
+    // Left absent the API defaults this to `true`, so only send it when set.
     if (removeWaterBodies !== undefined) {
       searchMessage.removeWaterBodies = removeWaterBodies;
     }
 
-    if (departureLocation) {
-      requestMessage.oneToManyRequest = { departureLocation, ...searchMessage };
-    } else {
-      requestMessage.manyToOneRequest = { arrivalLocation, ...searchMessage };
-    }
+    const requestMessage: Record<string, any> = departureLocation
+      ? { oneToManyRequest: { departureLocation, ...searchMessage } }
+      : { manyToOneRequest: { arrivalLocation, ...searchMessage } };
 
-    const requestUrl = this.buildCellRequestUrl(uri, country, transportationConfig.urlName, endpoint);
+    const requestUrl = this.buildCellRequestUrl(normalizedCountry, transportationConfig.urlName, endpoint);
 
     return { requestMessage, requestUrl };
   }
@@ -328,105 +348,96 @@ export class TravelTimeProtoClient {
     }
   }
 
+  /**
+   * Decodes a proto response body. Decode failures mean the response was
+   * received but could not be read, so they are not retryable.
+   */
+  private decodeProtoResponse<T>(type: protobuf.Type, data: Uint8Array): T {
+    try {
+      return type.decode(data).toJSON() as T;
+    } catch {
+      throw new TravelTimeError({ description: 'Could not decode proto response', isRetryable: false });
+    }
+  }
+
+  /**
+   * Sends a proto request through the rate limiter when it is enabled: each
+   * request costs one hit, and a 429 pauses the whole queue via `backOff`
+   * before retrying, up to `retryCount` times — the transport's own 429
+   * retry is off while the rate limiter drives retries.
+   */
+  private async send(requestUrl: string, buffer: Uint8Array) {
+    const rq = () => this.transport.request(requestUrl, { method: 'POST', body: buffer });
+    if (!this.rateLimiter.isEnabled()) return rq();
+    for (let retriesDone = 0; ; retriesDone += 1) {
+      await this.rateLimiter.acquire(1, retriesDone > 0);
+      try {
+        return await rq();
+      } catch (error) {
+        const mapped = TravelTimeError.from(error);
+        if (mapped.status !== 429 || retriesDone >= this.rateLimiter.getRetryCount()) throw mapped;
+        await this.rateLimiter.backOff();
+      }
+    }
+  }
+
   private async handleProtoFile(
-    uri: string,
     request: TimeFilterFastProtoRequest | TimeFilterFastProtoDistanceRequest,
     options?: ProtoRequestBuildOptions,
   ): Promise<TimeFilterFastProtoResponse> {
-    const { requestMessage, requestUrl } = this.buildProtoRequest(request, uri, options);
-    const message = this.TimeFilterFastRequest.create(requestMessage);
-    const buffer = this.TimeFilterFastRequest.encode(message).finish();
+    try {
+      const { requestMessage, requestUrl } = this.buildProtoRequest(request, options);
+      const message = this.TimeFilterFastRequest.create(requestMessage);
+      const buffer = this.TimeFilterFastRequest.encode(message).finish();
 
-    const rq = () => this.axiosInstance.post(requestUrl, buffer);
-
-    const promise = this.rateLimiter.isEnabled()
-      ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-        this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
-      })
-      : rq();
-
-    const { data } = await promise;
-    const response = this.TimeFilterFastResponse.decode(data);
-    return response.toJSON() as TimeFilterFastProtoResponse;
+      const { body } = await this.send(requestUrl, buffer);
+      return this.decodeProtoResponse<TimeFilterFastProtoResponse>(this.TimeFilterFastResponse, body);
+    } catch (error) {
+      throw TravelTimeError.from(error);
+    }
   }
 
   private async handleGeohashProtoFile(
-    uri: string,
     request: GeohashFastProtoRequest,
   ): Promise<GeohashFastProtoResponse> {
-    const { requestMessage, requestUrl } = this.buildCellProtoRequest(request, uri, 'geohash');
-    const message = this.GeohashFastRequest.create(requestMessage);
-    const buffer = this.GeohashFastRequest.encode(message).finish();
+    try {
+      const { requestMessage, requestUrl } = this.buildCellProtoRequest(request, 'geohash');
+      const message = this.GeohashFastRequest.create(requestMessage);
+      const buffer = this.GeohashFastRequest.encode(message).finish();
 
-    const rq = () => this.axiosInstance.post(requestUrl, buffer);
-
-    const promise = this.rateLimiter.isEnabled()
-      ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-        this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
-      })
-      : rq();
-
-    const { data } = await promise;
-    const response = this.GeohashFastResponse.decode(data);
-    return response.toJSON() as GeohashFastProtoResponse;
+      const { body } = await this.send(requestUrl, buffer);
+      const decoded = this.decodeProtoResponse<Partial<GeohashFastProtoResponse>>(this.GeohashFastResponse, body);
+      return normalizeCells(decoded);
+    } catch (error) {
+      throw TravelTimeError.from(error);
+    }
   }
 
   private async handleH3ProtoFile(
-    uri: string,
     request: H3FastProtoRequest,
   ): Promise<H3FastProtoResponse> {
-    const { requestMessage, requestUrl } = this.buildCellProtoRequest(request, uri, 'h3');
-    const message = this.H3FastRequest.create(requestMessage);
-    const buffer = this.H3FastRequest.encode(message).finish();
+    try {
+      const { requestMessage, requestUrl } = this.buildCellProtoRequest(request, 'h3');
+      const message = this.H3FastRequest.create(requestMessage);
+      const buffer = this.H3FastRequest.encode(message).finish();
 
-    const rq = () => this.axiosInstance.post(requestUrl, buffer);
-
-    const promise = this.rateLimiter.isEnabled()
-      ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-        this.rateLimiter.addAndExecute(() => resolve(rq()), 1);
-      })
-      : rq();
-
-    const { data } = await promise;
-    const response = this.H3FastResponse.decode(data);
-    const json = response.toJSON() as any;
-    if (json.cells?.ids) {
-      json.cells.ids = json.cells.ids.map((id: string) => BigInt(id).toString(16));
+      const { body } = await this.send(requestUrl, buffer);
+      const decoded = normalizeCells(this.decodeProtoResponse<Partial<H3FastProtoResponse>>(this.H3FastResponse, body));
+      // The wire carries fixed64 cell indices; expose the 15-character hex form.
+      decoded.cells.ids = decoded.cells.ids.map((id) => BigInt(id).toString(16));
+      return decoded;
+    } catch (error) {
+      throw TravelTimeError.from(error);
     }
-    return json as H3FastProtoResponse;
   }
 
-  timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(this.baseURL, request);
+  timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(request);
 
-  timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.handleProtoFile(this.baseURL, request, { useDistance: true });
+  timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.handleProtoFile(request, { useDistance: true });
 
-  timeFilterFastFares = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(this.baseURL, request, { useFares: true });
+  timeFilterFastFares = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(request, { useFares: true });
 
-  geohashFast = async (request: GeohashFastProtoRequest) => this.handleGeohashProtoFile(this.baseURL, request);
+  geohashFast = async (request: GeohashFastProtoRequest) => this.handleGeohashProtoFile(request);
 
-  h3Fast = async (request: H3FastProtoRequest) => this.handleH3ProtoFile(this.baseURL, request);
-
-  setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
-    this.rateLimiter.setRateLimitSettings(settings);
-  };
-
-  getBaseURL = () => this.baseURL;
-
-  /**
-   *
-   * @param baseURL Set new base URL. Pass nothing to reset to default
-   */
-  setBaseURL = (baseURL = DEFAULT_BASE_URL) => {
-    this.baseURL = baseURL;
-  };
-
-  setCredentials = (credentials: Credentials) => {
-    if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
-    this.apiKey = credentials.apiKey;
-    this.applicationId = credentials.applicationId;
-    this.axiosInstance.defaults.auth = {
-      username: credentials.applicationId,
-      password: credentials.apiKey,
-    };
-  };
+  h3Fast = async (request: H3FastProtoRequest) => this.handleH3ProtoFile(request);
 }

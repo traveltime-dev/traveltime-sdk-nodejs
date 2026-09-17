@@ -1,8 +1,5 @@
-import axios, {
-  AxiosInstance, AxiosRequestConfig, CreateAxiosDefaults,
-} from 'axios';
-import HttpAgent, { HttpsAgent } from 'agentkeepalive';
-import { TravelTimeError } from '../error';
+import { TravelTimeError, TravelTimeValidationError } from '../error';
+import { Transport, TransportRetryOptions } from '../core/transport';
 import {
   MapInfoResponse,
   GeocodingResponse,
@@ -45,18 +42,32 @@ import { GeohashFastRequest, GeohashFastResponse } from '../types/geohashFast';
 
 type HttpMethod = 'get' | 'post'
 
+type RequestConfig = {
+  params?: Record<string, unknown>
+  headers?: Record<string, string>
+}
+
 type RequestPayload = {
   body?: any
-  config?: AxiosRequestConfig
+  config?: RequestConfig
 }
 
 const DEFAULT_BASE_URL = 'https://api.traveltimeapp.com/v4';
-const sdkVersion = require('../../package.json').version;
 
-const defaultHttpsAgent = new HttpsAgent({ keepAlive: true, maxSockets: 100 });
-const defaultHttpAgent = new HttpAgent({ keepAlive: true, maxSockets: 100 });
+/**
+ * Decodes a response body: JSON when it parses, otherwise the raw text
+ * (e.g. the KML response formats).
+ */
+function parseResponseBody(body: Buffer): unknown {
+  const text = body.toString('utf8');
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
 
-function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
+function getHitAmountFromRequest(url: string, body: RequestPayload['body']): number | null {
   switch (url) {
     case '/time-filter':
     case '/routes':
@@ -69,7 +80,7 @@ function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
     case '/time-filter/fast':
     case '/h3/fast':
     case '/geohash/fast': {
-      return (body.arrival_searches.one_to_many?.length || 0) + (body.arrival_searches.many_to_one?.length || 0);
+      return (body.arrival_searches?.one_to_many?.length || 0) + (body.arrival_searches?.many_to_one?.length || 0);
     }
     case '/distance-map':
     case '/time-map':
@@ -77,32 +88,12 @@ function getHitAmountFromRequest(url: string, body: RequestPayload['body']) {
     case '/geohash': {
       return (body.departure_searches?.length || 0) + (body.arrival_searches?.length || 0) + (body.unions?.length || 0) + (body.intersections?.length || 0);
     }
-    default: return 0;
+    default: return null;
   }
 }
 
-function endpointChecksHPM(url: string) {
-  return [
-    '/time-filter',
-    '/routes',
-    '/time-filter/postcode-districts',
-    '/time-filter/postcode-sectors',
-    '/time-filter/postcodes',
-    '/time-map/fast',
-    '/time-filter/fast',
-    '/time-map',
-    '/distance-map',
-    '/h3',
-    '/h3/fast',
-    '/geohash',
-    '/geohash/fast',
-  ].includes(url);
-}
-
 export class TravelTimeClient {
-  private apiKey: string;
-  private applicationId: string;
-  private axiosInstance: AxiosInstance;
+  private transport: Transport;
   private rateLimiter: RateLimiter;
 
   constructor(
@@ -110,80 +101,67 @@ export class TravelTimeClient {
     parameters?: {
       baseURL?: string,
       rateLimitSettings?: Partial<RateLimitSettings>,
-      axiosInstance?: AxiosInstance
+      /** Request timeout in milliseconds. Default `120000`. */
+      timeout?: number,
+      /** HTTP 429 retry behaviour. On by default, unless the rate limiter is enabled — its own retry logic applies then. */
+      retry?: TransportRetryOptions,
     },
   ) {
-    if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
-    this.applicationId = credentials.applicationId;
-    this.apiKey = credentials.apiKey;
+    if (!(credentials.applicationId && credentials.apiKey)) throw new TravelTimeValidationError('Credentials must be valid');
     this.rateLimiter = new RateLimiter(parameters?.rateLimitSettings);
-    const headers: CreateAxiosDefaults['headers'] = {
-      'Content-Type': 'application/json',
-      'X-Application-Id': this.applicationId,
-      'X-Api-Key': this.apiKey,
-      'User-Agent': `Travel Time Nodejs SDK ${sdkVersion}`,
-    };
-    if (parameters?.axiosInstance) {
-      this.axiosInstance = parameters.axiosInstance;
-      if (!this.axiosInstance.defaults.baseURL) this.axiosInstance.defaults.baseURL = parameters?.baseURL ?? DEFAULT_BASE_URL;
-      this.axiosInstance.defaults.headers.common = {
-        ...headers,
-        ...this.axiosInstance.defaults.headers.common,
-      };
-    } else {
-      this.axiosInstance = axios.create({
-        baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
-        maxBodyLength: Infinity,
-        maxContentLength: Infinity,
-        httpAgent: defaultHttpAgent,
-        httpsAgent: defaultHttpsAgent,
-        headers: {
-          common: headers,
-        },
-      });
-    }
+    this.transport = new Transport({
+      baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
+      auth: { scheme: 'api-key', applicationId: credentials.applicationId, apiKey: credentials.apiKey },
+      timeout: parameters?.timeout,
+      // `enabled` comes last so a caller-supplied object cannot switch the
+      // transport retry back on while the rate limiter drives 429 retries
+      retry: { ...parameters?.retry, enabled: !this.rateLimiter.isEnabled() },
+    });
   }
 
-  private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload, retryCount = 0): Promise<Response> {
-    const { body, config } = payload || {};
-    const rq = () => (method === 'get' ? this.axiosInstance[method]<Response>(url, config) : this.axiosInstance[method]<Response>(url, body, config));
+  private async request<Response>(url: string, method: HttpMethod, payload?: RequestPayload): Promise<Response> {
     try {
-      const promise = (this.rateLimiter.isEnabled() && endpointChecksHPM(url)) ? new Promise<Awaited<ReturnType<typeof rq>>>((resolve) => {
-        this.rateLimiter.addAndExecute(() => resolve(rq()), getHitAmountFromRequest(url, body || {}), retryCount > 0);
-      }) : rq();
-      const { data } = await promise;
-      return data;
+      return await this.dispatch<Response>(url, method, payload);
     } catch (error) {
-      if (this.rateLimiter.isEnabled() && retryCount < this.rateLimiter.getRetryCount() && axios.isAxiosError(error) && error.response?.status === 429) {
-        return new Promise((resolve) => {
-          this.rateLimiter.setIsSleeping(true);
-          setTimeout(() => {
-            this.rateLimiter.setIsSleeping(false);
-            resolve(this.request(url, method, payload, retryCount + 1));
-          }, this.rateLimiter.getTimeBetweenRetries());
-        });
-      }
-      throw TravelTimeError.makeError(error);
+      throw TravelTimeError.from(error);
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+  private async dispatch<Response>(url: string, method: HttpMethod, payload?: RequestPayload): Promise<Response> {
+    const { body, config } = payload || {};
+    const rq = async (): Promise<Response> => {
+      const response = await this.transport.request(url, {
+        method: method === 'get' ? 'GET' : 'POST',
+        query: config?.params,
+        headers: config?.headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      return parseResponseBody(response.body) as Response;
+    };
+    if (!this.rateLimiter.isEnabled()) return rq();
+    // With the rate limiter enabled, the transport's own 429 retry is off and
+    // retries are driven here instead, so a 429 can pause the whole queue.
+    const hits = getHitAmountFromRequest(url, body || {});
+    for (let retriesDone = 0; ; retriesDone += 1) {
+      if (hits !== null) await this.rateLimiter.acquire(hits, retriesDone > 0);
+      try {
+        return await rq();
+      } catch (error) {
+        const mapped = TravelTimeError.from(error);
+        if (mapped.status !== 429 || retriesDone >= this.rateLimiter.getRetryCount()) throw mapped;
+        await this.rateLimiter.backOff();
+      }
+    }
+  }
+
   private async batch<T extends GenericFunction, R extends Awaited<ReturnType<T>>>(
     requestFn: T,
     bodies: Parameters<T>[0][],
   ): Promise<BatchResponse<R>[]> {
-    const results: BatchResponse<R>[] = [];
-
-    const chunkResults = await Promise.allSettled(bodies.map((request) => requestFn(request)));
-    chunkResults.forEach((chunkResult) => {
-      if (chunkResult.status === 'rejected') {
-        results.push({ type: 'error', error: chunkResult.reason });
-      } else {
-        results.push({ type: 'success', body: chunkResult.value });
-      }
-    });
-
-    return results;
+    const settled = await Promise.allSettled(bodies.map((requestBody) => requestFn(requestBody)));
+    return settled.map((result): BatchResponse<R> => (result.status === 'rejected'
+      ? { type: 'error', error: TravelTimeError.from(result.reason) }
+      : { type: 'success', body: result.value }));
   }
 
   async distanceMap(body: DistanceMapRequest): Promise<DistanceMapResponse>
@@ -239,17 +217,25 @@ export class TravelTimeClient {
   timeFilter = async (body: TimeFilterRequest) => this.request<TimeFilterResponse>('/time-filter', 'post', { body });
   timeFilterBatch = async (requests: TimeFilterRequest[]) => this.batch(this.timeFilter, requests);
   manyToManyMatrix = async (body: TimeFilterManyToManyMatrixRequest) => {
-    const requests = timeFilterManyToManyMatrixToRequest(body);
-    const responses = await this.timeFilterBatch(requests);
-    return timeFilterManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
+    try {
+      const requests = timeFilterManyToManyMatrixToRequest(body);
+      const responses = await this.timeFilterBatch(requests);
+      return timeFilterManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
+    } catch (error) {
+      throw TravelTimeError.from(error);
+    }
   };
 
   timeFilterFast = async (body: TimeFilterFastRequest) => this.request<TimeFilterFastResponse>('/time-filter/fast', 'post', { body });
   timeFilterFastBatch = async (requests: TimeFilterFastRequest[]) => this.batch(this.timeFilterFast, requests);
   manyToManyMatrixFast = async (body: TimeFilterFastManyToManyMatrixRequest) => {
-    const requests = timeFilterFastManyToManyMatrixToRequest(body);
-    const responses = await this.timeFilterFastBatch(requests);
-    return timeFilterFastManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
+    try {
+      const requests = timeFilterFastManyToManyMatrixToRequest(body);
+      const responses = await this.timeFilterFastBatch(requests);
+      return timeFilterFastManyToManyMatrixResponseMapper(responses, body.coordsFrom.length, body.coordsTo.length, body.properties || ['travel_time']);
+    } catch (error) {
+      throw TravelTimeError.from(error);
+    }
   };
 
   timeFilterPostcodeDistricts = async (body: TimeFilterPostcodeDistrictsRequest) => this
@@ -302,28 +288,6 @@ export class TravelTimeClient {
   ): Promise<BatchResponse<Awaited<TimeMapFastResponseType[T]>>[]> {
     return this.batch((body: TimeMapFastRequest) => this.timeMapFast(body, format as T), bodies);
   }
-
-  getBaseURL = () => this.axiosInstance.defaults.baseURL;
-
-  /**
-   *
-   * @param baseURL Set new base URL. Pass nothing to reset to default
-   */
-  setBaseURL = (baseURL = DEFAULT_BASE_URL) => {
-    this.axiosInstance.defaults.baseURL = baseURL;
-  };
-
-  setRateLimitSettings = (settings: Partial<RateLimitSettings>) => {
-    this.rateLimiter.setRateLimitSettings(settings);
-  };
-
-  setCredentials = (credentials: Credentials) => {
-    if (!(credentials.applicationId && credentials.apiKey)) throw new Error('Credentials must be valid');
-    this.apiKey = credentials.apiKey;
-    this.applicationId = credentials.applicationId;
-    this.axiosInstance.defaults.headers.common['X-Application-Id'] = credentials.applicationId;
-    this.axiosInstance.defaults.headers.common['X-Api-Key'] = credentials.apiKey;
-  };
 
   h3 = async (body: H3Request) => this
     .request<H3Response>('/h3', 'post', { body });

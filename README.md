@@ -45,20 +45,21 @@ const travelTimeClient = new TravelTimeClient({
 
 You can apply additional optional parameters to client constructor’s second argument `parameters` object:
  - `baseURL` [string] - you can change base URL of client. Default value is `https://api.traveltimeapp.com/v4`.
- - `axiosInstance` [object] - if needed, you can pass your own axios instance.
- - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. When using rate limiter if the response status is `429` we will retry your request up to 3 times. This object accepts these arguments:
+ - `timeout` [number] - per-attempt request timeout in milliseconds. Default is `120000`. Retries each get their own timeout, so the worst-case total for a call is roughly `(maxRetries + 1) × timeout` plus backoff.
+ - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses, which backs off exponentially with jitter. Accepts `maxRetries` (default `3`, pass `0` to disable retrying), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms). This retrying is turned off while the rate limiter is enabled, since the rate limiter does its own.
+ - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. Requests are paced out across the minute — roughly one every `60000 / hitsPerMinute` milliseconds — rather than sent in bursts, and a `429` pauses the whole queue before retrying. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
-    - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`.
+    - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`. A single request costing more hits than this is rejected with a `TravelTimeValidationError`, since it could never fit within the limit.
     - `retryCount` [number] - Determines how many times request should be repeated when API returns status `429`. Default is `3`.
-    - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `1000`.
+    - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `1000`. This acts as a floor, since a retry also waits for its turn in the queue: at `60` hits per minute the shortest effective delay is `1000` ms.
 
-If you need to change any of these parameters you can call setter methods: `travelTimeClient.setBaseURL`, `travelTimeClient.setRateLimitSettings`.
+Credentials and all of these parameters are fixed at construction time — create a new client instance to use different ones.
 
 ---
 
 Now you'll be able to call all TravelTime API endpoints from `travelTimeClient` instance.
 
-Every instance function returns Object with type of `Promise<AxiosResponse<EndpointResponseType>>`.
+Every instance function returns Object with type of `Promise<EndpointResponseType>`.
 
 #### Batch Processing
 
@@ -736,16 +737,19 @@ Body attributes:
 #### Advanced Options
 
 You can apply additional optional parameters to client constructor’s second argument `parameters` object:
+ - `baseUrl` [string] - you can change base URL of client. Default value is `https://proto.api.traveltimeapp.com/api/v3`.
+ - `timeout` [number] - per-attempt request timeout in milliseconds. Default is `120000`. Retries each get their own timeout, so the worst-case total for a call is roughly `(maxRetries + 1) × timeout` plus backoff.
+ - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses, which backs off exponentially with jitter. Accepts `maxRetries` (default `3`, pass `0` to disable retrying), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms). This retrying is turned off while the rate limiter is enabled, since the rate limiter does its own.
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
     - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on custom plan and not sure of your limits feel free to contact us. Default value is `60`.
     - `retryCount` [number] - Determines how many times request should be repeated when API returns status `429`. Default is `3`.
     - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `1000`.
 
-If you need to change any of these parameters you can call setter methods: `travelTimeClient.setRateLimitSettings`.
+Credentials and all of these parameters are fixed at construction time — create a new client instance to use different ones.
 
 ```ts
-import { TravelTimeError, TravelTimeProtoClient, TimeFilterFastProtoRequest } from 'traveltime-api';
+import { TravelTimeProtoClient, TimeFilterFastProtoRequest } from 'traveltime-api';
 
 const travelTimeProtoClient = new TravelTimeProtoClient({
   apiKey: 'YOUR_APP_KEY',
@@ -777,7 +781,7 @@ const requestData: TimeFilterFastProtoRequest = {
 
 travelTimeProtoClient.timeFilterFast(requestData)
   .then((data) => console.log(data))
-  .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
+  .catch((e) => console.error(e));
 ```
 
 #### Distance and fares variants
@@ -786,7 +790,7 @@ Two sibling methods take the same request shape and return extra properties alon
 * `timeFilterFastDistance` also returns `distances`. Transportation is limited to non-public-transport modes.
 * `timeFilterFastFares` also returns `monthlyFares`.
 
-See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`http_status`, `error_code`, `description`, `details`) from proto endpoints.
+Proto endpoint failures are thrown as `TravelTimeError` instances with the proto error headers already mapped onto its fields. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`status`, `errorCode`, `description`, `details`) from proto endpoints.
 
 #### Transportation Details
 
@@ -846,7 +850,7 @@ Body attributes:
 * removeWaterBodies: Optional boolean. When true (the service default), returned cells will not cover large nearby water bodies.
 
 ```ts
-import { TravelTimeError, TravelTimeProtoClient, GeohashFastProtoRequest } from 'traveltime-api';
+import { TravelTimeProtoClient, GeohashFastProtoRequest } from 'traveltime-api';
 
 const travelTimeProtoClient = new TravelTimeProtoClient({
   apiKey: 'YOUR_APP_KEY',
@@ -867,10 +871,10 @@ const requestData: GeohashFastProtoRequest = {
 
 travelTimeProtoClient.geohashFast(requestData)
   .then((data) => console.log(data))
-  .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
+  .catch((e) => console.error(e));
 ```
 
-The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`http_status`, `error_code`, `description`, `details`) from proto endpoints.
+The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`status`, `errorCode`, `description`, `details`) from proto endpoints.
 
 ### [H3 Fast (Proto)](https://docs.traveltime.com/api/start/h3-proto)
 A fast version of H3 communicating using [protocol buffers](https://github.com/protocolbuffers/protobuf).
@@ -888,7 +892,7 @@ Body attributes:
 Cell ids are returned in their 15-character hexadecimal H3 form.
 
 ```ts
-import { TravelTimeError, TravelTimeProtoClient, H3FastProtoRequest } from 'traveltime-api';
+import { TravelTimeProtoClient, H3FastProtoRequest } from 'traveltime-api';
 
 const travelTimeProtoClient = new TravelTimeProtoClient({
   apiKey: 'YOUR_APP_KEY',
@@ -909,10 +913,10 @@ const requestData: H3FastProtoRequest = {
 
 travelTimeProtoClient.h3Fast(requestData)
   .then((data) => console.log(data))
-  .catch((e) => console.error(TravelTimeError.makeProtoError(e)));
+  .catch((e) => console.error(e));
 ```
 
-The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`http_status`, `error_code`, `description`, `details`) from proto endpoints.
+The same rate-limit options and transportation detail shapes documented under [Time Filter Fast (Proto)](#time-filter-fast-proto) apply here. See [TravelTime Error Response](#traveltime-error-response) for how to destructure `TravelTimeError` fields (`status`, `errorCode`, `description`, `details`) from proto endpoints.
 
 ### [Routes](https://traveltime.com/docs/api/reference/routes)
 Returns routing information between source and destinations.
@@ -1134,7 +1138,7 @@ travelTimeClient.supportedLocations({
 ```
 
 ### [TravelTime Error Response](https://docs.traveltime.com/api/reference/error-response)
-If an error occurred in TravelTime api you can use TravelTimeError object to check and destructure error into a standard format.
+All failures are thrown as `TravelTimeError` instances with camelCase fields: `status`, `errorCode`, `description`, `documentationLink`, `additionalInfo`, `details` and `isRetryable`. Client-side validation failures are thrown as `TravelTimeValidationError` and transport-level failures (timeouts, DNS errors, non-TravelTime-shaped HTTP responses) as `TravelTimeNetworkError` — both extend `TravelTimeError`. Errors never contain request or response objects, headers, or credentials, so they are safe to log and serialize; `toJSON()` emits the fields above for structured loggers.
 
 ```ts
 import { TravelTimeError } from 'traveltime-api';
@@ -1148,7 +1152,7 @@ travelTimeClient.mapInfo()
   });
 ```
 
-For proto endpoints, errors are delivered via response headers (`x-error-code`, `x-error-message`, `x-error-details`) rather than a JSON body. Use `TravelTimeError.makeProtoError` to convert an axios error into a `TravelTimeError` with those headers mapped onto the standard fields (`http_status`, `error_code`, `description`, plus the proto-only `details` string).
+For proto endpoints, errors are delivered via response headers (`x-error-code`, `x-error-message`, `x-error-details`) rather than a JSON body. The SDK maps those headers onto the standard fields for you (`status`, `errorCode`, `description`, plus the proto-only `details` string).
 
 ```ts
 import { TravelTimeError } from 'traveltime-api';
@@ -1156,14 +1160,13 @@ import { TravelTimeError } from 'traveltime-api';
 travelTimeProtoClient.timeFilterFast(requestData)
   .then((data) => console.log(data))
   .catch((e) => {
-    const err = TravelTimeError.makeProtoError(e);
-    if (TravelTimeError.isTravelTimeError(err)) {
-      console.error(`Travel Time API proto request failed with error code: ${err.http_status}`);
-      console.error(`X-ERROR-CODE: ${err.error_code || 'Not provided'}`);
-      console.error(`X-ERROR-DETAILS: ${err.details || 'Not provided'}`);
-      console.error(`X-ERROR-MESSAGE: ${err.description || 'Not provided'}`);
+    if (TravelTimeError.isTravelTimeError(e)) {
+      console.error(`Travel Time API proto request failed with status: ${e.status}`);
+      console.error(`X-ERROR-CODE: ${e.errorCode ?? 'Not provided'}`);
+      console.error(`X-ERROR-DETAILS: ${e.details || 'Not provided'}`);
+      console.error(`X-ERROR-MESSAGE: ${e.description || 'Not provided'}`);
     } else {
-      console.error(err);
+      console.error(e);
     }
   });
 ```
