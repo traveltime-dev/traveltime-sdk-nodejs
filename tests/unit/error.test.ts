@@ -233,6 +233,36 @@ describe('error model', () => {
     expect(mapped.stack).toBe(original.stack);
   });
 
+  describe('serialization', () => {
+    // res.json(err) / res.send(err) call JSON.stringify, which honours
+    // toJSON() — so anything it emits reaches the HTTP client
+    const cases: Array<[string, TravelTimeError]> = [
+      ['TravelTimeError', TravelTimeError.fromJsonResponse(422, {
+        http_status: 422, error_code: 16, description: 'Invalid request', documentation_link: 'https://docs.traveltime.com/api/reference/error-codes',
+      }, REQUEST_URL)],
+      ['TravelTimeValidationError', new TravelTimeValidationError('coordsFrom must be an array of coordinates')],
+      ['TravelTimeNetworkError', TravelTimeNetworkError.from(makeFetchFailure(), REQUEST_URL)],
+    ];
+
+    cases.forEach(([label, error]) => {
+      it(`should not serialize the stack of a ${label}`, () => {
+        const serialized = JSON.parse(JSON.stringify(error));
+        expect(serialized).not.toHaveProperty('stack');
+        expect(JSON.stringify(error)).not.toContain(__filename);
+        // the fields consumers rely on are untouched
+        expect(serialized.name).toBe(label);
+        expect(serialized.description).toBe(error.description);
+        expect(serialized.isRetryable).toBe(error.isRetryable);
+      });
+
+      it(`should keep the stack on a ${label} instance for logging`, () => {
+        expect(error.stack).toContain(label);
+        // console.error uses util.inspect, which reads .stack off the instance
+        expect(util.inspect(error, { depth: null })).toContain(error.stack);
+      });
+    });
+  });
+
   it('should compute isRetryable from the kind of failure', () => {
     const cases: Array<[string, TravelTimeError, boolean]> = [
       ['429', new TravelTimeError({ description: 'too many requests', status: 429 }), true],

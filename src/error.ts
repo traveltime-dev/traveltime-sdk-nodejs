@@ -111,7 +111,6 @@ export class TravelTimeError extends Error {
       additionalInfo: this.additionalInfo,
       details: this.details,
       isRetryable: this.isRetryable,
-      stack: this.stack,
     };
   }
 
