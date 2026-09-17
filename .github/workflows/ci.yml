@@ -11,6 +11,10 @@ on:
       - '**.md'
       - LICENSE
 
+# Neither job writes to the repo; they only check out and run the test suite.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
