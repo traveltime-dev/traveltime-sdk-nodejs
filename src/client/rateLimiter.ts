@@ -69,7 +69,7 @@ export class RateLimiter {
   ) {
     this.settings = {
       enabled: false,
-      hitsPerMinute: 60,
+      hitsPerMinute: 120,
       retryCount: 3,
       timeBetweenRetries: 1000,
       ...rateLimitSettings,
