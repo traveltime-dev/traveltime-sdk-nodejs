@@ -1,7 +1,13 @@
 import { TravelTimeValidationError } from '../error';
 
 export type RateLimitSettings = {
+  /** Turns the rate limiter on. Default `false`. */
   enabled: boolean
+  /**
+   * Hits per minute your plan allows; requests are paced evenly across the minute.
+   *
+   * Default is `120`
+   */
   hitsPerMinute: number
   /**
    * Determines how many times request should be repeated when API returns status `429`.
