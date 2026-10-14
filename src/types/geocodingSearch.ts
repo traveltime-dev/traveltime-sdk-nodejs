@@ -1,15 +1,20 @@
 import { Coords } from './common';
 
-/**
- * Bounding box limiting geocoding search results. Sent as
- * `southEast.lat,southEast.lng,northWest.lat,northWest.lng`, which the API reads as
- * `min-lat,min-lng,max-lat,max-lng`.
- */
+/** Bounding box limiting geocoding search results, given by its south-west and north-east corners. */
 export type GeocodingBounds = {
-  /** Its `lat` is sent as the minimum latitude and its `lng` as the minimum longitude. */
+  /** South-west corner: the minimum latitude and longitude. */
+  southWest: Coords,
+  /** North-east corner: the maximum latitude and longitude. */
+  northEast: Coords
+  southEast?: never
+  northWest?: never
+} | {
+  /** @deprecated Misnamed: it is the south-west corner. Use `southWest`. */
   southEast: Coords,
-  /** Its `lat` is sent as the maximum latitude and its `lng` as the maximum longitude. */
+  /** @deprecated Misnamed: it is the north-east corner. Use `northEast`. */
   northWest: Coords
+  southWest?: never
+  northEast?: never
 }
 
 /** Optional settings for a geocoding search. */

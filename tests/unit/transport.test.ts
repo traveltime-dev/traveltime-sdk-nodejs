@@ -359,6 +359,30 @@ describe('transport', () => {
       expect(calls).toHaveLength(3);
     });
 
+    it('should send southWest/northEast geocoding bounds as sw.lat,sw.lng,ne.lat,ne.lng', async () => {
+      const { calls, fn } = recordingFetch(jsonResponse(200, {}));
+      stubFetch(fn);
+      const client = new TravelTimeClient({ apiKey: 'test-key', applicationId: 'app-id' });
+
+      await client.geocoding('Oslo', {
+        params: { bounds: { southWest: { lat: 54.16243, lng: 4.04297 }, northEast: { lat: 71.18316, lng: 31.81641 } } },
+      });
+
+      expect(new URL(calls[0].url).searchParams.get('bounds')).toBe('54.16243,4.04297,71.18316,31.81641');
+    });
+
+    it('should send deprecated southEast/northWest geocoding bounds unchanged', async () => {
+      const { calls, fn } = recordingFetch(jsonResponse(200, {}));
+      stubFetch(fn);
+      const client = new TravelTimeClient({ apiKey: 'test-key', applicationId: 'app-id' });
+
+      await client.geocoding('Oslo', {
+        params: { bounds: { southEast: { lat: 54.16243, lng: 4.04297 }, northWest: { lat: 71.18316, lng: 31.81641 } } },
+      });
+
+      expect(new URL(calls[0].url).searchParams.get('bounds')).toBe('54.16243,4.04297,71.18316,31.81641');
+    });
+
     it('should build the proto request against the transport with Basic auth', async () => {
       const { calls, fn } = recordingFetch(() => new Response(new Uint8Array(0), { status: 200 }));
       stubFetch(fn);
