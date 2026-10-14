@@ -4,6 +4,7 @@ import {
   MapInfoResponse,
   GeocodingResponse,
   GeocodingSearchRequest,
+  GeocodingBounds,
   RoutesRequest,
   RoutesResponse,
   SupportedLocationsResponse,
@@ -65,6 +66,11 @@ function parseResponseBody(body: Buffer): unknown {
   } catch {
     return text;
   }
+}
+
+function geocodingBoundsToParam(bounds: GeocodingBounds): string {
+  const [sw, ne] = bounds.southWest ? [bounds.southWest, bounds.northEast] : [bounds.southEast, bounds.northWest];
+  return `${sw.lat},${sw.lng},${ne.lat},${ne.lng}`;
 }
 
 function getHitAmountFromRequest(url: string, body: RequestPayload['body']): number | null {
@@ -210,7 +216,7 @@ export class TravelTimeClient {
   async geocoding(query: string, req?: GeocodingSearchRequest) {
     const { acceptLanguage, params } = req || {};
     const headers = acceptLanguage ? { 'Accept-Language': acceptLanguage } : undefined;
-    const bounds = params?.bounds ? `${params.bounds.southEast.lat},${params.bounds.southEast.lng},${params.bounds.northWest.lat},${params.bounds.northWest.lng}` : undefined;
+    const bounds = params?.bounds ? geocodingBoundsToParam(params.bounds) : undefined;
     const withinCountry = Array.isArray(params?.['within.country']) ? params?.['within.country'].join(',') : params?.['within.country'];
     return this.request<GeocodingResponse>('/geocoding/search', 'get', {
       config: {
