@@ -27,7 +27,7 @@
   "author": "TravelTime <support@traveltime.com> (https://traveltime.com/)",
   "license": "MIT",
   "dependencies": {
-    "protobufjs": "^8.7.1"
+    "protobufjs": "^8.8.0"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
