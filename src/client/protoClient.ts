@@ -68,6 +68,7 @@ interface TimeFilterProtoMessageWithUrl {
   requestUrl: string
 }
 
+/** Client for the TravelTime protocol buffers API. Failed calls reject with a `TravelTimeError`. */
 export class TravelTimeProtoClient {
   private transport: Transport;
   private protoFileDir = `${__dirname}/proto/v2`;
@@ -94,10 +95,16 @@ export class TravelTimeProtoClient {
   private H3FastRequest: protobuf.Type;
   private H3FastResponse: protobuf.Type;
 
+  /**
+   * @param credentials Application id and key from the TravelTime Developer Portal.
+   * @param parameters Optional settings, fixed for the lifetime of the client.
+   */
   constructor(
     credentials: Credentials,
     parameters?: {
+      /** Client-side rate limiting. Off by default. Each request costs one hit. */
       rateLimitSettings?: Partial<RateLimitSettings>,
+      /** API base URL. Default `https://proto.api.traveltimeapp.com/api/v3`. */
       baseUrl?: string,
       /** Request timeout in milliseconds. Default `120000`. */
       timeout?: number,
@@ -431,13 +438,18 @@ export class TravelTimeProtoClient {
     }
   }
 
+  /** Time Filter (Fast) over protocol buffers: travel times between one location and many points. */
   timeFilterFast = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(request);
 
+  /** Like `timeFilterFast`, also returning `distances`. Public transport modes are not supported. */
   timeFilterFastDistance = async (request: TimeFilterFastProtoDistanceRequest) => this.handleProtoFile(request, { useDistance: true });
 
+  /** Like `timeFilterFast`, also returning `monthlyFares`. */
   timeFilterFastFares = async (request: TimeFilterFastProtoRequest) => this.handleProtoFile(request, { useFares: true });
 
+  /** Geohash (Fast) over protocol buffers: travel time statistics for the reachable geohash cells. */
   geohashFast = async (request: GeohashFastProtoRequest) => this.handleGeohashProtoFile(request);
 
+  /** H3 (Fast) over protocol buffers: travel time statistics for the reachable H3 cells, ids in hexadecimal form. */
   h3Fast = async (request: H3FastProtoRequest) => this.handleH3ProtoFile(request);
 }
