@@ -31,4 +31,39 @@ describe('routes', () => {
     });
     expect(response.results.length).toBeGreaterThan(0);
   });
+
+  it('should return the H3 cells of each journey', async () => {
+    const response = await client.routes({
+      locations,
+      departure_searches: [{
+        id: 'h3 departure search',
+        departure_location_id: 'London center',
+        arrival_location_ids: ['Hyde Park'],
+        departure_time: new Date().toISOString(),
+        transportation: { type: 'driving' },
+        properties: ['travel_time', 'h3'],
+        h3: { resolution: 8, properties: ['min', 'max', 'mean'] },
+      }],
+    });
+    const [journey] = response.results[0].locations[0].properties;
+    expect(journey.h3?.cells.length).toBeGreaterThan(0);
+    expect(journey.h3?.cells[0].properties?.mean).toBeTypeOf('number');
+  });
+
+  it('should return bare H3 cells without the h3 object', async () => {
+    const response = await client.routes({
+      locations,
+      departure_searches: [{
+        id: 'h3 default search',
+        departure_location_id: 'London center',
+        arrival_location_ids: ['Hyde Park'],
+        departure_time: new Date().toISOString(),
+        transportation: { type: 'driving' },
+        properties: ['h3'],
+      }],
+    });
+    const [journey] = response.results[0].locations[0].properties;
+    expect(journey.h3?.cells.length).toBeGreaterThan(0);
+    expect(journey.h3?.cells[0].properties).toBeUndefined();
+  });
 });
