@@ -928,6 +928,8 @@ Body attributes:
 * departure_searches: Searches based on departure times. Leave departure location at no earlier than given time. You can define a maximum of 10 searches.
 * arrival_searches: Searches based on arrival times. Arrive at destination location at no later than given time. You can define a maximum of 10 searches.
 
+Add `h3` to a search's `properties` to also get the H3 cells each journey passes through, in `h3.cells`. The optional `h3` object sets their `resolution` (`6` to `11`, default `8`) and which travel time statistics (`min`, `max`, `mean`) each cell returns; with none requested, cells carry only their `id`.
+
 ```ts
 import {
   LocationRequest,
@@ -947,7 +949,8 @@ const departure_search: RoutesRequestDepartureSearch = {
   arrival_location_ids: ['Hyde Park', 'ZSL London Zoo'],
   transportation: { type: 'driving' },
   departure_time: new Date().toISOString(),
-  properties: ['travel_time', 'distance', 'route'],
+  properties: ['travel_time', 'distance', 'route', 'h3'],
+  h3: { resolution: 8, properties: ['min', 'max', 'mean'] },
 };
 
 const arrival_search: RoutesRequestArrivalSearch = {
