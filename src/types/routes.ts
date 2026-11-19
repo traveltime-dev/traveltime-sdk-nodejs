@@ -6,9 +6,18 @@ import {
   ResponseFares,
   Snapping,
 } from './common';
+import { GeoGridCell, GeoGridProperties } from './geogrid';
 
 /** Properties a Routes search can return for each location. */
-export type RoutesRequestProperty = 'travel_time' | 'distance' | 'fares' | 'route';
+export type RoutesRequestProperty = 'travel_time' | 'distance' | 'fares' | 'route' | 'h3';
+
+/** H3 representation of the routes returned by a search. */
+export type RoutesRequestH3 = {
+  /** H3 resolution of the returned cells (higher = smaller cells), from `6` to `11`. Defaults to `8`. */
+  'resolution'?: number;
+  /** Travel time statistics to return for each cell. None by default. */
+  'properties'?: Array<GeoGridProperties>;
+}
 
 /** Fields shared by Routes departure and arrival searches. */
 export type RoutesRequestSearchBase = Snapping & {
@@ -20,6 +29,8 @@ export type RoutesRequestSearchBase = Snapping & {
   'properties': Array<RoutesRequestProperty>;
   /** Departure or arrival window returning alternative journeys. Public transport modes only. */
   'range'?: RangeRequestFull;
+  /** H3 representation settings. Applies only when `properties` includes `h3`. */
+  'h3'?: RoutesRequestH3;
 }
 
 /** A search from one departure location to up to 2 arrival locations. */
@@ -52,6 +63,20 @@ export type RoutesRequest = {
   'arrival_searches'?: Array<RoutesRequestArrivalSearch>;
 };
 
+/** A cell a journey passes through. */
+export type RoutesResponseH3Cell = {
+  /** H3 index of the cell. */
+  'id': string;
+  /** Travel time statistics requested in `h3.properties`, in seconds. Absent when none were requested. */
+  'properties'?: GeoGridCell['properties'];
+}
+
+/** H3 representation of one journey. */
+export type RoutesResponseH3 = {
+  /** Cells the journey passes through, in the order it first reaches them. */
+  'cells': Array<RoutesResponseH3Cell>;
+}
+
 /** Properties of one journey. Only requested properties are present. */
 export type RoutesResponseProperties = {
   /** Journey time in seconds. */
@@ -62,6 +87,8 @@ export type RoutesResponseProperties = {
   'fares'?: ResponseFares;
   /** The route itself. */
   'route'?: ResponseRoute;
+  /** H3 representation of the journey. */
+  'h3'?: RoutesResponseH3;
 }
 
 /** A reachable location and its journeys. */
