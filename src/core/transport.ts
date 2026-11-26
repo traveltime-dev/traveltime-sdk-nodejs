@@ -4,28 +4,36 @@ import { TravelTimeError, TravelTimeNetworkError, TravelTimeValidationError } fr
 const sdkVersion = require('../../package.json').version;
 
 const DEFAULT_TIMEOUT = 120_000;
-const DEFAULT_RETRY_MAX_RETRIES = 3;
-const DEFAULT_RETRY_BASE_DELAY = 1_000;
-const DEFAULT_RETRY_MAX_DELAY = 60_000;
+const DEFAULT_RETRY_MAX_RETRIES = 4;
+const DEFAULT_RETRY_BASE_DELAY = 30_000;
+const DEFAULT_RETRY_MAX_DELAY = 30_000;
+const DEFAULT_SERVER_ERROR_RETRIES = 3;
+const SERVER_ERROR_BASE_DELAY = 1_000;
+const SERVER_ERROR_JITTER = 500;
 
-/** Public 429-retry tuning. To disable retries entirely, set `maxRetries: 0`. */
+/** Public retry tuning. To disable retries entirely, set `maxRetries: 0` and `maxServerErrorRetries: 0`. */
 export interface TransportRetryOptions {
-  /** Maximum number of retries after the initial attempt. Default `3`. Set `0` to disable retries. */
+  /** Maximum number of HTTP 429 retries after the initial attempt. Default `4`. Set `0` to disable them. */
   maxRetries?: number;
-  /** First backoff delay in milliseconds, doubled on every retry. Default `1000`. */
+  /** First HTTP 429 backoff delay in milliseconds, doubled on every retry. Default `30000`. */
   baseDelay?: number;
-  /** Upper bound in milliseconds for any single retry delay. Default `60000`. */
+  /** Upper bound in milliseconds for any single HTTP 429 retry delay. Default `30000`. */
   maxDelay?: number;
+  /**
+   * Maximum number of retries for 5xx responses and dropped connections, waiting
+   * 1s, 2s, 4s… between them. Timeouts are not retried. Default `3`. Set `0` to disable them.
+   */
+  maxServerErrorRetries?: number;
 }
 
 /**
- * Internal: the clients decide whether the transport retries at all — it
- * must stay off while the rate limiter drives 429 retries, or the two retry
- * paths multiply. Not exported, so callers cannot set it.
+ * Internal: the clients decide whether the transport retries 429s — it must
+ * stay off while the rate limiter drives 429 retries, or the two retry paths
+ * multiply. Not exported, so callers cannot set it.
  */
 interface TransportRetryConfig extends TransportRetryOptions {
   /** Whether requests rejected with HTTP 429 are retried. Default `true`. */
-  enabled?: boolean;
+  retryRateLimited?: boolean;
 }
 
 export type TransportAuth = {
@@ -101,10 +109,21 @@ function tryParseJson(body: Buffer): unknown {
 }
 
 /**
+ * A 5xx response or a connection that failed before any response. Timeouts are
+ * excluded: the request may still be running on the server, so retrying it
+ * would only add load.
+ */
+function isTransient(error: TravelTimeError): boolean {
+  if (error.status !== undefined) return error.status >= 500;
+  return error instanceof TravelTimeNetworkError && error.isRetryable && error.code !== 'ETIMEDOUT';
+}
+
+/**
  * Shared HTTP layer for both clients, built on the native `fetch`.
  *
  * - applies a per-attempt timeout
  * - retries HTTP 429 with exponential backoff and jitter
+ * - retries 5xx responses and dropped connections with a short exponential backoff
  * - maps every failure to a sanitized `TravelTimeError` subclass; raw
  *   request/response objects (which carry credential headers) never escape
  */
@@ -123,16 +142,20 @@ export class Transport {
     this.errorFormat = options.errorFormat ?? 'json';
     this.timeout = options.timeout ?? DEFAULT_TIMEOUT;
     this.retry = {
-      enabled: options.retry?.enabled ?? true,
+      retryRateLimited: options.retry?.retryRateLimited ?? true,
       maxRetries: options.retry?.maxRetries ?? DEFAULT_RETRY_MAX_RETRIES,
       baseDelay: options.retry?.baseDelay ?? DEFAULT_RETRY_BASE_DELAY,
       maxDelay: options.retry?.maxDelay ?? DEFAULT_RETRY_MAX_DELAY,
+      maxServerErrorRetries: options.retry?.maxServerErrorRetries ?? DEFAULT_SERVER_ERROR_RETRIES,
     };
     if (!Number.isFinite(this.timeout) || this.timeout <= 0) {
       throw new TravelTimeValidationError('timeout must be a positive number of milliseconds');
     }
     if (!Number.isInteger(this.retry.maxRetries) || this.retry.maxRetries < 0) {
       throw new TravelTimeValidationError('retry.maxRetries must be a non-negative integer');
+    }
+    if (!Number.isInteger(this.retry.maxServerErrorRetries) || this.retry.maxServerErrorRetries < 0) {
+      throw new TravelTimeValidationError('retry.maxServerErrorRetries must be a non-negative integer');
     }
     if (!Number.isFinite(this.retry.baseDelay) || this.retry.baseDelay <= 0) {
       throw new TravelTimeValidationError('retry.baseDelay must be a positive number of milliseconds');
@@ -144,13 +167,22 @@ export class Transport {
 
   async request(path: string, options: TransportRequestOptions): Promise<TransportResponse> {
     const url = this.buildUrl(path, options.query);
-    const maxRetries = this.retry.enabled ? this.retry.maxRetries : 0;
-    for (let retriesDone = 0; ; retriesDone += 1) {
+    const maxRateLimitRetries = this.retry.retryRateLimited ? this.retry.maxRetries : 0;
+    let rateLimitRetries = 0;
+    let serverErrorRetries = 0;
+    for (;;) {
       const outcome = await this.attempt(url, options);
       if (outcome.ok) return outcome.response;
-      const shouldRetry = outcome.error.status === 429 && retriesDone < maxRetries;
-      if (!shouldRetry) throw outcome.error;
-      await this.waitBeforeRetry(this.retryDelay(retriesDone));
+      const { error } = outcome;
+      if (error.status === 429 && rateLimitRetries < maxRateLimitRetries) {
+        await this.waitBeforeRetry(this.retryDelay(rateLimitRetries));
+        rateLimitRetries += 1;
+      } else if (isTransient(error) && serverErrorRetries < this.retry.maxServerErrorRetries) {
+        await this.waitBeforeRetry(SERVER_ERROR_BASE_DELAY * 2 ** serverErrorRetries + Math.random() * SERVER_ERROR_JITTER);
+        serverErrorRetries += 1;
+      } else {
+        throw error;
+      }
     }
   }
 
@@ -213,7 +245,7 @@ export class Transport {
     return TravelTimeNetworkError.from(error, url);
   }
 
-  /** Backoff before the next retry, given how many retries are already done. */
+  /** Backoff before the next 429 retry, given how many 429 retries are already done. */
   private retryDelay(retriesDone: number): number {
     const { baseDelay, maxDelay } = this.retry;
     const backoff = Math.min(baseDelay * 2 ** retriesDone, maxDelay);

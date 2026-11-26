@@ -46,12 +46,12 @@ const travelTimeClient = new TravelTimeClient({
 You can apply additional optional parameters to client constructor’s second argument `parameters` object:
  - `baseURL` [string] - you can change base URL of client. Default value is `https://api.traveltimeapp.com/v4`.
  - `timeout` [number] - per-attempt request timeout in milliseconds. Default is `120000`. Retries each get their own timeout, so the worst-case total for a call is roughly `(maxRetries + 1) × timeout` plus backoff.
- - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses, which backs off exponentially with jitter. Accepts `maxRetries` (default `3`, pass `0` to disable retrying), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms). This retrying is turned off while the rate limiter is enabled, since the rate limiter does its own.
+ - `retry` [object] - controls the built-in retrying. `HTTP 429 Too Many Requests` responses are retried with exponential backoff and jitter, configured by `maxRetries` (default `4`, pass `0` to disable), `baseDelay` (default `30000` ms) and `maxDelay` (default `30000` ms), so a retry reaches the next minute's quota; this 429 retrying is turned off while the rate limiter is enabled, since the rate limiter does its own. `5xx` responses and dropped connections are retried up to `maxServerErrorRetries` times (default `3`, pass `0` to disable), 1, 2 and 4 seconds apart. Timeouts are not retried.
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. Requests are paced out across the minute — roughly one every `60000 / hitsPerMinute` milliseconds — rather than sent in bursts, and a `429` pauses the whole queue before retrying. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
     - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on a Production plan and not sure of your limits, feel free to contact us. Default value is `120`. A single request costing more hits than this is rejected with a `TravelTimeValidationError`, since it could never fit within the limit.
-    - `retryCount` [number] - Determines how many times request should be repeated when API returns status `429`. Default is `3`.
-    - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `1000`. This acts as a floor, since a retry also waits for its turn in the queue.
+    - `retryCount` [number] - Determines how many times request should be repeated when API returns status `429`. Default is `4`.
+    - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `30000`. This acts as a floor, since a retry also waits for its turn in the queue.
 
 Credentials and all of these parameters are fixed at construction time — create a new client instance to use different ones.
 
@@ -739,12 +739,12 @@ Body attributes:
 You can apply additional optional parameters to client constructor’s second argument `parameters` object:
  - `baseUrl` [string] - you can change base URL of client. Default value is `https://proto.api.traveltimeapp.com/api/v3`.
  - `timeout` [number] - per-attempt request timeout in milliseconds. Default is `120000`. Retries each get their own timeout, so the worst-case total for a call is roughly `(maxRetries + 1) × timeout` plus backoff.
- - `retry` [object] - controls the built-in retrying of `HTTP 429 Too Many Requests` responses, which backs off exponentially with jitter. Accepts `maxRetries` (default `3`, pass `0` to disable retrying), `baseDelay` (default `1000` ms) and `maxDelay` (default `60000` ms). This retrying is turned off while the rate limiter is enabled, since the rate limiter does its own.
+ - `retry` [object] - controls the built-in retrying. `HTTP 429 Too Many Requests` responses are retried with exponential backoff and jitter, configured by `maxRetries` (default `4`, pass `0` to disable), `baseDelay` (default `30000` ms) and `maxDelay` (default `30000` ms), so a retry reaches the next minute's quota; this 429 retrying is turned off while the rate limiter is enabled, since the rate limiter does its own. `5xx` responses and dropped connections are retried up to `maxServerErrorRetries` times (default `3`, pass `0` to disable), 1, 2 and 4 seconds apart. Timeouts are not retried.
  - `rateLimitSettings` [object] - in order to keep within [limits](https://docs.traveltime.com/api/overview/usage-limits) we suggest enabling this feature to reduce risk of receiving `HTTP 429 Too Many Requests` errors. This object accepts these arguments:
     - `enabled` [boolean] - pass `true` to enable rate limiter on this SDK instance. Default is set to `false`.
     - `hitsPerMinute` [number] - pass number that your plan supports. You can find what HPM your plan supports [here](https://docs.traveltime.com/api/overview/usage-limits#Hits-Per-Minute-HPM). If you are on a Production plan and not sure of your limits, feel free to contact us. Default value is `120`.
-    - `retryCount` [number] - Determines how many times request should be repeated when API returns status `429`. Default is `3`.
-    - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `1000`.
+    - `retryCount` [number] - Determines how many times request should be repeated when API returns status `429`. Default is `4`.
+    - `timeBetweenRetries` [number] - Determines how often retry should happen. Time units - `milliseconds`. Default is `30000`.
 
 Credentials and all of these parameters are fixed at construction time — create a new client instance to use different ones.
 

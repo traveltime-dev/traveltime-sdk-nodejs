@@ -12,7 +12,7 @@ export type RateLimitSettings = {
   /**
    * Determines how many times request should be repeated when API returns status `429`.
    *
-   * Default is `3`
+   * Default is `4`
    */
   retryCount: number
   /**
@@ -20,7 +20,7 @@ export type RateLimitSettings = {
    *
    * Time units - `milliseconds`.
    *
-   * Default is `1000`
+   * Default is `30000`
    */
   timeBetweenRetries: number
 }
@@ -76,8 +76,8 @@ export class RateLimiter {
     this.settings = {
       enabled: false,
       hitsPerMinute: 120,
-      retryCount: 3,
-      timeBetweenRetries: 1000,
+      retryCount: 4,
+      timeBetweenRetries: 30_000,
       ...rateLimitSettings,
     };
     if (this.settings.enabled) validateSettings(this.settings);

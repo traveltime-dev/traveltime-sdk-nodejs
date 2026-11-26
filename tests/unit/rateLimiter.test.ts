@@ -379,11 +379,11 @@ describe('rateLimiter', () => {
   });
 
   describe('single retry path', () => {
-    // `enabled` is not part of TransportRetryOptions, but a JS caller can
-    // pass anything — it must be ignored, never honoured, or transport
-    // retries multiply with limiter retries (4 x 4 = 16 requests) inside
+    // `retryRateLimited` is not part of TransportRetryOptions, but a JS caller
+    // can pass anything — it must be ignored, never honoured, or transport
+    // retries multiply with limiter retries (5 x 5 = 25 requests) inside
     // single admissions that consume no pacing slot
-    const jsCallerRetry = { enabled: true, baseDelay: 1, maxDelay: 1 } as TransportRetryOptions;
+    const jsCallerRetry = { retryRateLimited: true, baseDelay: 1, maxDelay: 1 } as TransportRetryOptions;
 
     it('should ignore a JS caller forcing transport retries on while the limiter drives retries', async () => {
       const { calls } = recordingFetch(tooManyRequests);
@@ -394,7 +394,7 @@ describe('rateLimiter', () => {
 
       const result = track(client.timeFilter(timeFilterBody(1)));
       await vi.advanceTimersByTimeAsync(60_000);
-      expect(calls).toHaveLength(4); // initial attempt + 3 limiter retries, not 4 x 4
+      expect(calls).toHaveLength(5); // initial attempt + 4 limiter retries, not 5 x 5
       expect(result.rejected).toBe(true);
     });
 
@@ -413,7 +413,7 @@ describe('rateLimiter', () => {
         travelTime: 3600,
       }));
       await vi.advanceTimersByTimeAsync(60_000);
-      expect(calls).toHaveLength(4);
+      expect(calls).toHaveLength(5);
       expect(result.rejected).toBe(true);
     });
   });

@@ -116,7 +116,7 @@ export class TravelTimeClient {
       rateLimitSettings?: Partial<RateLimitSettings>,
       /** Request timeout in milliseconds. Default `120000`. */
       timeout?: number,
-      /** HTTP 429 retry behaviour. On by default, unless the rate limiter is enabled — its own retry logic applies then. */
+      /** Retries of HTTP 429, 5xx responses and dropped connections. On by default; while the rate limiter is enabled, it retries 429s itself. */
       retry?: TransportRetryOptions,
     },
   ) {
@@ -126,9 +126,9 @@ export class TravelTimeClient {
       baseURL: parameters?.baseURL ?? DEFAULT_BASE_URL,
       auth: { scheme: 'api-key', applicationId: credentials.applicationId, apiKey: credentials.apiKey },
       timeout: parameters?.timeout,
-      // `enabled` comes last so a caller-supplied object cannot switch the
-      // transport retry back on while the rate limiter drives 429 retries
-      retry: { ...parameters?.retry, enabled: !this.rateLimiter.isEnabled() },
+      // `retryRateLimited` comes last so a caller-supplied object cannot switch
+      // the transport's 429 retry back on while the rate limiter drives 429 retries
+      retry: { ...parameters?.retry, retryRateLimited: !this.rateLimiter.isEnabled() },
     });
   }
 

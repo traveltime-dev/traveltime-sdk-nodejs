@@ -182,7 +182,9 @@ describe('transport', () => {
     it('should map a non-TravelTime-shaped body onto TravelTimeNetworkError with the status', async () => {
       const { fn } = recordingFetch(() => new Response('<html>Bad Gateway</html>', { status: 502 }));
 
-      const err = await makeTransport(fn).request('/time-map', { method: 'POST', body: '{}' }).catch((e) => e);
+      const err = await makeTransport(fn, { retry: { maxServerErrorRetries: 0 } })
+        .request('/time-map', { method: 'POST', body: '{}' })
+        .catch((e) => e);
       expect(err).toBeInstanceOf(TravelTimeNetworkError);
       expect(err.status).toBe(502);
       expect(err.isRetryable).toBe(true);
@@ -216,7 +218,7 @@ describe('transport', () => {
 
   describe('timeout', () => {
     it('should time out a hung request with a retryable timeout error', async () => {
-      const err = await makeTransport(hangingFetch, { timeout: 30, retry: { enabled: false } })
+      const err = await makeTransport(hangingFetch, { timeout: 30, retry: { retryRateLimited: false } })
         .request('/time-map', { method: 'POST', body: '{}' })
         .catch((e) => e);
 
@@ -298,27 +300,91 @@ describe('transport', () => {
     it('should not retry when retry is disabled', async () => {
       const { calls, fn } = recordingFetch(jsonResponse(429, { error_code: 5, description: 'Too many requests' }));
 
-      const err = await makeTransport(fn, { retry: { enabled: false } }).request('/time-map', { method: 'POST', body: '{}' }).catch((e) => e);
+      const err = await makeTransport(fn, { retry: { retryRateLimited: false } }).request('/time-map', { method: 'POST', body: '{}' }).catch((e) => e);
       expect(calls).toHaveLength(1);
       expect(err.status).toBe(429);
     });
 
-    it('should not retry non-429 failures', async () => {
-      const { calls, fn } = recordingFetch(() => new Response('oops', { status: 503 }));
-
-      await makeTransport(fn).request('/time-map', { method: 'POST', body: '{}' }).catch(() => undefined);
-      expect(calls).toHaveLength(1);
-    });
-
-    // maxRetries: Infinity would never give up, and 0.5 silently meant one retry
-    it.each([Infinity, 0.5, -1, NaN])('should reject maxRetries %p as invalid', (maxRetries) => {
+    // Infinity would never give up, and 0.5 silently meant one retry
+    it.each([Infinity, 0.5, -1, NaN])('should reject a retry count of %p as invalid', (count) => {
       const { fn } = recordingFetch(jsonResponse(200, {}));
-      expect(() => makeTransport(fn, { retry: { maxRetries } })).toThrow(TravelTimeValidationError);
+      expect(() => makeTransport(fn, { retry: { maxRetries: count } })).toThrow(TravelTimeValidationError);
+      expect(() => makeTransport(fn, { retry: { maxServerErrorRetries: count } })).toThrow(TravelTimeValidationError);
     });
 
     it.each(['baseDelay', 'maxDelay'] as const)('should reject a non-positive %s', (key) => {
       const { fn } = recordingFetch(jsonResponse(200, {}));
       expect(() => makeTransport(fn, { retry: { [key]: 0 } })).toThrow(TravelTimeValidationError);
+    });
+  });
+
+  describe('server error and connection retry', () => {
+    const delays: number[] = [];
+    const recordDelays = () => {
+      delays.length = 0;
+      type Waiter = { waitBeforeRetry: (delay: number) => Promise<void> };
+      vi.spyOn(Transport.prototype as unknown as Waiter, 'waitBeforeRetry').mockImplementation(async (delay) => {
+        delays.push(delay);
+      });
+    };
+    const connectionReset = () => {
+      throw new TypeError('fetch failed', { cause: Object.assign(new Error('socket hang up'), { code: 'ECONNRESET' }) });
+    };
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('should retry 5xx responses and dropped connections 1s, 2s and 4s apart, then throw the last error', async () => {
+      recordDelays();
+      const { calls, fn } = recordingFetch(
+        () => new Response('oops', { status: 503 }),
+        connectionReset,
+        jsonResponse(500, { error_code: 1, description: 'Internal error' }),
+      );
+
+      const err = await makeTransport(fn).request('/time-map', { method: 'POST', body: '{}' }).catch((e) => e);
+
+      expect(calls).toHaveLength(4);
+      expect(delays.map((delay) => Math.floor(delay / 1000))).toEqual([1, 2, 4]);
+      expect(err).toBeInstanceOf(TravelTimeError);
+      expect(err.status).toBe(500);
+    });
+
+    it('should recover once a retried request succeeds', async () => {
+      recordDelays();
+      const { calls, fn } = recordingFetch(connectionReset, jsonResponse(200, { ok: true }));
+
+      const response = await makeTransport(fn).request('/time-map', { method: 'POST', body: '{}' });
+
+      expect(calls).toHaveLength(2);
+      expect(response.status).toBe(200);
+    });
+
+    it('should not retry client errors, timeouts, or when maxServerErrorRetries is 0', async () => {
+      recordDelays();
+      const badRequest = recordingFetch(jsonResponse(422, { error_code: 16, description: 'Unsupported location' }));
+      const serverError = recordingFetch(() => new Response('oops', { status: 503 }));
+
+      await makeTransport(badRequest.fn).request('/time-map', { method: 'POST', body: '{}' }).catch(() => undefined);
+      const timeout = await makeTransport(hangingFetch, { timeout: 30 }).request('/time-map', { method: 'POST', body: '{}' }).catch((e) => e);
+      await makeTransport(serverError.fn, { retry: { maxServerErrorRetries: 0 } })
+        .request('/time-map', { method: 'POST', body: '{}' }).catch(() => undefined);
+
+      expect(badRequest.calls).toHaveLength(1);
+      expect(timeout.code).toBe('ETIMEDOUT');
+      expect(serverError.calls).toHaveLength(1);
+      expect(delays).toEqual([]);
+    });
+
+    it('should keep retrying 5xx while the rate limiter handles 429s', async () => {
+      recordDelays();
+      const { calls, fn } = recordingFetch(() => new Response('oops', { status: 502 }), jsonResponse(200, { map_info: [] }));
+      stubFetch(fn);
+      const client = new TravelTimeClient({ apiKey: 'test-key', applicationId: 'app-id' }, { rateLimitSettings: { enabled: true } });
+
+      await expect(client.mapInfo()).resolves.toEqual({ map_info: [] });
+      expect(calls).toHaveLength(2);
     });
   });
 
@@ -411,7 +477,7 @@ describe('transport', () => {
           }),
         });
         stubFetch(async () => { throw failure; });
-        const client = new TravelTimeClient({ apiKey: SENTINEL, applicationId: 'app-id' });
+        const client = new TravelTimeClient({ apiKey: SENTINEL, applicationId: 'app-id' }, { retry: { maxServerErrorRetries: 0 } });
 
         const err = await client.mapInfo().catch((e) => e);
         expect(err).toBeInstanceOf(TravelTimeNetworkError);
@@ -423,7 +489,7 @@ describe('transport', () => {
           status: 500,
           headers: { 'x-echoed-api-key': SENTINEL },
         }));
-        const client = new TravelTimeClient({ apiKey: SENTINEL, applicationId: 'app-id' });
+        const client = new TravelTimeClient({ apiKey: SENTINEL, applicationId: 'app-id' }, { retry: { maxServerErrorRetries: 0 } });
 
         const err = await client.mapInfo().catch((e) => e);
         expect(err).toBeInstanceOf(TravelTimeNetworkError);
