@@ -27,8 +27,12 @@ function validateMatrixRequest(body: { coordsFrom?: Coords[], coordsTo?: Coords[
   }
 }
 
-function validateMaxSearchLimit(MAX_SEARCHES_LIMIT: number, maxSearchesPerRequest: number | undefined) {
-  const maxSearches = maxSearchesPerRequest || MAX_SEARCHES_LIMIT;
+const MAX_SEARCHES_LIMIT = 100_000;
+/** Time Filter's per-search location limit on most plans; larger requests are rejected unless the plan allows more. */
+const TIME_FILTER_DEFAULT_MAX_SEARCHES = 2_000;
+
+function validateMaxSearchLimit(maxSearchesPerRequest: number | undefined, defaultMaxSearches: number) {
+  const maxSearches = maxSearchesPerRequest || defaultMaxSearches;
   if (maxSearches > MAX_SEARCHES_LIMIT) {
     throw new TravelTimeValidationError(`Max number of searches is ${MAX_SEARCHES_LIMIT}`);
   }
@@ -44,6 +48,7 @@ function generateLocationsForChunk(indexFrom: number, coordsFrom: Coords, chunk:
 
 function generateRequestsFromChunks<R>(body: {
   maxSearchesPerRequest: number | undefined
+  defaultMaxSearchesPerRequest: number
   coordsFrom: Coords[]
   coordsTo: Coords[]
 }, makeRequest: (params: {
@@ -52,7 +57,7 @@ function generateRequestsFromChunks<R>(body: {
   chunk: Coords[],
   chunkOffset: number,
 }) => R): R[] {
-  const maxSearchesPerRequest = validateMaxSearchLimit(100_000, body.maxSearchesPerRequest);
+  const maxSearchesPerRequest = validateMaxSearchLimit(body.maxSearchesPerRequest, body.defaultMaxSearchesPerRequest);
   const requests: R[] = [];
   body.coordsFrom.forEach((coordsFrom, indexFrom) => {
     for (let index = 0; index < body.coordsTo.length; index += maxSearchesPerRequest) {
@@ -88,6 +93,7 @@ export function timeFilterFastManyToManyMatrixToRequest(body: TimeFilterFastMany
     coordsFrom: body.coordsFrom,
     coordsTo: body.coordsTo,
     maxSearchesPerRequest: body.maxSearchesPerRequest,
+    defaultMaxSearchesPerRequest: MAX_SEARCHES_LIMIT,
   }, ({
     indexFrom, coordsFrom, chunk, chunkOffset,
   }) => ({
@@ -141,6 +147,7 @@ export function timeFilterManyToManyMatrixToRequest(body: TimeFilterManyToManyMa
     coordsFrom: body.coordsFrom,
     coordsTo: body.coordsTo,
     maxSearchesPerRequest: body.maxSearchesPerRequest,
+    defaultMaxSearchesPerRequest: TIME_FILTER_DEFAULT_MAX_SEARCHES,
   }, ({
     indexFrom, coordsFrom, chunk, chunkOffset,
   }) => ({

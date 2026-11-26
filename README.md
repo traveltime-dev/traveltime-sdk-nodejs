@@ -576,9 +576,18 @@ travelTimeClient.timeFilter({
 
 This utility function leverages `travelTimeClient.timeFilter` (as described in the previous section) to efficiently construct Many-to-Many matrices in batches.
 
+Each `coordsFrom` point is sent as its own request, and all requests start at once. Enable the rate limiter (`rateLimitSettings`, see [Advanced Options](#advanced-options)) with your plan's hits per minute, as in the example below, so requests are paced to your plan. Without it, a matrix with more rows than your plan allows per minute has its extra requests fail with `429`, leaving `null` entries.
+
+Rows wider than `maxSearchesPerRequest` `coordsTo` points (default `2000`, the Time Filter limit on most plans) are split into several requests. If your plan allows more points per search, you can raise it up to `100000`.
+
 
 ```ts
-const matrix = await travelTimeClient.manyToManyMatrix({
+const matrixClient = new TravelTimeClient(
+  { apiKey: 'YOUR_APP_KEY', applicationId: 'YOUR_APP_ID' },
+  { rateLimitSettings: { enabled: true, hitsPerMinute: 60 } }, // your plan's hits per minute
+);
+
+const matrix = await matrixClient.manyToManyMatrix({
     coordsFrom: [
       { lat: 51.5055, lng: -0.0754 },
       { lat: 51.5171, lng: -0.1062 },
@@ -676,9 +685,16 @@ travelTimeClient.timeFilterFast({
 
 This utility function leverages `travelTimeClient.timeFilterFast` (as described in the previous section) to efficiently construct Many-to-Many matrices in batches.
 
+Each `coordsFrom` point is sent as its own request, and all requests start at once. Enable the rate limiter (`rateLimitSettings`, see [Advanced Options](#advanced-options)) with your plan's hits per minute, as in the example below, so requests are paced to your plan. Without it, a matrix with more rows than your plan allows per minute has its extra requests fail with `429`, leaving `null` entries.
+
 
 ```ts
-const matrix = await travelTimeClient.manyToManyMatrixFast({
+const matrixClient = new TravelTimeClient(
+  { apiKey: 'YOUR_APP_KEY', applicationId: 'YOUR_APP_ID' },
+  { rateLimitSettings: { enabled: true, hitsPerMinute: 60 } }, // your plan's hits per minute
+);
+
+const matrix = await matrixClient.manyToManyMatrixFast({
     coordsFrom: [
       { lat: 51.5055, lng: -0.0754 },
       { lat: 51.5171, lng: -0.1062 },
