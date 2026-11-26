@@ -48,8 +48,9 @@ export type TimeFilterManyToManyMatrixRequest = TimeFilterManyToManyMatrixReques
   searchType?: 'arrive' | 'depart'
   /**
    * Maximum number of `coordsTo` points sent in one request; larger rows are split.
-   * Defaults to and is capped at `100_000`, but Time Filter accepts at most `2_000`
-   * location ids per search, so set `2_000` or less when `coordsTo` is larger.
+   * Default value is `2_000`, the Time Filter limit on most plans. Plans with a higher
+   * limit can raise it.
+   * Max value is `100_000`.
    */
   maxSearchesPerRequest?: number
 }

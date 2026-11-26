@@ -576,6 +576,10 @@ travelTimeClient.timeFilter({
 
 This utility function leverages `travelTimeClient.timeFilter` (as described in the previous section) to efficiently construct Many-to-Many matrices in batches.
 
+Each `coordsFrom` point is sent as its own request, and all requests start at once. For matrices with more rows than your plan allows per minute, enable the rate limiter (`rateLimitSettings`, see [Advanced Options](#advanced-options)) with your plan's limit, e.g. `new TravelTimeClient(credentials, { rateLimitSettings: { enabled: true, hitsPerMinute: 60 } })`. Without it, requests over the limit fail with `429` and leave `null` entries.
+
+Rows wider than `maxSearchesPerRequest` `coordsTo` points (default `2000`, the Time Filter limit on most plans) are split into several requests. If your plan allows more points per search, you can raise it up to `100000`.
+
 
 ```ts
 const matrix = await travelTimeClient.manyToManyMatrix({
@@ -675,6 +679,8 @@ travelTimeClient.timeFilterFast({
 ### Time Filter Fast Many to Many Utility
 
 This utility function leverages `travelTimeClient.timeFilterFast` (as described in the previous section) to efficiently construct Many-to-Many matrices in batches.
+
+Each `coordsFrom` point is sent as its own request, and all requests start at once. For matrices with more rows than your plan allows per minute, enable the rate limiter (`rateLimitSettings`, see [Advanced Options](#advanced-options)) with your plan's limit, e.g. `new TravelTimeClient(credentials, { rateLimitSettings: { enabled: true, hitsPerMinute: 60 } })`. Without it, requests over the limit fail with `429` and leave `null` entries.
 
 
 ```ts

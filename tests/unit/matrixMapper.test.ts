@@ -87,6 +87,18 @@ describe('matrixMapper', () => {
       expect(requests[0].departure_searches![0].arrival_location_ids.length).toBe(2);
       expect(requests[1].departure_searches![0].arrival_location_ids.length).toBe(1);
     });
+
+    it('should split rows wider than 2000 points by default', () => {
+      const requests = timeFilterManyToManyMatrixToRequest({
+        coordsFrom: [coordsFrom[0]],
+        coordsTo: Array.from({ length: 2001 }, () => coordsTo[0]),
+        travelTime: 3600,
+        transportation: { type: 'driving' },
+        leaveTime: '2024-01-01T08:00:00Z',
+      });
+
+      expect(requests.map((request) => request.arrival_searches![0].departure_location_ids.length)).toEqual([2000, 1]);
+    });
   });
 
   describe('timeFilterFastManyToManyMatrixToRequest', () => {
